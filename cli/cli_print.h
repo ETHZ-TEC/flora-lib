@@ -18,6 +18,10 @@
 
 #include "cli/cJSON/cJSON.h"
 
+#ifndef CLI_ENABLE
+#define CLI_ENABLE    1
+#endif /* CLI_ENABLE */
+
 #define VT100_OUTPUT cli_interactive_mode
 
 #define CLI_OUTPUT_BEGIN "\x02" // ASCII Start of Text (STX). Can be nested if there is an asynchronous log item or output to separate execution output.
@@ -68,6 +72,8 @@ typedef enum {
 
 void cli_set_vt100_modes();
 
+#if CLI_ENABLE
+
 void cli_print(char* buffer);
 void cli_nprint(char* buffer, uint16_t size);
 void cli_println(char* buffer);
@@ -82,6 +88,22 @@ bool cli_delete_prompt();
 
 void cli_set_color(uint8_t color);
 bool cli_string_is_printable(const char *s, uint16_t size);
+
+#else /* CLI_ENABLE */
+
+#define cli_print(str)
+#define cli_nprint(str, n)
+#define cli_println(str)
+#define cli_log(str, mod, lvl)
+#define cli_log_json(cont, mod, lvl)
+#define cli_log_inline(str, lvl, nl, l, s)
+#define cli_log_inline_json(str, lvl)
+#define cli_print_prompt(nl)
+#define cli_delete_prompt()
+#define cli_set_color(c)
+#define cli_string_is_printable(str, n)   0
+
+#endif /* CLI_ENABLE */
 
 
 #endif /* CLI_CLI_PRINT_H_ */

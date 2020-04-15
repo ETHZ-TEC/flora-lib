@@ -57,6 +57,8 @@ void hs_timer_schedule_stop();
 void hs_timer_timeout_stop();
 void hs_timer_generic_stop();
 
+void hs_timer_handle_overflow(void);
+
 
 
 

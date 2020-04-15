@@ -51,17 +51,19 @@
 #ifndef PROTOCOL_GMW_GMW_PLATFORM_CONF_H_
 #define PROTOCOL_GMW_GMW_PLATFORM_CONF_H_
 
-#include "protocol/gloria/gloria_interface.h"
+
+#ifndef GLOSSY_CONF_PAYLOAD_LEN
+#define GLOSSY_CONF_PAYLOAD_LEN         GMW_MAX_PKT_LEN
+#endif /* GLOSSY_CONF_PAYLOAD_LEN */
 
 /* the RF overhead introduced by glossy and the radio platform.
  * 2 bytes for glossy header + length byte + 16-bit crc
  */
 #define GMW_RF_OVERHEAD_GLOSSY          5       /* see glossy.c */
 #define GMW_RF_OVERHEAD_STROBING        4
-// #define GMW_CONF_RF_OVERHEAD            MAX(GMW_RF_OVERHEAD_GLOSSY, GMW_RF_OVERHEAD_STROBING)
-#define GMW_CONF_RF_OVERHEAD            0 /* header of gloria is accounted for in GLORIA_INTERFACE_T_HOP */
+#define GMW_CONF_RF_OVERHEAD            MAX(GMW_RF_OVERHEAD_GLOSSY, GMW_RF_OVERHEAD_STROBING)
 
-#define GMW_CONF_T_REF_OFS              0         /* us */
+#define GMW_CONF_T_REF_OFS              (300)    /* us */
 
 #ifndef GMW_CONF_T_GUARD_ROUND
 #define GMW_CONF_T_GUARD_ROUND          1000      /* us */
@@ -77,33 +79,21 @@
 #define GMW_CONF_RF_TX_CHANNEL          GMW_RF_TX_CHANNEL_870_0_MHz
 #endif /* GMW_CONF_RF_TX_CHANNEL */
 
-
-#define GMW_START(initiator_id, payload, payload_len, n_tx_max, sync_slot, rf_cal) \
-                                      gloria_start(initiator_id, payload, payload_len, n_tx_max, sync_slot)
-#define GMW_STOP()                    gloria_stop()
-#define GMW_GET_N_RX()                gloria_get_rx_cnt()
-#define GMW_GET_PAYLOAD_LEN()         gloria_get_payload_len()
-#define GMW_GET_RELAY_CNT_FIRST_RX()  gloria_get_rx_index()
-#define GMW_GET_N_RX_STARTED()        gloria_get_rx_preamble_cnt()
-#define GMW_IS_T_REF_UPDATED()        gloria_is_t_ref_updated()
-#define GMW_GET_T_REF()               gloria_get_t_ref()
-
-// extended GMW-GLORIA interface
-#define GMW_T_HOP(len)                        gloria_get_time_on_air(len)
-#define GMW_SET_TX_POWER(power)               gloria_set_tx_power(power)
-
-// T_SLOT_MIN depends on the used primitive, therefore it needs to be implemented here
-#define GMW_T_SLOT_MIN(len, n, hops)    ( hops * GMW_T_HOP(len) + 250 )
-
 /* min. duration of 1 packet transmission with Glossy in us
  * note: TX to RX switch takes ~313us, RX to TX switch ~287us -> constant
  *       overhead is ~300us per hop, which already includes the transmission
  *       of 4 preamble bytes and the sync word (4 bytes) -> the actual
  *       switching time is therefore approx. 44us */
-#ifndef GMW_T_HOP
-#error "Formula for GMW_T_HOP calculation is not valid for SX1262"
 #define GMW_T_HOP(len)   (300 + (len) * 8 * 1000000UL / GMW_CONF_RF_TX_BITRATE)
-#endif /* GMW_T_HOP */
+
+#define GMW_START(initiator_id, payload, payload_len, n_tx_max, sync, rf_cal)   //PIN_SET(COM_GPIO2)//glossy_start(initiator_id, payload, payload_len, n_tx_max, sync, rf_cal)
+#define GMW_STOP()                   //PIN_CLR(COM_GPIO2)//glossy_stop()
+#define GMW_GET_T_REF()              0//glossy_get_t_ref_lf()
+#define GMW_IS_T_REF_UPDATED()       0//glossy_is_t_ref_updated()
+#define GMW_GET_N_RX()               0//glossy_get_rx_cnt()
+#define GMW_GET_N_RX_STARTED()       0//glossy_get_rx_try_cnt()
+#define GMW_GET_PAYLOAD_LEN()        0//glossy_get_payload_len()
+#define GMW_GET_RELAY_CNT_FIRST_RX() 0//glossy_get_relay_cnt()
 
 #if GMW_CONF_USE_MULTI_PRIMITIVES
   /* all modes enabled if USE_GLOSSY_MODES (note: mode 0 is always enabled) */
@@ -166,6 +156,27 @@ typedef enum
 /*--- GLOSSY MACROS ---*/
 /*---------------------------------------------------------------------------*/
 
+#ifndef GMW_START
+#define GMW_START(initiator_id, payload, payload_len, n_tx_max, sync, rf_cal) \
+      glossy_start(initiator_id, payload, payload_len, n_tx_max, sync, rf_cal)
+#endif /* GMW_START */
+
+#ifndef GMW_STOP
+#define GMW_STOP()                      glossy_stop()
+#endif /* GMW_STOP */
+
+#ifndef GMW_GET_T_REF
+/* return HF timestamp of the start of the first reception */
+#define GMW_GET_T_REF()                 glossy_get_t_ref()
+#endif /* GMW_GET_T_REF */
+
+#ifndef GMW_IS_T_REF_UPDATED
+#define GMW_IS_T_REF_UPDATED()          glossy_is_t_ref_updated()
+#endif /* GMW_IS_T_REF_UPDATED */
+
+#ifndef GMW_GET_RELAY_CNT_FIRST_RX
+#define GMW_GET_RELAY_CNT_FIRST_RX()    glossy_get_relay_cnt()
+#endif /* GMW_GET_RELAY_CNT_FIRST_RX */
 
 #ifndef GMW_HIGH_NOISE_DETECTED
   #define GMW_HIGH_NOISE_DETECTED()     gmw_high_noise_detected()

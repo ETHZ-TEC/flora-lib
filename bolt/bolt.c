@@ -38,21 +38,10 @@ typedef enum {
 /* private variables */
 static volatile bolt_state_t bolt_state = BOLT_STATE_INVALID;
 
-#if BOLT_TRQ_ENABLE
-static lptimer_clock_t  lptimer_ext = 0;
-#endif /* BOLT_TRQ_ENABLE */
-
 
 bool bolt_init(void)
 {
   /* note: control signals and SPI must be initialized before calling bolt_init! */
-
-#if BOLT_TRQ_ENABLE
-  PIN_MAP_AS_INPUT(BOLT_CONF_TIMEREQ_PIN, BOLT_CONF_TIMEREQ_PINMAP);
-  PIN_CFG_IN(BOLT_CONF_TIMEREQ_PIN);
-  PIN_PULLDOWN_EN(BOLT_CONF_TIMEREQ_PIN);
-  lptimer_wait_for_event(BOLT_CONF_TIMEREQ_TIMERID, 0);
-#endif /* BOLT_TRQ_ENABLE */
 
   if (bolt_status()) {
     BOLT_DEBUG("[BOLT] not accessible, init failed");
@@ -64,32 +53,6 @@ bool bolt_init(void)
   return 1;
 }
 
-#if BOLT_TRQ_ENABLE
-void bolt_set_timereq_callback(void (*func)(void))
-{
-  if (!func) {
-    /* remove the callback = switch to polling mode (utilize the DMA) */
-    lptimer_wait_for_event(BOLT_CONF_TIMEREQ_TIMERID, 0);
-  } else {
-    /* set the lptimer callback function */
-    lptimer_wait_for_event(BOLT_CONF_TIMEREQ_TIMERID, (lptimer_callback_t)func);
-    /* configure the time request pin for port interrupt
-     * (default is 'pulldown resistor' and 'trigger on rising edge') */
-    //PIN_CFG_INT(BOLT_CONF_IND_PIN);
-  }
-}
-
-uint8_t bolt_handle_timereq(lptimer_clock_t* timestamp)
-{
-  if (DMA_TIMER_IFG && timestamp) {        /* interrupt flag set? */
-    *timestamp = (lptimer_ext << 16) | BOLT_CONF_TIMEREQ_CCR;
-    /* note: TAxCCR CCIFG is automatically cleared when the transfer starts */
-    DMA_TIMER_CLRIFG;  /* no need to re-enable DMA in repeated transfer mode */
-    return 1;
-  }
-  return 0;
-}
-#endif /* BOLT_TRQ_ENABLE */
 
 void bolt_release(void)
 {

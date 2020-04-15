@@ -17,9 +17,7 @@
 #define BOLT_ENABLE                     0
 #endif /* BOLT_ENABLE */
 
-#ifndef BOLT_TRQ_ENABLE
-#define BOLT_TRQ_ENABLE                 0
-#endif /* BOLT_TRQ_ENABLE */
+/* note: the time request feature is configured outside of this driver */
 
 #ifndef BOLT_MAX_MSG_LEN
 #define BOLT_MAX_MSG_LEN                128  /* bytes */
@@ -59,12 +57,6 @@ uint32_t bolt_read(uint8_t* out_data);
  * write a message to BOLT (max. length: BOLT_MAX_MSG_LEN)
  */
 bool bolt_write(uint8_t* data, uint32_t len);
-
-
-#if BOLT_TRQ_ENABLE
-void    bolt_set_timereq_callback(void (*func)(void));
-uint8_t bolt_handle_timereq(lptimer_clock_t* timestamp);
-#endif /* BOLT_TRQ_ENABLE */
 
 
 #endif /* BOLT_BOLT_H_ */

@@ -70,17 +70,21 @@ typedef struct __attribute__((packed)) gmw_schedule {
 /**
  * @brief                       Config section structure.
  */
-#define GMW_CONFIG_SECTION_HEADER_LEN   (8)
+#define GMW_CONFIG_SECTION_HEADER_LEN   (6)
 typedef struct __attribute__((packed)) gmw_config {
   uint8_t n_retransmissions;
-  uint8_t mode;              /* (was channel_hopping_mode before) */
-  uint8_t max_packet_length; /* Max packet size (rf level) for data packets */
-  uint8_t primitive;         /* ID of the primitive to use (0 is Glossy) */
-  uint8_t gap_time;          /* Gap time in increments of 100 us */
-  /* the following values are in increments of GMW_CONF_SLOT_TIME_BASE */
-  uint8_t slot_time;         /* Data slot time */
-  uint8_t ctrl_time;         /* Control slot time */
-  uint8_t cont_time;         /* Contention slot time */
+  uint8_t channel_hopping_mode; /*
+                                 * not, per slot, or in flood
+                                 * (see gmw_hopping_mode_t)
+                                 * /!\ NOT IMPLEMENTED YET /!\
+                                 */
+  uint8_t max_packet_length;    /*
+                                 * Max packet size (at rf level)
+                                 * for data packets
+                                 */
+  uint8_t primitive;            /* ID of the primitive to use (0 is Glossy) */
+  uint8_t gap_time;             /* Gap time in increments of 100 us */
+  uint8_t slot_time;            /* Slot time in increments of 500 us */
 } gmw_config_t;
 
 /**
@@ -116,7 +120,7 @@ typedef struct __attribute__((packed)) gmw_control {
   uint8_t user_bytes[GMW_CONF_CONTROL_USER_BYTES];
 #endif /* GMW_CONF_CONTROL_USER_BYTES */
 #if GMW_CONF_USE_MAGIC_NUMBER
-  uint8_t magic_number; // aka network ID
+  uint8_t magic_number;
 #endif /*GMW_CONF_USE_MAGIC_NUMBER*/
 } gmw_control_t;
 

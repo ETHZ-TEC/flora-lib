@@ -21,6 +21,8 @@ extern uint16_t input_count;
 extern uint16_t input_cursor;
 extern bool cli_inside_execution;
 
+#if CLI_ENABLE
+
 static bool cli_is_newline = false;
 
 void cli_clear_screen() {
@@ -331,3 +333,5 @@ bool cli_string_is_printable( const char *s, uint16_t size ) {
 
   return (*s == '\0');
 }
+
+#endif /* CLI_ENABLE */

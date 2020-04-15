@@ -26,15 +26,15 @@
 
 #include <stdlib.h>
 
-#include "radio/semtech/boards/board.h"
-#include "flocklab/flocklab.h"
+#include "main.h"
+
 #include "arch/stm32hal/platform.h"
+#include "radio/semtech/boards/board.h"
 #include "radio/semtech/boards/sx126x-board.h"
 #include "radio/semtech/boards/utilities.h"
+#include "radio/radio_platform.h"
 #include "time/rtc.h"
-
 #include "radio/semtech/radio.h"
-#include "main.h"
 #include "stm32l4xx_hal.h"
 
 
@@ -60,7 +60,7 @@ void SX126xReset( void )
     rtc_delay(20);
     HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_SET); // internal pull-up
     rtc_delay(10);
-    FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
+    RADIO_TX_STOP_IND();
 }
 
 void SX126xWaitOnBusy( void )
@@ -70,7 +70,8 @@ void SX126xWaitOnBusy( void )
 
 void SX126xWakeup( void )
 {
-    flocklab_reset_pins();
+    RADIO_TX_STOP_IND();
+    RADIO_RX_STOP_IND();
 
     CRITICAL_SECTION_BEGIN( );
 

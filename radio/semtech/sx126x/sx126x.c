@@ -21,16 +21,15 @@
  * \author    Gregory Cristian ( Semtech )
  */
 #include <string.h>
+
+#include "main.h"
 #include "arch/stm32hal/platform.h"
 #include "time/rtc.h"
 #include "radio/semtech/boards/utilities.h"
 #include "radio/semtech/radio.h"
 #include "radio/semtech/sx126x/sx126x.h"
 #include "radio/semtech/boards/sx126x-board.h"
-
 #include "radio/radio_platform.h"
-#include "flocklab/flocklab.h"
-
 
 
 /*!
@@ -243,7 +242,7 @@ void SX126xSetSleep( SleepParams_t sleepConfig )
     SX126xWriteCommand( RADIO_SET_SLEEP, &sleepConfig.Value, 1 );
     OperatingMode = MODE_SLEEP;
 
-    FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
+    RADIO_TX_STOP_IND();
     //FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
 }
 
@@ -281,7 +280,7 @@ void SX126xSetTx( uint32_t timeout )
     buf[2] = ( uint8_t )( timeout & 0xFF );
     SX126xWriteCommand( RADIO_SET_TX, buf, 3 );
 
-    FLOCKLAB_PIN_SET(FLOCKLAB_LED1);
+    RADIO_TX_START_IND();
 }
 
 void SX126xSetTxWithoutExecute( uint32_t timeout )
@@ -310,7 +309,7 @@ void SX126xSetRx( uint32_t timeout )
     buf[2] = ( uint8_t )( timeout & 0xFF );
     SX126xWriteCommand( RADIO_SET_RX, buf, 3 );
 
-    FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
+    RADIO_RX_START_IND();
 }
 
 void SX126xSetRxWithoutExecute( uint32_t timeout )
@@ -340,7 +339,7 @@ void SX126xSetRxBoosted( uint32_t timeout )
     buf[2] = ( uint8_t )( timeout & 0xFF );
     SX126xWriteCommand( RADIO_SET_RX, buf, 3 );
 
-    FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
+    RADIO_RX_START_IND();
 }
 
 void SX126xSetRxBoostedWithoutExecute( uint32_t timeout )

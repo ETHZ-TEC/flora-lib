@@ -50,9 +50,9 @@
 #define PROTOCOL_GMW_GMW_CONF_H_
 
 
-#ifndef USE_GMW
-#define USE_GMW     0
-#endif /* USE_GMW */
+#ifndef GMW_ENABLE
+#define GMW_ENABLE     0
+#endif /* GMW_ENABLE */
 
 /*---------------------------------------------------------------------------*/
 /*--- Packet sizes and slot configurations ---*/
@@ -130,7 +130,7 @@
   #elif GMW_CONF_PERIOD_TIME_BASE == GMW_CONF_PERIOD_TIME_BASE_100ms
    #define GMW_CONF_TIME_SCALE  10UL
   #elif GMW_CONF_PERIOD_TIME_BASE == GMW_CONF_PERIOD_TIME_BASE_10ms
-   #define GMW_CONF_TIME_SCALE  100UL
+   #define GMW_CONF_TIME_SCALE  100UL 
   #elif GMW_CONF_PERIOD_TIME_BASE == GMW_CONF_PERIOD_TIME_BASE_1ms
    #define GMW_CONF_TIME_SCALE  1000UL
   #else
@@ -178,12 +178,10 @@
  * @brief     Macro holding the maximal slot time of a contention slot,
  *            in micro-seconds (us).
  *
+ *            Default value is set to 8ms.
  */
 #ifndef GMW_CONF_T_CONT
-#define GMW_CONF_T_CONT          GMW_T_SLOT_MIN(1 + \
-                                          GMW_CONF_RF_OVERHEAD, \
-                                          GMW_CONF_TX_CNT_DATA, \
-                                          GMW_CONF_MAX_HOPS)
+#define GMW_CONF_T_CONT                   8000LU /* in us */
 #endif /* GMW_CONF_T_CONT */
 
 /**
@@ -560,8 +558,7 @@
 #ifndef GMW_CONF_SLOT_TIME_BASE
 #define GMW_CONF_SLOT_TIME_BASE           500UL /* in ms */
 #else
-// FIXME: Is it ok to remove this check?
-// #error "GMW_CONF_SLOT_TIME_BASE already defined!"
+#error "GMW_CONF_SLOT_TIME_BASE already defined!"
 #endif
 
 /* the time base for the slot time field in clock ticks */

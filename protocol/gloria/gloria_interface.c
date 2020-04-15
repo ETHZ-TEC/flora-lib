@@ -10,17 +10,26 @@
 #include <math.h>
 
 
+#ifndef GLORIA_START_IND
+  #define GLORIA_START_IND()
+  #define GLORIA_STOP_IND()
+#endif /* GLORIA_START_IND */
+
+
 /*******************************************************************************
- * BEGIN: GMW INTERFACE
+ * BEGIN: GLORIA INTERFACE
  ******************************************************************************/
 
+extern radio_sleeping_t radio_sleeping;
+
 /* internal state */
-static gloria_flood_t flood;                                     // flood struct which (serves as input, state, and output to/from gloria_run_flood)
-static bool flood_running;                                       // indicates whether flood is onging or not
+static gloria_flood_t   flood;                                   // flood struct which (serves as input, state, and output to/from gloria_run_flood)
+static gloria_message_t message;                                 // buffer for the message (static to avoid allocation on the stack)
+static bool     flood_running;                                   // indicates whether flood is onging or not
 static uint8_t  lastrun_msg_received = 0;                        // number of times a message has been received during the last gloria run
 static uint8_t  lastrun_payload_len = 0;                         // length of the payload received during the last gloria run (0 if no payload has been received)
 static uint8_t  lastrun_rx_index = 0;                            // slot index (slot in which the message was received (corresponds to relay counter in Glossy terminology)
-static uint8_t  lastrun_num_preamble_detected = 0;               // number of preamble detect events during the last Gloria run
+static uint8_t  lastrun_n_rx_started = 0;                        // number of rx started events during the last Gloria run
 static bool     lastrun_t_ref_updated = false;                   // indicates whether last_t_ref has been updated during the last flood
 static uint64_t last_t_ref = 0;                                  // reference time (updated if gloria_start is called with sync_slot=true)
 static int8_t   internal_power = GLORIA_INTERFACE_POWER;         // internal state for power (can be adapted from the GMW layer)
@@ -47,18 +56,31 @@ void gloria_start(uint16_t initiator_id,
                   uint8_t n_tx_max,
                   uint8_t sync_slot)
 {
+  if (!payload) {
+    LOG_WARNING_CONST("invalid parameters");
+    return;
+  }
+
+  /* radio must be woken from sleep mode! */
+  if (radio_sleeping) {
+    LOG_WARNING_CONST("radio is in sleep mode");
+    return;
+  }
+
   /* argument checks */
   if (payload_len > GLORIA_INTERFACE_MAX_PAYLOAD_LEN) {
     if (initiator_id == NODE_ID) {
-      DEBUG_PRINT("WARNING: payload_len passed to gloria_start as initiator exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before sending!");
+      LOG_WARNING_CONST("payload_len passed to gloria_start as initiator exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before sending!");
     } else {
-      DEBUG_PRINT("WARNING: payload_len passed to gloria_start as receiver exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before returning!");
+      LOG_WARNING_CONST("payload_len passed to gloria_start as receiver exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before returning!");
     }
     arg_payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
   }
   else {
     arg_payload_len = payload_len;
   }
+
+  GLORIA_START_IND();
 
   /* store arguments for further use */
   arg_initiator_id = initiator_id;
@@ -71,14 +93,11 @@ void gloria_start(uint16_t initiator_id,
   lastrun_msg_received = 0;
   lastrun_payload_len = 0;
   lastrun_rx_index = 0;
-  lastrun_num_preamble_detected = 0;
+  lastrun_n_rx_started = 0;
   lastrun_t_ref_updated = false;
   // last_t_ref: not initialized here since old values of previous floods are still valid and useful if current flood does not update the value
 
   /* prepare flood struct */
-  gloria_message_t message;
-  message.header.type = 0;
-
   flood.marker = 0;
   flood.modulation = internal_modulation;
   flood.power = internal_power;
@@ -90,11 +109,14 @@ void gloria_start(uint16_t initiator_id,
   flood.data_slots = GLORIA_INTERFACE_MAX_SLOTS;
   flood.sync_timer = 0;
   flood.lp_listening = false;
+
+  memset(&message, 0, sizeof(gloria_message_t));
+  message.header.type = 0;
   // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
 
   if (initiator_id == NODE_ID) {
     // send flood
-    uint64_t marker = ((hs_timer_get_current_timestamp() + GLORIA_RADIO_WAKEUP_TIME + HS_TIMER_FREQUENCY / 32 + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
+    uint64_t marker = ((hs_timer_get_current_timestamp() + GLORIA_RADIO_WAKEUP_TIME + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
     flood.marker = marker;    // marker (timestamp when flood shall start) must be set on the initiator
     message.header.dst = 0;   // 0 means broadcast
     message.header.sync = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
@@ -108,11 +130,12 @@ void gloria_start(uint16_t initiator_id,
     flood.message = &message;
     flood.marker = 0;
     flood.rx_timeout = 0;
-    flood.guard_time = 10000 * HS_TIMER_FREQUENCY_US;
+    flood.guard_time = 0;   //10000 * HS_TIMER_FREQUENCY_US;
     flood.initial = false;
   }
 
   radio_reset_preamble_counter();
+  radio_reset_sync_counter();
 
   gloria_run_flood(&flood, &gloria_flood_callback);
 }
@@ -123,22 +146,22 @@ uint8_t gloria_stop(void)
   if (flood_running) {
     if (arg_initiator_id == NODE_ID) {
       // If this node is initiator, we can detect if flood did not terminate and warn the user
-      DEBUG_PRINT("WARNING: Stopping glossy while flood sending is still ongoing!");
+      LOG_WARNING_CONST("Stopping glossy while flood sending is still ongoing!");
     }
     else {
-      DEBUG_PRINT("WARNING: Stopping glossy before finishing to participate in the flood!");
+      //LOG_VERBOSE_CONST("Stopping glossy before finishing to participate in the flood!");
     }
 
-    // Set radio to cold sleep
-    radio_sleep(0);
+    // put radio in standby mode
+    radio_set_standby();
 
     // Stop gloria timers
     hs_timer_schedule_stop();
     // FIXME: clear corresponding interrupt flags (if any)
     // FIXME: reset/cleanup state of current flood -> not necessary? All state is contained in flood variable which is passed by reference to gloria_run_flood()
 
-    // Clear interrupt flags (which potentially could prevent the MCU from sleepting or cause a higher sleep current)
-    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_13);
+    // Clear interrupt flags (which potentially could prevent the MCU from sleeping or cause a higher sleep current)
+    __HAL_GPIO_EXTI_CLEAR_IT(RADIO_DIO1_WAKEUP_Pin);
     __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 
     flood_running = false; // keep ordering: last internal state variable updated here
@@ -162,7 +185,11 @@ uint8_t gloria_stop(void)
     update_t_ref();
   }
 
-  lastrun_num_preamble_detected = radio_get_preamble_counter();
+  if (radio_modulations[flood.modulation].modem == MODEM_LORA) {
+    lastrun_n_rx_started = radio_get_preamble_counter();
+  } else {
+    lastrun_n_rx_started = radio_get_sync_counter();
+  }
 
   // DEBUG: print flood struct
   if (internal_enable_flood_printing) {
@@ -174,6 +201,8 @@ uint8_t gloria_stop(void)
   arg_payload_ptr = NULL;
   arg_payload_len = 0;
   arg_sync_slot = false;
+
+  GLORIA_STOP_IND();
 
   return lastrun_msg_received;
 }
@@ -190,8 +219,8 @@ uint8_t gloria_get_rx_index(void) {
   return lastrun_rx_index;
 }
 
-uint8_t gloria_get_rx_preamble_cnt(void) {
-  return lastrun_num_preamble_detected;
+uint8_t gloria_get_rx_started_cnt(void) {
+  return lastrun_n_rx_started;
 }
 
 uint8_t gloria_is_t_ref_updated(void){
@@ -200,6 +229,11 @@ uint8_t gloria_is_t_ref_updated(void){
 
 uint64_t gloria_get_t_ref(void){
   return last_t_ref;
+}
+
+uint32_t gloria_get_flood_time(void)
+{
+  return gloria_calculate_flood_time(&flood);
 }
 
 /* EXTENDED INTERFACE *********************************************************/
@@ -242,7 +276,7 @@ uint32_t gloria_get_time_on_air(uint8_t payload_len) {
     uint32_t nBits = nPreambleBits + 3*8 + 1*8 + 0*8 + phyPl*8 + 2*8;
     toa = nBits * 1000000UL / bitrate;
   } else {
-    DEBUG_PRINT("WARNING: Unknown modulation!");
+    LOG_WARNING_CONST("Unknown modulation!");
   }
   return toa;
 }
@@ -272,7 +306,7 @@ static void copy_payload(void) {
     memcpy(arg_payload_ptr, flood.message->payload, lastrun_payload_len);
   }
   else {
-    DEBUG_PRINT("WARNING: Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
+    LOG_WARNING_CONST("Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
     memcpy(arg_payload_ptr, flood.message->payload, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
     lastrun_payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
   }
@@ -284,7 +318,7 @@ static void copy_payload(void) {
 static void update_t_ref(void) {
   lastrun_t_ref_updated = false;
   if (flood.reconstructed_marker == 0) {
-    DEBUG_PRINT("WARNING: Tried to update t_ref with flood.reconstructed_marker==0!");
+    LOG_WARNING_CONST("Tried to update t_ref with flood.reconstructed_marker==0!");
     return;
   }
 
@@ -292,33 +326,25 @@ static void update_t_ref(void) {
   uint64_t hs_sync_point = 0;
   uint64_t lp_sync_point = 0;
   int64_t hs_sync_point_check = 0;
-  int64_t lp_sync_point_check = 0;
 
   // get sync point
-  while(!sync_point_acquired) {
+  while (!sync_point_acquired) {
     hs_sync_point = hs_timer_get_current_timestamp();
     lp_sync_point = lptimer_now();
 
     // Read timer values again to make sure that timers were not updated while reading
     uint64_t hs_tmp = hs_timer_get_current_timestamp();
-    uint64_t lp_tmp = lptimer_now();
 
     hs_sync_point_check = hs_tmp - hs_sync_point;
-    lp_sync_point_check = lp_tmp - lp_sync_point;
 
-    if (
-      hs_sync_point_check >= 0 &&
-      hs_sync_point_check < HS_TIMER_FREQUENCY_MS &&
-      lp_sync_point_check >= 0 &&
-      lp_sync_point_check < LPTIMER_SECOND/1000
-    )
-    {
+    if (hs_sync_point_check >= 0 &&
+        hs_sync_point_check < HS_TIMER_FREQUENCY_MS) {
       sync_point_acquired = true;
     }
   }
 
   // determine time difference between reconstructed_marker and sync point
-  uint64_t lp_time_diff = (hs_sync_point - flood.reconstructed_marker)/HS_TIMER_FREQUENCY_US*LPTIMER_SECOND/1000000;
+  uint64_t lp_time_diff = (hs_sync_point - flood.reconstructed_marker) / HS_TIMER_FREQUENCY_US * LPTIMER_SECOND / 1000000;
 
   // determine the the reconstructed_marker time in lptimer ticks
   /* update t_ref related internal state */
@@ -327,5 +353,5 @@ static void update_t_ref(void) {
 }
 
 /*******************************************************************************
- * END: GMW INTERFACE
+ * END: GLORIA INTERFACE
  ******************************************************************************/

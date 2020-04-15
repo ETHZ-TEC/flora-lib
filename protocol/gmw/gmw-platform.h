@@ -73,7 +73,7 @@ void gmw_set_rf_channel(gmw_rf_tx_channel_t channel);
  * @param   power               TX power in dBm, will be set to the closest
  *                              value available (equal or larger).
  */
-void gmw_set_tx_power(int8_t power);
+void gmw_set_tx_power(gmw_rf_tx_power_t power);
 
 /**
  * @brief                       Implementation of the noise detection feature.
@@ -100,19 +100,6 @@ uint8_t gmw_communication_active();
  * @returns                     RSSI value in dBm.
  */
 int8_t gmw_get_rssi_last();
-
-/**
- * @brief                       Set the modulation used for Rx and Tx. Valid
- *                              modulations are defined in radio_constants.c.
- */
-void gmw_set_rf_modulation(uint8_t modulation);
-
-/**
- * @brief                       Set the radio band (frequency and bandwidth)
- *                              used for Rx and Tx. Valid radio bands are
- *                              defined in radio_constants.c.
- */
-void gmw_set_rf_band(uint8_t band);
 
 /** @} */
 

@@ -48,6 +48,7 @@ static lora_irq_mode_t radio_mode;
 static radio_message_t* last_message_list = NULL;
 
 static uint8_t preamble_detected_counter = 0;
+static uint8_t sync_detected_counter = 0;
 
 // debug variables
 char char_buff[100];
@@ -267,7 +268,7 @@ void radio_sleep(bool warm) {
 
     radio_sleeping = warm + 1;
   }
-  FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
+  RADIO_TX_STOP_IND();
 }
 
 void radio_reset() {
@@ -417,7 +418,7 @@ void radio_OnRadioRxDone(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t 
       }
     }
     else {
-      cli_log("CRC Error on message reception!", "radio", CLI_LOG_LEVEL_ERROR);
+      LOG_ERROR_CONST("CRC Error on message reception");
     }
   }
 #endif
@@ -438,7 +439,7 @@ void radio_OnRadioRxError(void) {
 
 #ifdef DEBUG
   if (!radio_disable_log) {
-    cli_log("CRC Error Timeout!", "radio", CLI_LOG_LEVEL_WARNING);
+    LOG_WARNING_CONST("CRC Error Timeout");
   }
 #endif
 }
@@ -453,13 +454,16 @@ void radio_OnRadioRxTimeout(void) {
 
 #ifdef DEBUG
   if (!radio_disable_log) {
-    cli_log("Rx Timeout!", "radio", CLI_LOG_LEVEL_WARNING);
+    LOG_WARNING_CONST("Rx Timeout");
   }
 #endif
 }
 
 void radio_OnRadioRxSync(void) {
   radio_last_sync_timestamp = hs_timer_get_capture_timestamp();
+  if (sync_detected_counter < 255) {
+    sync_detected_counter++;
+  }
 }
 
 void radio_OnRadioRxPreamble(void) {
@@ -516,4 +520,12 @@ void radio_reset_preamble_counter(void) {
 
 uint8_t radio_get_preamble_counter(void) {
   return preamble_detected_counter;
+}
+
+void radio_reset_sync_counter(void) {
+  sync_detected_counter = 0;
+}
+
+uint8_t radio_get_sync_counter(void) {
+  return sync_detected_counter;
 }

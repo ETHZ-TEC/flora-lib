@@ -51,14 +51,14 @@
   * \file
   *         This file is the main header file for the Glossy Middleware (GMW)
   */
-
+ 
 #ifndef PROTOCOL_GMW_GMW_H_
 #define PROTOCOL_GMW_GMW_H_
 
-#include "app_config.h"
+#include "main.h"
 
 /* the correct include order is important */
-#include "arch/stm32hal/gmw-platform-conf.h"
+#include "protocol/gmw/gmw-platform-conf.h"
 #include "protocol/gmw/gmw-platform.h"
 #include "protocol/gmw/gmw-conf.h"
 #include "protocol/gmw/gmw-types.h"
@@ -73,6 +73,27 @@
 #endif
 
 /*---------------------------------------------------------------------------*/
+
+/* important values, do not modify */
+
+/*
+ * Minimum duration in us of a Glossy flood according to "Energy-efficient
+ * Real-time Communication in Multi-hop Low-power Wireless Networks"
+ * (Zimmerling et al.) plus 250 us of slack time.
+ * GMW_T_HOP(len) should return the duration in us the radio hardware needs to
+ *  transmit a packet of length len.
+ * @param len   total size of the packet sent by the hardware
+ * @param n     number of retransmissions, a glossy parameter
+ * @param hops  maximal number of hops in the network
+ * */
+#define GMW_T_SLOT_MIN(len, n, hops)    ((hops + (2 * n) - 1) * \
+                                          GMW_T_HOP(len) + \
+                                          250 )
+/* same formula but adapted for the strobing mode */
+#define GMW_T_SLOT_STROBE_MIN(len, n)    (n * (GMW_T_HOP(len) + \
+                                          STROBING_CONF_TX_TO_TX_DELAY) + 250 )
+
+/*---------------------------------------------------------------------------*/
 /* some macros to calculate from us to the base time unit used in the config
  * and back into us and clock ticks
  */
@@ -83,10 +104,9 @@
 
 /* converts from GMW_CONF_SLOT_TIME_BASE to local clock ticks */
 #define GMW_SLOT_TIME_TO_TICKS(t)       ((gmw_lptimer_clock_t)(t) * \
-                                         GMW_CONF_SLOT_TIME_BASE_CLOCK)
+                                        GMW_CONF_SLOT_TIME_BASE_CLOCK)
 
-#define GMW_SLOT_TIME_TO_US(t)          ((gmw_lptimer_clock_t)(t) * \
-                                         GMW_CONF_SLOT_TIME_BASE)
+#define GMW_SLOT_TIME_TO_US(t)          ((t) * GMW_CONF_SLOT_TIME_BASE)
 
 /* converts from us into multiples of GMW_CONF_GAP_TIME_BASE */
 #define GMW_US_TO_GAP_TIME(t)           (((t) / GMW_CONF_GAP_TIME_BASE) + \
@@ -96,15 +116,13 @@
 #define GMW_GAP_TIME_TO_TICKS(t)        ((gmw_lptimer_clock_t)(t) * \
                                         GMW_CONF_GAP_TIME_BASE_CLOCK)
 
-#define GMW_GAP_TIME_TO_US(t)           ((gmw_lptimer_clock_t)(t) * \
-                                         GMW_CONF_GAP_TIME_BASE)
+#define GMW_GAP_TIME_TO_US(t)           ((t) * GMW_CONF_GAP_TIME_BASE)
 
 #define GMW_US_TO_TICKS(t)              ((t) * GMW_LPTIMER_SECOND / 1000000UL)
 
 #define GMW_TICKS_TO_MS(t)              ((t) * 1000UL / GMW_LPTIMER_SECOND)
 
-#define GMW_TICKS_TO_US(t)              ((gmw_lptimer_clock_t)(t) * 1000000UL \
-                                         / GMW_LPTIMER_SECOND)
+#define GMW_TICKS_TO_US(t)              ((t) * 1000000UL / GMW_LPTIMER_SECOND)
 
 /* converts from time and period into ms */
 #define GMW_PERIOD_TO_MS(t)             ((t) * 1000UL / GMW_CONF_TIME_SCALE)
@@ -187,9 +205,6 @@ gmw_get_state(void);
  */
 const gmw_statistics_t *
 const gmw_get_stats(void);
-
-uint64_t
-gmw_get_time(void);
 
 /**
  * @brief                       reset the GMW statistics

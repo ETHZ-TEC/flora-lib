@@ -221,10 +221,10 @@ void hs_timer_schedule(uint64_t timestamp, void (*callback)()) {
   uint64_t now = hs_timer_get_current_timestamp();
 
   if ((timestamp - now) < TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
-    FLOCKLAB_PIN_SET(FLOCKLAB_LED1);
-    FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
+    // FLOCKLAB_PIN_SET(FLOCKLAB_LED1);
+    // FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
     callback();
-    cli_log("Schedule too late!", "hs_timer", CLI_LOG_LEVEL_WARNING);
+    LOG_WARNING_CONST("Schedule too late!");
   }
   else {
     hs_timer_scheduled_timestamp = timestamp;
@@ -314,36 +314,31 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
   }
 }
 
-// void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-//
-//   if (htim->Instance == TIM1) {
-//     HAL_IncTick();
-//   }
-//
-//
-// #ifndef DOZER
-//   if (hs_timer_initialized) {
-//     hs_timer_counter_extension++;
-//   }
-// #endif
-//
-// #ifdef DOZER
-//
-//   if (hs_timer_initialized && htim->Instance == TIM2) {
-//     hs_timer_counter_extension++;
-//   }
-// #ifndef DEVKIT
-//   else if (tim15_initialized && htim->Instance == TIM15) {
-//     counter_extension_tim15++;
-//   }
-// #else
-//   else if (tim5_initialized && htim->Instance == TIM5) {
-//     counter_extension_tim5++;
-//   }
-// #endif
-//
-// #endif
-// }
+void hs_timer_handle_overflow(void)
+{
+#ifdef DOZER
+
+  if (hs_timer_initialized && htim->Instance == TIM2) {
+    hs_timer_counter_extension++;
+  }
+ #ifndef DEVKIT
+  else if (tim15_initialized && htim->Instance == TIM15) {
+    counter_extension_tim15++;
+  }
+ #else
+  else if (tim5_initialized && htim->Instance == TIM5) {
+    counter_extension_tim5++;
+  }
+ #endif
+
+#else /* DOZER */
+
+  if (hs_timer_initialized) {
+     hs_timer_counter_extension++;
+  }
+
+#endif /* DOZER */
+}
 
 
 #ifndef DOZER

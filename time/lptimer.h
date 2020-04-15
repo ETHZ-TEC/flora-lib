@@ -10,7 +10,13 @@
 
 #include <stdint.h>
 
-#define LPTIMER_SECOND       32768       /* ticks per second */
+#define LPTIMER_SECOND      32768       /* ticks per second */
+
+/* returns relative time (elapsed time since MCU start) in milliseconds */
+#define LPTIMER_NOW_MS()    (uint32_t)(lptimer_now() * 1000 / LPTIMER_SECOND)
+
+/* returns relative time (elapsed time since MCU start) in seconds */
+#define LPTIMER_NOW_SEC()   (uint32_t)(lptimer_now() / LPTIMER_SECOND)
 
 
 typedef void (* lptimer_cb_func_t)(void);

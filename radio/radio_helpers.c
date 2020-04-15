@@ -8,19 +8,18 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+
+#include "main.h"
+
 #include "radio/radio_helpers.h"
 #include "radio/radio_platform.h"
-
-#include "cli/cli.h"
-#include "time/hs_timer.h"
 #include "radio/radio_constants.h"
-#include "main.h"
-#include "stm32l4xx_hal.h"
+#include "radio/flora_radio.h"
 #include "radio/semtech/radio.h"
 #include "radio/semtech/sx126x/sx126x.h"
 #include "radio/semtech/boards/sx126x-board.h"
-#include "radio/flora_radio.h"
-#include "flocklab/flocklab.h"
+#include "cli/cli.h"
+#include "time/hs_timer.h"
 
 extern volatile bool radio_receive_continuous;
 extern volatile bool radio_command_scheduled;
@@ -689,18 +688,16 @@ static void radio_execute() {
   radio_stop_schedule();
   radio_command_scheduled = false;
 
-#if FLOCKLAB
   switch (Radio.GetStatus()) {
     case RF_RX_RUNNING:
-      FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
+      RADIO_RX_START_IND();
       break;
     case RF_TX_RUNNING:
-      FLOCKLAB_PIN_SET(FLOCKLAB_LED1);
+      RADIO_TX_START_IND();
       break;
     default:
       break;
   }
-#endif /* FLOCKLAB */
 
 
 }

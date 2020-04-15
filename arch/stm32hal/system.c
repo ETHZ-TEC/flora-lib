@@ -67,25 +67,22 @@ void system_init()
   protocol_init();
 
 #if !USE_SWO
-  #if BASEBOARD
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    // HAL_GPIO_WritePin(COM_GPIO2_GPIO_Port, COM_GPIO2_Pin, GPIO_PIN_RESET);
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  #if BASEBOARD || !FLOCKLAB
     HAL_GPIO_WritePin(COM_GPIO2_GPIO_Port, COM_GPIO2_Pin, GPIO_PIN_SET);
     GPIO_InitStruct.Pin = COM_GPIO2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP; // default set to pull-up becauase on BaseBoard COM_GPIO2 is connected to Colibri_EN
+    GPIO_InitStruct.Pull = GPIO_PULLUP; // default set to pull-up because on BaseBoard COM_GPIO2 is connected to Colibri_EN
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(COM_GPIO2_GPIO_Port, &GPIO_InitStruct);
-  #else
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    // HAL_GPIO_WritePin(COM_GPIO2_GPIO_Port, COM_GPIO2_Pin, GPIO_PIN_RESET);
+  #else /* BASEBOARD || !FLOCKLAB */
+    // configure as input
     HAL_GPIO_WritePin(COM_GPIO2_GPIO_Port, COM_GPIO2_Pin, GPIO_PIN_SET);
     GPIO_InitStruct.Pin = COM_GPIO2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP; // default set to pull-up becauase on BaseBoard COM_GPIO2 is connected to Colibri_EN
+    GPIO_InitStruct.Pull = GPIO_PULLUP; // default set to pull-up because on BaseBoard COM_GPIO2 is connected to Colibri_EN
     // GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(COM_GPIO2_GPIO_Port, &GPIO_InitStruct);
-  #endif /* BASEBOARD */
+  #endif /* BASEBOARD || !FLOCKLAB */
+  HAL_GPIO_Init(COM_GPIO2_GPIO_Port, &GPIO_InitStruct);
 #endif /* USE_SWO */
 
 #if FLOCKLAB

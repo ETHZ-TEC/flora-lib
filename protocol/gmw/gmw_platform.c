@@ -46,6 +46,8 @@
  */
 /*---------------------------------------------------------------------------*/
 #include "protocol/gmw/gmw.h"
+
+#if GMW_ENABLE
 /*---------------------------------------------------------------------------*/
 void
 gmw_platform_init(void)
@@ -118,10 +120,9 @@ gmw_set_rf_channel(gmw_rf_tx_channel_t channel)
 }
 /*---------------------------------------------------------------------------*/
 void
-gmw_set_tx_power(int8_t power)
+gmw_set_tx_power(gmw_rf_tx_power_t power)
 {
-  // FIXME: tx power levels are platform specific and should not be part of GMW layer
-  GMW_SET_TX_POWER(power);
+  //TODO
 }
 /*---------------------------------------------------------------------------*/
 uint8_t
@@ -246,5 +247,6 @@ rf1a_cb_rx_tx_error(lptimer_ext_clock_t *timestamp)
 #endif /* GMW_CONF_USE_MULTI_PRIMITIVES */
 /*---------------------------------------------------------------------------*/
 
+#endif /* GMW_ENABLE */
 
 /** @} */

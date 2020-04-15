@@ -53,6 +53,8 @@
 
 #include "protocol/gmw/gmw.h"
 
+#if GMW_ENABLE
+
 #if GMW_CONF_USE_NOISE_DETECTION
 
 #ifdef PLATFORM_DPP_CC430
@@ -248,5 +250,6 @@ gmw_high_noise_test(void)
 /*---------------------------------------------------------------------------*/
 #endif /* GMW_CONF_USE_NOISE_DETECTION */
 
+#endif /* GMW_ENABLE */
 
 /** @} */

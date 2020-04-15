@@ -47,6 +47,8 @@
 
 /*---------------------------------------------------------------------------*/
 #include "protocol/gmw/gmw.h"
+
+#if GMW_ENABLE
 /*---------------------------------------------------------------------------*/
 #if GMW_CONF_USE_CONTROL_SLOT_CONFIG
 static const uint8_t slot_times[GMW_CONTROL_SLOT_CONFIG_TIMELIST_SIZE] = {
@@ -81,13 +83,12 @@ gmw_control_init(gmw_control_t *control)
 #endif /* GMW_CONF_CONTROL_USER_BYTES */
 
   if(sizeof(gmw_slot_config_t) != GMW_CONTROL_SLOT_CONFIG_TYPE_SIZE) {
-    DEBUG_PRINT(
-      "ERROR: sizeof(gmw_slot_config_t) != GMW_CONTROL_SLOT_CONFIG_TYPE_SIZE");
+    LOG_ERROR_CONST("sizeof(gmw_slot_config_t) != GMW_CONTROL_SLOT_CONFIG_TYPE_SIZE");
   }
 
   if(sizeof(gmw_control_t) > GMW_MAX_PKT_LEN) {
-    DEBUG_PRINT("WARNING: A full control structure does not fit in a packet! "
-                "Reduce control size or use static schedule/config.");
+    LOG_WARNING_CONST("WARNING: A full control structure does not fit in a packet! "
+                      "Reduce control size or use static schedule/config.");
   }
 
 #if GMW_CONF_USE_MAGIC_NUMBER
@@ -112,8 +113,8 @@ gmw_control_compile_to_buffer(const gmw_control_t* control,
           * GMW_CONF_MAX_SLOTS          // size of slot_config
           + GMW_CONTROL_SLOT_CONFIG_TIMELIST_SIZE)  // size of slot_time_list
         * GMW_CONF_USE_CONTROL_SLOT_CONFIG)) > len) {
-    DEBUG_PRINT("WARNING: Packet buffer too small to send the required "
-                "control information.");
+    LOG_WARNING_CONST("Packet buffer too small to send the required "
+                      "control information.");
     return 0;
   }
 
@@ -121,7 +122,7 @@ gmw_control_compile_to_buffer(const gmw_control_t* control,
   if(!GMW_CONF_USE_STATIC_SCHED) {
 
     if(GMW_CONF_MAX_SLOTS < n_slots) {
-      DEBUG_PRINT("ERROR: n_slots is too large (>= GMW_CONF_MAX_SLOTS)");
+      LOG_ERROR_CONST("n_slots is too large (>= GMW_CONF_MAX_SLOTS)");
     }
     memcpy(buffer, &control->schedule, GMW_SCHED_SECTION_HEADER_LEN);
     buffer += GMW_SCHED_SECTION_HEADER_LEN;
@@ -165,8 +166,8 @@ gmw_control_compile_to_buffer(const gmw_control_t* control,
 #endif /*GMW_CONF_USE_MAGIC_NUMBER*/
 
   if(!((uint32_t)buffer - start_address)) {
-    DEBUG_PRINT("WARNING: Control packet contains no payload! Glossy behavior "
-                "undefined.");
+    LOG_WARNING_CONST("Control packet contains no payload! Glossy behavior "
+                      "undefined.");
     return 1;
 
   } else {
@@ -178,8 +179,8 @@ gmw_control_compile_to_buffer(const gmw_control_t* control,
 #define ITERATE_BUFFER(f, s, loc) \
 { \
   if(len < s) { \
-    DEBUG_PRINT("ERROR: received buffer len too small for control packet @" loc\
-                " (expect=%u receive=%u)", s, len); \
+    LOG_ERROR("received buffer len too small for control packet @" loc\
+              " (expect=%u receive=%u)", s, len); \
     return 0xff; \
   } \
   memcpy(f, buffer, s); \
@@ -204,17 +205,16 @@ gmw_control_decompile_from_buffer(gmw_control_t* control,
          * GMW_CONF_MAX_SLOTS           // size of slot_config
          + GMW_CONTROL_SLOT_CONFIG_TIMELIST_SIZE)  // size of slot_time_list
        * GMW_CONF_USE_CONTROL_SLOT_CONFIG)) < len) {
-    DEBUG_PRINT("WARNING: Received packet bigger than maximal expected control size.");
-    DEBUG_PRINT("exp %u, rcv %u",
-                ( sizeof(gmw_control_t)            // size of full control
-                      - GMW_CONF_USE_STATIC_SCHED *     // if static sched substract
-                        sizeof(gmw_schedule_t)          // size of schedule
-                      - GMW_CONF_USE_STATIC_CONFIG *    // if static config substract
-                       (sizeof(gmw_config_t)            // size of config plus
-                       + (sizeof(gmw_slot_config_t)
-                         * GMW_CONF_MAX_SLOTS           // size of slot_config
-                         + GMW_CONTROL_SLOT_CONFIG_TIMELIST_SIZE)  // size of slot_time_list
-                       * GMW_CONF_USE_CONTROL_SLOT_CONFIG)), len );
+    LOG_WARNING("received packet bigger than maximal expected control size: "
+                "exp %u, rcv %u", (sizeof(gmw_control_t)             // size of full control
+                              - GMW_CONF_USE_STATIC_SCHED *     // if static sched substract
+                                sizeof(gmw_schedule_t)          // size of schedule
+                              - GMW_CONF_USE_STATIC_CONFIG *    // if static config substract
+                               (sizeof(gmw_config_t)            // size of config plus
+                               + (sizeof(gmw_slot_config_t)
+                                 * GMW_CONF_MAX_SLOTS           // size of slot_config
+                                 + GMW_CONTROL_SLOT_CONFIG_TIMELIST_SIZE)  // size of slot_time_list
+                               * GMW_CONF_USE_CONTROL_SLOT_CONFIG)), len );
     return 0;
   }
 
@@ -262,16 +262,13 @@ gmw_control_decompile_from_buffer(gmw_control_t* control,
 static void
 config_init(gmw_config_t* config)
 {
-  /* set default values */
   config->n_retransmissions    = GMW_CONF_TX_CNT_DATA;
-  config->mode                 = 0;
+  config->channel_hopping_mode = 0;
   config->max_packet_length    = GMW_CONF_MAX_DATA_PKT_LEN +
                                  GMW_CONF_RF_OVERHEAD;
-  config->primitive            = 0;
+  config->primitive          = 0;
   config->gap_time             = GMW_US_TO_GAP_TIME(GMW_CONF_T_GAP);
   config->slot_time            = GMW_US_TO_SLOT_TIME(GMW_CONF_T_DATA);
-  config->ctrl_time            = GMW_US_TO_SLOT_TIME(GMW_CONF_T_CONTROL);
-  config->cont_time            = GMW_US_TO_SLOT_TIME(GMW_CONF_T_CONT);
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -282,4 +279,7 @@ schedule_init(gmw_schedule_t* schedule)
   schedule->period              = 5;
 }
 /*---------------------------------------------------------------------------*/
+
+#endif /* GMW_ENABLE */
+
 /** @} */

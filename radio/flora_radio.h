@@ -64,5 +64,7 @@ void radio_set_tx_callback(void (*callback)());
 
 void radio_reset_preamble_counter(void);
 uint8_t radio_get_preamble_counter(void);
+void radio_reset_sync_counter(void);
+uint8_t radio_get_sync_counter(void);
 
 #endif /* RADIO_FLORA_RADIO_H_ */

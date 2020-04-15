@@ -28,6 +28,7 @@
 #include "radio/semtech/sx126x/sx126x.h"
 #include "radio/semtech/boards/board.h"
 #include "radio/semtech/boards/sx126x-board.h"
+#include "radio/radio_platform.h"
 #include "time/rtc.h"
 #include "flocklab/flocklab.h"
 
@@ -1226,7 +1227,7 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_TX_DONE ) == IRQ_TX_DONE )
         {
-            FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
+            RADIO_TX_STOP_IND();
             RxTimeoutTimer.IsRunning = false;
             if( ( RadioEvents != NULL ) && ( RadioEvents->TxDone != NULL ) )
             {
@@ -1252,7 +1253,7 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_RX_DONE ) == IRQ_RX_DONE )
         {
-            FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
+            RADIO_RX_STOP_IND();
 
             bool crc_error = (irqRegs & IRQ_CRC_ERROR) == IRQ_CRC_ERROR || (irqRegs & IRQ_HEADER_ERROR) == IRQ_HEADER_ERROR;
 
@@ -1287,8 +1288,8 @@ void RadioIrqProcess( void )
         {
             if( ( irqRegs & IRQ_RX_DONE ) != IRQ_RX_DONE )
             {
-                FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
-                FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
+                RADIO_TX_STOP_IND();
+                RADIO_RX_STOP_IND();
                 RxTimeoutTimer.IsRunning = false;
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
                 {
@@ -1307,8 +1308,9 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_RX_TX_TIMEOUT ) == IRQ_RX_TX_TIMEOUT )
         {
-            FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
-            FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
+            RADIO_TX_STOP_IND();
+            RADIO_RX_STOP_IND();
+            PIN_CLR(COM_GPIO2);
             if( SX126xGetOperatingMode( ) == MODE_TX )
             {
               TxTimeoutTimer.IsRunning = true;

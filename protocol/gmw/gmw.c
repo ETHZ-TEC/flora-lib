@@ -54,6 +54,7 @@
 
 #include "protocol/gmw/gmw.h"
 
+#if GMW_ENABLE
 /*---------------------------------------------------------------------------*/
 /* some defines to show activity */
 #ifdef GMW_CONF_SLOT_ACT_PIN
@@ -138,7 +139,7 @@ gmw_sync_state_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] =
   /* macro to retrieve slot time of slot i (c => control)*/
   #define GMW_CONTROL_GET_SLOT_CONFIG_TIME(c, i) \
     (IS_CONTENTION_SLOT) ? \
-    (GMW_SLOT_TIME_TO_TICKS(current_config->cont_time)) : \
+    (GMW_US_TO_TICKS(GMW_CONF_T_CONT)) : \
       ((GMW_CONTROL_HAS_SLOT_CONFIG(c)) ? \
       (GMW_SLOT_TIME_TO_TICKS( \
           (c)->slot_time_list[(c)->slot_config[i].slot_time_select])) : \
@@ -148,7 +149,7 @@ gmw_sync_state_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] =
     current_config->n_retransmissions
   #define GMW_CONTROL_GET_SLOT_CONFIG_TIME(c, i) \
     (IS_CONTENTION_SLOT) ? \
-        GMW_SLOT_TIME_TO_TICKS(current_config->cont_time) : \
+        GMW_US_TO_TICKS(GMW_CONF_T_CONT) : \
         GMW_SLOT_TIME_TO_TICKS(current_config->slot_time)
 #endif /* GMW_CONF_USE_CONTROL_SLOT_CONFIG */
 /*---------------------------------------------------------------------------*/
@@ -166,38 +167,27 @@ gmw_sync_state_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] =
 /**
  * @brief     Macros to send and receive control and data slots.
  */
-/* FIXME: this GMW_WAIT_UNTIL takes way too much time in the first execution of GMW_SEND_CONTROL
-   it seems that GMW_SLOT_TIME_TO_TICKS converts 0 to 220858
-   */
 #define GMW_SEND_CONTROL() \
 {\
   GMW_GPIO_CONTROL_SEND_START();\
-  DEBUG_PRINT("GMW_SEND_CONTROL 1");\
-  GMW_START(NODE_ID, gmw_payload, control_len, \
+  GMW_START(node_id, gmw_payload, control_len, \
             GMW_CONF_TX_CNT_CONTROL, GMW_WITH_SYNC,\
             GMW_WITH_RF_CAL);\
-  DEBUG_PRINT("GMW_SEND_CONTROL 2");\
   GMW_NOISE_DETECTION();\
-  DEBUG_PRINT("GMW_SEND_CONTROL 3");\
-  DEBUG_PRINT("prev: %lu, ticks: %lu", prev_ctrl_slot_time, GMW_SLOT_TIME_TO_TICKS(prev_ctrl_slot_time));\
-  GMW_WAIT_UNTIL(lptimer_get() + GMW_SLOT_TIME_TO_TICKS(prev_ctrl_slot_time));\
-  DEBUG_PRINT("GMW_SEND_CONTROL 4");\
+  GMW_WAIT_UNTIL(lptimer_get() + GMW_US_TO_TICKS(GMW_CONF_T_CONTROL));\
   GMW_STOP();\
-  DEBUG_PRINT("GMW_SEND_CONTROL 5");\
   GMW_GPIO_CONTROL_SEND_END(); \
-  DEBUG_PRINT("GMW_SEND_CONTROL 6");\
 }
 
 #define GMW_RCV_CONTROL() \
 {\
   GMW_GPIO_CONTROL_RECV_START(); \
-  GMW_START(GMW_UNKNOWN_INITIATOR, gmw_payload, GMW_MAX_PKT_LEN, \
+  GMW_START(GMW_UNKNOWN_INITIATOR, gmw_payload, 0, \
             GMW_CONF_TX_CNT_CONTROL, GMW_WITH_SYNC, \
             GMW_WITH_RF_CAL);\
   GMW_NOISE_DETECTION();\
   GMW_WAIT_UNTIL(lptimer_get() + \
-                 GMW_SLOT_TIME_TO_TICKS(prev_ctrl_slot_time) + \
-                 GMW_US_TO_TICKS(GMW_CONF_T_GUARD_ROUND)); \
+              GMW_US_TO_TICKS(GMW_CONF_T_CONTROL + GMW_CONF_T_GUARD_ROUND)); \
   GMW_STOP();\
   GMW_GPIO_CONTROL_RECV_END(); \
 }
@@ -205,7 +195,7 @@ gmw_sync_state_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] =
 #define GMW_SEND_PACKET() \
 {\
   GMW_GPIO_PACKET_SEND_START(); \
-  GMW_START_PRIM(NODE_ID, gmw_payload, payload_len, \
+  GMW_START_PRIM(node_id, gmw_payload, payload_len, \
                  GMW_CONTROL_GET_SLOT_CONFIG_N_RETRANS(&control, slot_idx), \
                  GMW_WITHOUT_SYNC, GMW_WITHOUT_RF_CAL);\
   GMW_NOISE_DETECTION();\
@@ -347,7 +337,7 @@ static gmw_pre_post_processes_t pre_post_proc;
 static gmw_control_t            control;
 static gmw_control_t*           new_control;
 static gmw_sync_state_t         sync_state;
-static gmw_lptimer_clock_t      rx_timestamp;
+static gmw_lptimer_clock_t       rx_timestamp;
 static gmw_statistics_t         stats = { 0 };
 static uint32_t                 global_time;
 static uint8_t                  gmw_payload[GMW_MAX_PKT_LEN];
@@ -388,14 +378,6 @@ gmw_get_state(void)
   return sync_state;
 }
 /*---------------------------------------------------------------------------*/
-uint64_t
-gmw_get_time(void)
-{
-  uint64_t t_now = lptimer_now();
-  uint64_t delta_us = (t_now - rx_timestamp) * 1000000 / LPTIMER_SECOND;
-  return ((uint64_t)global_time * 1000000 / GMW_CONF_TIME_SCALE) + delta_us;
-}
-/*---------------------------------------------------------------------------*/
 /**
  * @brief     GMW task.
  *            It implements the generic round structure, schedule the execution
@@ -415,7 +397,6 @@ void gmw_run(void)
   static gmw_lptimer_clock_t    start_of_next_round;
   static gmw_lptimer_clock_t    slot_start;
   static gmw_lptimer_clock_t    current_slot_time;
-  static gmw_lptimer_clock_t    prev_ctrl_slot_time;
 
   static uint32_t               pre_process_offset;
   static uint32_t               missed_slots;
@@ -430,7 +411,7 @@ void gmw_run(void)
   static gmw_sync_event_t       sync_event;
 
 #if GMW_CONF_USE_DRIFT_COMPENSATION
-  static gmw_lptimer_clock_t    t_ref_last;
+  static gmw_lptimer_clock_t     t_ref_last;
   static uint16_t               period_last;
 #endif /* GMW_CONF_USE_DRIFT_COMPENSATION */
 
@@ -452,9 +433,7 @@ void gmw_run(void)
   }
 
   pre_process_offset  = 0;
-  prev_ctrl_slot_time = GMW_CONF_T_CONTROL;
-  start_of_next_round = GMW_LPTIMER_NOW() + GMW_CONF_T_PREPROCESS + \
-                        GMW_LPTIMER_SECOND / 10;    /* add some slack time */
+  start_of_next_round = GMW_LPTIMER_NOW() + GMW_CONF_T_PREPROCESS + GMW_LPTIMER_SECOND / 10;
   //GMW_LPTIMER_RESET();
 
   if(!gmw_impl) {
@@ -485,7 +464,7 @@ void gmw_run(void)
       control_len = gmw_control_compile_to_buffer(&control, gmw_payload,
                                                   GMW_MAX_PKT_LEN);
       if(control_len == 0) {
-        DEBUG_PRINT("Packet buffer too small to send the control.");
+        LOG_ERROR_CONST("Packet buffer too small to send the control.");
         break;
       }
 
@@ -493,8 +472,8 @@ void gmw_run(void)
       start_of_next_round += GMW_US_TO_TICKS(GMW_CONF_PREROUND_SETUP_TIME);
 
       if(start_of_next_round < GMW_LPTIMER_NOW()) {
-        DEBUG_PRINT("ERROR: GMW t_start overrun by %ld ticks (start: %lu, now: %lu)",
-                    (uint32_t)(GMW_LPTIMER_NOW() - start_of_next_round), (uint32_t)start_of_next_round, (uint32_t)GMW_LPTIMER_NOW());
+        LOG_ERROR("GMW t_start overrun by %ld ticks (start: %lu, now: %lu)",
+               (uint32_t)(GMW_LPTIMER_NOW() - start_of_next_round), (uint32_t)start_of_next_round, (uint32_t)GMW_LPTIMER_NOW());
         /* no wait if overrun */
         start_of_next_round = GMW_LPTIMER_NOW();
       } else {
@@ -516,7 +495,7 @@ void gmw_run(void)
                                                   GMW_EVT_CONTROL_RCVD,
                                                   GMW_EVT_PKT_OK);
       if(!(GMW_RUNNING == sync_state || GMW_SUSPENDED == sync_state)) {
-        DEBUG_PRINT("ERROR: host on_control_slot_post returned invalid state!");
+        LOG_ERROR_CONST("host on_control_slot_post returned invalid state!");
         while(1);
       }
 
@@ -528,7 +507,7 @@ BOOTSTRAP_MODE:
         period_last = 0;
   #endif /* GMW_CONF_USE_DRIFT_COMPENSATION */
         /* Reset the part of the control that is supposed to be received.
-         * Right now, does not erase anything if static, can be extended
+         * Right now, does not erase anything if static, can be extended 
          * to clean the user bytes */
         if((!GMW_CONF_USE_STATIC_SCHED) && (!GMW_CONF_USE_STATIC_CONFIG)) {
           memset(&control, 0, sizeof(control));
@@ -545,8 +524,7 @@ BOOTSTRAP_MODE:
             uint32_t time_to_sleep_in_ms = gmw_impl->on_bootstrap_timeout();
             if(time_to_sleep_in_ms != 0) {
               /* we go to sleep */
-              DEBUG_PRINT("going to sleep for %lums",
-                          time_to_sleep_in_ms);
+              LOG_INFO("going to sleep for %lums", time_to_sleep_in_ms);
               stats.sleep_cnt++;
               GMW_BEFORE_DEEPSLEEP();
               GMW_WAIT_UNTIL(GMW_LPTIMER_NOW() +
@@ -566,13 +544,13 @@ BOOTSTRAP_MODE:
 
       /* did we receive a synced glossy packet?
        * If so, we know for sure we successfully received a control packet
-       * -> True only assuming there are no other Glossy network running in
+       * -> True only assuming there are no other Glossy network running in 
        *    parallel!
        * Also check the magic number after decompiling the buffer
        * to avoid sync with another network. */
       if(GMW_IS_T_REF_UPDATED()) {
         /* HF timestamp of first RX; subtract a constant offset */
-        t_ref        = GMW_GET_T_REF() -
+        t_ref        = GMW_GET_T_REF() - 
                        GMW_US_TO_TICKS(GMW_CONF_T_REF_OFS);
         global_time  = control.schedule.time;
         rx_timestamp = t_ref;
@@ -581,16 +559,14 @@ BOOTSTRAP_MODE:
         /* reconstruct the control struct */
         if(!gmw_control_decompile_from_buffer(&control, gmw_payload,
                                               GMW_GET_PAYLOAD_LEN())) {
-          DEBUG_PRINT("Reception of control buggy. "
-                      "Back to bootstrap.");
+          LOG_WARNING_CONST("Reception of control buggy. Back to bootstrap.");
           goto BOOTSTRAP_MODE;
         }
 
   #if GMW_CONF_USE_MAGIC_NUMBER
         /* check the magic number */
         if(control.magic_number != GMW_CONF_CONTROL_MAGIC_NUMBER) {
-          DEBUG_PRINT("Received packet is not a valid control packet. "
-                      "Back to bootstrap.");
+          LOG_WARNING_CONST("Received packet is not a valid control packet. Back to bootstrap.");
           goto BOOTSTRAP_MODE;
         }
   #endif /*GMW_CONF_USE_MAGIC_NUMBER*/
@@ -609,7 +585,7 @@ BOOTSTRAP_MODE:
           goto BOOTSTRAP_MODE;
         }
       } else {
-        DEBUG_PRINT("WARNING: Schedule missed or corrupted.");
+        LOG_WARNING_CONST("schedule missed or corrupted");
         /* we can only estimate t_ref */
         t_ref += ((int32_t)control.schedule.period * GMW_LPTIMER_SECOND +
            GMW_PPM_TO_TICKS((uint32_t)control.schedule.period * stats.drift)) /
@@ -635,7 +611,7 @@ BOOTSTRAP_MODE:
           pkt_event = GMW_EVT_PKT_SILENCE;
 
         } else {
-          DEBUG_PRINT("WARNING: Packet reception event is buggy...");
+          LOG_WARNING_CONST("packet reception event is buggy...");
         }
   #endif /* GMW_CONF_USE_NOISE_DETECTION */
       }
@@ -678,9 +654,8 @@ BOOTSTRAP_MODE:
                                   GMW_CONF_RF_OVERHEAD);
 
     /* start time of first data slot */
-    slot_start = t_start + GMW_SLOT_TIME_TO_TICKS(prev_ctrl_slot_time) +
+    slot_start = t_start + GMW_US_TO_TICKS(GMW_CONF_T_CONTROL) +
                            GMW_US_TO_TICKS(GMW_CONF_T_GAP_CONTROL);
-    prev_ctrl_slot_time = current_config->ctrl_time;
 
     /* permission to participate in this round? */
     if(GMW_RUNNING == sync_state) {
@@ -698,7 +673,7 @@ BOOTSTRAP_MODE:
         n_rx                = 0;
         n_rx_started        = 0;
         current_slot_time   = GMW_CONTROL_GET_SLOT_CONFIG_TIME(&control,
-                                                               slot_idx);
+                                                              slot_idx);
 
         /* on_slot_pre_callback */
         gmw_skip_event_t skip_event;  /* no need to make this static */
@@ -708,16 +683,14 @@ BOOTSTRAP_MODE:
                                            gmw_payload,
                                            IS_INITIATOR,
                                            IS_CONTENTION_SLOT);
-        if(payload_len > GMW_MAX_PKT_LEN) {
-          skip_event = GMW_EVT_SKIP_SLOT;
-        }
+
         /* set t_now, this allows us to determine if we missed the slot */
         t_now = GMW_LPTIMER_NOW();
         if(skip_event == GMW_EVT_SKIP_SLOT) {
           /* Instruction to skip the slot, but we have payload to send... */
           pkt_event   = GMW_EVT_PKT_SKIPPED;
           if(payload_len) {
-            DEBUG_PRINT("WARNING: slot %u skipped (app flag)", slot_idx);
+            LOG_WARNING("slot %u skipped (app flag)", slot_idx);
           }
           payload_len = 0;
 
@@ -728,7 +701,7 @@ BOOTSTRAP_MODE:
           /* we are too late, abort the flood */
           pkt_event   = GMW_EVT_PKT_MISSED;
           payload_len = 0;
-          DEBUG_PRINT("WARNING: slot %u skipped (missed by %ld ticks)",
+          LOG_WARNING("slot %u skipped (missed by %ld ticks)",
                       slot_idx, (int32_t)(t_now - slot_start));
 
         } else if(IS_INITIATOR || (IS_CONTENTION_SLOT && payload_len)) {
@@ -736,13 +709,9 @@ BOOTSTRAP_MODE:
           GMW_WAIT_UNTIL(slot_start);
           GMW_SEND_PACKET();
           pkt_event = GMW_EVT_PKT_OK;
-          //DEBUG_PRINT("packet sent (%ub)", payload_len);
 
         } else {
           /* RECEIVER */
-          if(!payload_len) {
-            payload_len = GMW_MAX_PKT_LEN;
-          }
           gmw_lptimer_clock_t slot_start_with_guard = slot_start -
                                         GMW_US_TO_TICKS(GMW_CONF_T_GUARD_SLOT);
           if(t_now >= slot_start_with_guard) {
@@ -759,27 +728,22 @@ BOOTSTRAP_MODE:
           /* did we receive data? */
           if(GMW_PKT_RCVD) {
             pkt_event = GMW_EVT_PKT_OK;
-            //DEBUG_PRINT("received packet, len=%u", payload_len);
             stats.pkt_rcvd_cnt++;
 
           } else if(GMW_PKT_CORRUPTED) {
             pkt_event = GMW_EVT_PKT_CORRUPTED;
-            //DEBUG_PRINT("corrupted packet received in slot %u", slot_idx);
             stats.pkt_corr_cnt++;
 
           } else if(GMW_PKT_GARBAGE) {
             pkt_event = GMW_EVT_PKT_GARBAGE;
-            //DEBUG_PRINT("garbage received in slot %u", slot_idx);
             stats.pkt_interf_cnt++;
 
           } else if(GMW_PKT_SILENCE) {
             pkt_event = GMW_EVT_PKT_SILENCE;
-            //DEBUG_PRINT("no data received in slot %u from node %u",
-            //            slot_idx, control.schedule.slot[slot_idx]);
             stats.pkt_silence_cnt++;
 
           } else {
-            DEBUG_PRINT("ERROR: invalid packet reception event");
+            LOG_ERROR_CONST("invalid packet reception event");
             pkt_event = GMW_EVT_PKT_SILENCE;
           }
         }
@@ -800,7 +764,7 @@ BOOTSTRAP_MODE:
                                stats.t_proc_max);
 
         /* update the start time of the next slot */
-        slot_start += current_slot_time +
+        slot_start += current_slot_time + 
                       GMW_GAP_TIME_TO_TICKS(current_config->gap_time);
 
   #if GMW_CONF_USE_AUTOCLEAN
@@ -810,7 +774,7 @@ BOOTSTRAP_MODE:
 
         /* check if the round is not getting too long */
         if(GMW_CHECK_ROUND_OVERRUN(slot_start, t_start, control)) {
-          DEBUG_PRINT("ERROR: Round overruns. Aborted after slot %u", slot_idx);
+          LOG_ERROR("Round overruns. Aborted after slot %u", slot_idx);
           break;
         }
 
@@ -860,7 +824,7 @@ BOOTSTRAP_MODE:
 
     /* print missed slot count and bitshifted 1 marking each missed slot */
     if(n_missed_slots) {
-      DEBUG_PRINT("WARNING: Missed %u slots!", n_missed_slots);
+      LOG_WARNING("Missed %u slots!", n_missed_slots);
     }
 
     /* poll the post process */
@@ -895,7 +859,7 @@ BOOTSTRAP_MODE:
                          (uint32_t)GMW_TICKS_TO_MS(GMW_LPTIMER_NOW() - t_start);
     /* sanity check */
     if(GMW_PERIOD_TO_MS(control.schedule.period) < measured_round_time_ms) {
-      DEBUG_PRINT("WARNING: Total measured round time %lums exceeds the round "
+      LOG_WARNING("Total measured round time %lums exceeds the round "
                   "period!", measured_round_time_ms);
     }
     stats.t_round_max = MAX(measured_round_time_ms, stats.t_round_max);
@@ -928,8 +892,8 @@ gmw_init(TaskHandle_t pre_gmw_proc,
   /* check if pre_process is correctly set */
   if(((pre_gmw_proc != NULL) && (GMW_CONF_T_PREPROCESS == 0)) ||
      ((pre_gmw_proc == NULL) && (GMW_CONF_T_PREPROCESS != 0))) {
-    DEBUG_PRINT("ERROR: A pre-processing task is set, but "
-                "GMW_CONF_T_PREPROCESS is zero or vice-versa.");
+    LOG_ERROR_CONST("A pre-processing task is set, but "
+                    "GMW_CONF_T_PREPROCESS is zero or vice-versa.");
   }
 
 #if GMW_CONF_USE_NOISE_DETECTION
@@ -947,17 +911,20 @@ gmw_init(TaskHandle_t pre_gmw_proc,
   memset(&control, 0, sizeof(control));
   gmw_control_init(&control);
 
-  DEBUG_PRINT("Starting GMW as %s node", GMW_IS_HOST ? "host" : "source");
-  DEBUG_PRINT("t_ctrl=%ums, t_data=%ums, t_cont=%ums, "
-              "data=%ub, slots=%u, tx=%u, hop=%u, scale=%u",
-              (uint16_t)(GMW_CONF_T_CONTROL / 1000),
-              (uint16_t)(GMW_CONF_T_DATA / 1000),
-              (uint16_t)(GMW_CONF_T_CONT / 1000),
-              GMW_CONF_MAX_DATA_PKT_LEN,
-              GMW_CONF_MAX_SLOTS,
-              GMW_CONF_TX_CNT_DATA,
-              GMW_CONF_MAX_HOPS,
-              (uint16_t)GMW_CONF_TIME_SCALE);
+  if (GMW_IS_HOST) {
+    LOG_INFO_CONST("Starting GMW as host node");
+  } else {
+    LOG_INFO_CONST("Starting GMW as source node");
+  }
+  LOG_INFO("  t_ctrl=%ums, t_data=%ums, t_cont=%ums, data=%ub, slots=%u, tx=%u, hop=%u, scale=%u",
+           (uint16_t)(GMW_CONF_T_CONTROL / 1000),
+           (uint16_t)(GMW_CONF_T_DATA / 1000),
+           (uint16_t)(GMW_CONF_T_CONT / 1000),
+           GMW_CONF_MAX_DATA_PKT_LEN,
+           GMW_CONF_MAX_SLOTS,
+           GMW_CONF_TX_CNT_DATA,
+           GMW_CONF_MAX_HOPS,
+           (uint16_t)GMW_CONF_TIME_SCALE);
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -971,5 +938,6 @@ copy_control_if_updated(void)
 }
 /*---------------------------------------------------------------------------*/
 
+#endif /* GMW_ENABLE */
 
 /** @} */

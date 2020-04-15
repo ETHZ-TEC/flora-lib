@@ -28,10 +28,10 @@ typedef struct __attribute__((__packed__, __aligned__(1))) {
 
 typedef struct __attribute__((__packed__)) {
   gloria_header_t header;
-  uint8_t payload[GLORIA_MAX_PAYLOAD_LENGTH];  // max payload = 255 - GLORIA_HEADER_LENGTH (- GLORIA_TIMESTAMP_LENGTH (if sync flood))
+  uint8_t payload[255-GLORIA_HEADER_LENGTH];  // max payload = 255 - GLORIA_HEADER_LENGTH (- GLORIA_TIMESTAMP_LENGTH (if sync flood))
 } gloria_message_t;
 
-_Static_assert(sizeof(gloria_message_t) == GLORIA_PHY_MAX_PAYLOAD, "gloria_raw_message_t not 255 Bytes in size! Check for padding and alignment.");
+_Static_assert(sizeof(gloria_message_t) == 255, "gloria_raw_message_t not 255 Bytes in size! Check for padding and alignment.");
 
 typedef struct {
   // parameters to specify before flood start
