@@ -8,8 +8,9 @@
 #ifndef RADIO_FLORA_RADIO_H_
 #define RADIO_FLORA_RADIO_H_
 
-#include <stdint.h>
-#include <stdbool.h>
+
+#include "flora_lib.h"
+
 
 typedef enum {
   FALSE = 0,
@@ -38,6 +39,16 @@ typedef struct lora_message_s {
   int8_t snr;
   struct lora_message_s* next;
 } radio_message_t;
+
+
+/* include all required radio drivers */
+#include "radio/radio_helpers.h"
+#include "radio/radio_constants.h"
+#include "radio/radio_platform.h"
+#include "radio/semtech/radio.h"
+#include "radio/semtech/sx126x/sx126x.h"
+#include "radio/semtech/boards/sx126x-board.h"
+
 
 void set_radio_conf(uint8_t mod, int8_t pwr);
 

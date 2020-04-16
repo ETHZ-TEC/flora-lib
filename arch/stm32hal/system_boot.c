@@ -6,11 +6,8 @@
  */
 
 
-#include "system/system_boot.h"
-#include "system/system_backup_registers.h"
+#include "arch/arch.h"
 
-
-#include "stm32l4xx_hal.h"
 
 typedef  void (*pFunction)(void);
 pFunction system_jump_to_bootloader;

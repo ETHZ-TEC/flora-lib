@@ -32,8 +32,9 @@
 #define PROTOCOL_ELWB_ELWB_H_
 
 
-#include "main.h"
-#include "protocol/gloria/gloria_interface.h"
+/* include lib and global defines */
+#include "flora_lib.h"
+
 
 #ifndef ELWB_ENABLE
 #define ELWB_ENABLE               0

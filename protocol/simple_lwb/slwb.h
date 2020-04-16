@@ -8,18 +8,10 @@
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_H_
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
+/* include lib and global defines */
+#include "flora_lib.h"
 
-#include "time/rtc.h"
-#include "config/config.h"
-#include "protocol/protocol.h"
-
-#include "protocol/gloria/gloria_structures.h"
-#include "protocol/gloria/gloria_time.h"
-
+/* include all sLWB related files */
 #include "protocol/simple_lwb/slwb_constants.h"
 #include "protocol/simple_lwb/slwb_structures.h"
 #include "protocol/simple_lwb/slwb_scheduler.h"
@@ -30,6 +22,7 @@
 
 #include "protocol/simple_lwb/helpers.h"
 #include "protocol/simple_lwb/linked_list.h"
+
 
 
 extern uint16_t slwb_round_period;

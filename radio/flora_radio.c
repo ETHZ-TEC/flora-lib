@@ -302,7 +302,7 @@ void radio_irq_capture_callback(){
     }
   }
 
-#ifdef DEBUG
+#ifdef FLORA_DEBUG
   led_set_event_blink(0, 0);
 #endif
 }
@@ -328,7 +328,7 @@ void radio_mcu_timeout_callback(){
     }
   }
 
-#ifdef DEBUG
+#ifdef FLORA_DEBUG
   if (!radio_disable_log) {
     CLI_LOG("MCU interrupt was triggered!", CLI_LOG_LEVEL_WARNING);
   }
@@ -356,7 +356,7 @@ void radio_OnRadioCadDone(_Bool detected) {
     }
   }
 
-#ifdef DEBUG
+#ifdef FLORA_DEBUG
   if (!radio_disable_log) {
     if (detected) {
       CLI_LOG("CAD detected signal!", CLI_LOG_LEVEL_INFO);
@@ -383,7 +383,7 @@ void radio_OnRadioRxDone(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t 
     SX126xSetRxBoosted(0);
   }
 
-#ifdef DEBUG
+#ifdef FLORA_DEBUG
   if (!radio_disable_log) {
     if (!crc_error) {
       radio_message_t* message = malloc(sizeof(radio_message_t));
@@ -437,7 +437,7 @@ void radio_OnRadioRxError(void) {
     }
   }
 
-#ifdef DEBUG
+#ifdef FLORA_DEBUG
   if (!radio_disable_log) {
     LOG_WARNING_CONST("CRC Error Timeout");
   }
@@ -452,7 +452,7 @@ void radio_OnRadioRxTimeout(void) {
     tmp(false);
   }
 
-#ifdef DEBUG
+#ifdef FLORA_DEBUG
   if (!radio_disable_log) {
     LOG_WARNING_CONST("Rx Timeout");
   }

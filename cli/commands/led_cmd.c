@@ -5,10 +5,9 @@
  *      Author: marku
  */
 
-#include "cli/commands/led_cmd.h"
+#include "cli/cli.h"
 
-#include "led/led.h"
-#include "cli/command.h"
+#if CLI_ENABLE
 
 extern bool leds_initialized;
 
@@ -143,3 +142,5 @@ command_return_t led_enable_command_handler(command_execution_t execution)
 
   return CMD_RET_SUCCESS;
 }
+
+#endif /* CLI_ENABLE */

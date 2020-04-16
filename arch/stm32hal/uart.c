@@ -5,12 +5,7 @@
  *      Author: marku
  */
 
-#include <string.h>
-#include <stdbool.h>
-
-#include "cli/uart.h"
-#include "time/rtc.h"
-#include "stm32l4xx_hal.h"
+#include "arch/arch.h"
 
 
 #ifndef DEVKIT

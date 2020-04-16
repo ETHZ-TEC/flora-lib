@@ -5,22 +5,9 @@
  *      Author: kelmicha
  */
 
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/_stdint.h>
+#include "cli/cli.h"
 
-#include "cli/command.h"
-#include "protocol/gloria/gloria.h"
-#include "protocol/gloria/gloria_constants.h"
-#include "protocol/gloria/gloria_structures.h"
-#include "time/hs_timer.h"
-#include "radio/radio_constants.h"
-#include "radio/radio_helpers.h"
-#include "protocol/simple_lwb/slwb.h"
-
-//#include "slwb.h"
-
+#if CLI_ENABLE
 
 static command_return_t slwb_start_command_handler(command_execution_t execution);
 
@@ -217,3 +204,5 @@ void slwb_register_commands() {
   command_register(&slwb_command, slwb_subcommands, COMMAND_COUNT(slwb_subcommands));
   command_register(NULL, slwb_commands, 1);
 }
+
+#endif /* CLI_ENABLE */

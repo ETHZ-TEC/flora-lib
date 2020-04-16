@@ -10,7 +10,7 @@
 
 #include "protocol/dozer/dozer_messages.h"
 #include "protocol/protocol.h"
-#include "cli/cli_print.h"
+//#include "cli/cli_print.h"
 #include "time/hs_timer.h"
 #include "radio/semtech/sx126x/sx126x.h"
 #include "protocol/dozer/dozer_config.h"

@@ -9,11 +9,8 @@
 #define UTILS_LOG_H_
 
 
-#include <stdarg.h>
-
 /* include global config */
-#include "main.h"
-#include "cli/uart.h"
+#include "flora_lib.h"
 
 
 /* --- default CONFIG --- */

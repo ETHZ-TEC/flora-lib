@@ -8,11 +8,18 @@
 #ifndef CLI_COMMAND_H_
 #define CLI_COMMAND_H_
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
 
-#include "cli.h"
+/* include all commands */
+#include "cli/commands/gloria_cmd.h"
+#include "cli/commands/develop_cmd.h"
+#include "cli/commands/slwb_cmd.h"
+#include "cli/commands/system_cmd.h"
+#include "cli/commands/radio_cmd.h"
+#include "cli/commands/config_cmd.h"
+#include "cli/commands/led_cmd.h"
+#include "cli/commands/cli_cmd.h"
+#include "cli/commands/test_cmd.h"
+#include "cli/commands/rtc_cmd.h"
 
 
 #define MAX_CHILDREN_COMMANDS 20

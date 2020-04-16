@@ -5,9 +5,7 @@
  *      Author: Roman Trub
  */
 
-#include "protocol/gloria/gloria_interface.h"
-
-#include <math.h>
+#include "protocol/gloria/gloria.h"
 
 
 #ifndef GLORIA_START_IND
@@ -193,7 +191,9 @@ uint8_t gloria_stop(void)
 
   // DEBUG: print flood struct
   if (internal_enable_flood_printing) {
+#if CLI_ENABLE
     gloria_print_flood(&flood);
+#endif /* CLI_ENABLE */
   }
 
   /* clear arg variables */

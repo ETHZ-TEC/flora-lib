@@ -12,7 +12,17 @@
 #define FLOCKLAB      0
 #endif /* FLOCKLAB */
 
-#if FLOCKLAB
+#if FLACKLAB
+
+#ifndef FLOCKLAB_SWD
+#define FLOCKLAB_SWD  0
+#endif /* FLOCKLAB_SWD */
+
+/* error check */
+#if BOLT_ENABLE || SWO_ENABLE
+/* SWO cannot be used at the moment since the pin is connected to the DIO1 of the SX1262 radio */
+#error "can't use BOLT or SWO on FlockLab"
+#endif
 
 #include <stdint.h>
 

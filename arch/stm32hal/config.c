@@ -5,13 +5,7 @@
  *      Author: marku
  */
 
-#include <string.h>
-
-#include "main.h"
-#include "stm32l4xx_hal.h"
-#include "config/config.h"
-#include "cli/cli.h"
-
+#include "arch/arch.h"
 
 
 extern bool cli_interactive_mode;
@@ -24,7 +18,7 @@ config_t config_current = {
 #if CLI_ENABLE
     .cli_mode = CLI_INTERACTIVE_ENABLE,
 #else
-	.cli_mode = 1, /* hard-coded if CLI not enabled to prevent compile errors */
+    .cli_mode = 1, /* hard-coded if CLI not enabled to prevent compile errors */
 #endif /* CLI_ENABLE */
 };
 

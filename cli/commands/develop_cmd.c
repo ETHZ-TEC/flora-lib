@@ -5,23 +5,9 @@
  *      Author: rtrueb
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "radio/flora_radio.h"
-#include "cli/commands/develop_cmd.h"
-#include "radio/radio_helpers.h"
-
-#include "cli/command.h"
 #include "cli/cli.h"
-#include "time/hs_timer.h"
-#include "time/rtc.h"
 
-#include "radio/semtech/radio.h"
-#include "radio/radio_constants.h"
-#include "radio/semtech/sx126x/sx126x.h"
-#include "radio/semtech/boards/sx126x-board.h"
+#if CLI_ENABLE
 
 /* global variables */
 extern bool cli_interactive_mode;
@@ -857,3 +843,5 @@ static void testlink_tx_callback() {
     cli_log("continuous rx_mode", "radio", CLI_LOG_LEVEL_DEBUG);
   }
 }
+
+#endif /* CLI_ENABLE */

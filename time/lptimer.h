@@ -8,7 +8,10 @@
 #ifndef TIME_LPTIMER_H_
 #define TIME_LPTIMER_H_
 
-#include <stdint.h>
+
+/* include lib and global defines */
+#include "flora_lib.h"
+
 
 #define LPTIMER_SECOND      32768       /* ticks per second */
 

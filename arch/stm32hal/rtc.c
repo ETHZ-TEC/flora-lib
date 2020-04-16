@@ -5,11 +5,9 @@
  *      Author: marku
  */
 
+#include "arch/arch.h"
 
-#include <stdbool.h>
-#include <time.h>
 
-#include "stm32l4xx_hal.h" // potentially defines HAL_RTC_MODULE_ENABLED => needs to stay before "#ifdef HAL_RTC_MODULE_ENABLE"
 #ifdef HAL_RTC_MODULE_ENABLED
 
 #include "time/rtc.h"

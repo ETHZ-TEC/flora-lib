@@ -5,8 +5,9 @@
  *      Author: marku
  */
 
-#include "main.h"
-#include "cli/commands/gloria_cmd.h"
+#include "cli/cli.h"
+
+#if CLI_ENABLE
 
 extern uint64_t gloria_last_sync;
 extern bool cli_interactive_mode;
@@ -919,3 +920,5 @@ end:
 
   return;
 }
+
+#endif /* CLI_ENABLE */

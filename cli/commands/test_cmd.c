@@ -5,17 +5,9 @@
  *      Author: marku
  */
 
+#include "cli/cli.h"
 
-#include <stdlib.h>
-
-#include "radio/radio_helpers.h"
-
-#include "system/system.h"
-#include "cli/command.h"
-#include "time/hs_timer.h"
-#include "time/rtc.h"
-#include "stm32l4xx_hal.h"
-#include "main.h"
+#if CLI_ENABLE
 
 static command_return_t test_sync_command_handler(command_execution_t execution);
 
@@ -182,3 +174,5 @@ static command_return_t test_sync_command_handler(command_execution_t execution)
 
   return CMD_RET_SUCCESS;
 }
+
+#endif /* CLI_ENABLE */

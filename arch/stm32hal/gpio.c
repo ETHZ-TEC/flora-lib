@@ -5,8 +5,7 @@
  *      Author: rdaforno
  */
 
-
-#include "arch/stm32hal/gpio.h"
+#include "arch/arch.h"
 
 
 void gpio_init(void)
@@ -25,7 +24,7 @@ void gpio_init(void)
   GPIO_InitStruct.Pin   = SWO_Pin;
   GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  HAL_GPIO_Init(COM_GPIO2_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(SWO_GPIO_Port, &GPIO_InitStruct);
 #endif /* SWO_ENABLE */
 
   (void)GPIO_InitStruct;

@@ -5,28 +5,7 @@
  *      Author: marku
  */
 
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include "main.h"
-
-#include "radio/radio_helpers.h"
-#include "system/system.h"
-#include "system/system_boot.h"
-#include "system/system_backup_registers.h"
-
-#include "time/rtc.h"
-#include "time/hs_timer.h"
-
-#include "config/config.h"
-#include "led/led.h"
-#include "cli/uart.h"
-#include "cli/cli.h"
-#include "protocol/protocol.h"
-#include "protocol/gloria/gloria.h"
-#include "time/rtc.h"
-
-#include "radio/flora_radio.h"
+#include "arch/arch.h"
 
 
 extern void SystemClock_Config(void);

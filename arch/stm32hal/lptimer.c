@@ -13,9 +13,8 @@
  * - LPTIM1 is sourced by LSE and runs at 32kHz
  */
 
+#include "arch/arch.h"
 
-#include "time/lptimer.h"
-#include "stm32l4xx_hal.h"
 
 extern LPTIM_HandleTypeDef hlptim1;
 

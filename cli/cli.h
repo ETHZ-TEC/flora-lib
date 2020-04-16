@@ -8,7 +8,10 @@
 #ifndef CLI_CLI_H_
 #define CLI_CLI_H_
 
-#include "cli_print.h"
+
+/* include lib and global defines */
+#include "flora_lib.h"
+
 
 #define CLI_VERSION_STRING          "FlOS CLI 0.1"
 #define CLI_MAX_INPUT               (304 - 1)
@@ -34,6 +37,15 @@
 #define CLI_VT100_ARROWDOWN         'B'
 #define CLI_VT100_ARROWRIGHT        'C'
 #define CLI_VT100_ARROWLEFT         'D'
+
+
+/* include all CLI files */
+#include "cli/cJSON/cJSON.h"
+#include "cli/cli_print.h"
+#include "cli/command.h"
+#include "cli/history.h"
+#include "cli/uart.h"
+
 
 void cli_init();
 void cli_update();

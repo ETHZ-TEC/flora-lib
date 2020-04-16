@@ -5,9 +5,8 @@
  *      Author: marku
  */
 
+#include "arch/arch.h"
 
-#include "system/system_backup_registers.h"
-#include "stm32l4xx_hal.h"
 
 system_backup_registers_t* backup_registers;
 

@@ -5,9 +5,7 @@
  *      Author: rtrueb
  */
 
-#include "main.h"
-#include "arch/stm32hal/gpio_exti.h"
-#include "stm32l4xx_hal.h"
+#include "arch/arch.h"
 
 /**
   * @brief  EXTI line detection callback.

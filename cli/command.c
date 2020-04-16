@@ -5,18 +5,9 @@
  *      Author: marku
  */
 
-
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-
-#include "cli/command.h"
-
-#include "stm32l4xx_hal.h"
-
 #include "cli/cli.h"
-#include "cli/cli_print.h"
 
+#if CLI_ENABLE
 
 static char null_string[] = "";
 
@@ -930,4 +921,4 @@ void command_print_subcommands(command_t* command, uint8_t level)
   }
 }
 
-
+#endif /* CLI_ENABLE */

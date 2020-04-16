@@ -5,8 +5,7 @@
  *      Author: kelmicha
  */
 
-#include "radio/flora_radio.h"
-#include "helpers.h"
+#include "protocol/simple_lwb/slwb.h"
 
 
 protocol_config_t protocol_config;

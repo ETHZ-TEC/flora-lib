@@ -5,16 +5,8 @@
  *      Author: marku
  */
 
+#include "arch/arch.h"
 
-#include "main.h"
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "time/hs_timer.h"
-#include "time/lptimer.h"
-#include "time/rtc.h"
-#include "cli/cli_print.h"
-#include "stm32l4xx_hal.h"
 
 extern TIM_HandleTypeDef htim2;
 

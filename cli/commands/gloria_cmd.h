@@ -8,7 +8,6 @@
 #ifndef CLI_COMMANDS_GLORIA_CMD_H_
 #define CLI_COMMANDS_GLORIA_CMD_H_
 
-#include "protocol/gloria/gloria.h"
 
 typedef enum {
   GLORIA_MESSAGE,

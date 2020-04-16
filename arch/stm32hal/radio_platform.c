@@ -6,10 +6,8 @@
  */
 
 
-#include "radio/radio_platform.h"
+#include "arch/arch.h"
 
-#include "stm32l4xx_hal.h"
-#include "main.h"
 
 inline void radio_set_nss_pin() {
   HAL_GPIO_WritePin(RADIO_NSS_GPIO_Port, RADIO_NSS_Pin, GPIO_PIN_SET);

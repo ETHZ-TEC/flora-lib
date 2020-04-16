@@ -5,23 +5,15 @@
  *      Author: marku
  */
 
-#include "cli/cli_print.h"
-
-#include "cli/cJSON/cJSON.h"
-
 #include "cli/cli.h"
-#include "cli/command.h"
-#include "time/hs_timer.h"
-#include "cli/uart.h"
-#include "time/rtc.h"
+
+#if CLI_ENABLE
 
 extern bool cli_interactive_mode;
 extern char cli_input_buffer[CLI_MAX_INPUT + 1];
 extern uint16_t input_count;
 extern uint16_t input_cursor;
 extern bool cli_inside_execution;
-
-#if CLI_ENABLE
 
 static bool cli_is_newline = false;
 

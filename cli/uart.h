@@ -8,11 +8,15 @@
 #ifndef CLI_UART_H_
 #define CLI_UART_H_
 
-#include <stdint.h>
-#include <stdbool.h>
+
+#include "flora_lib.h"
 
 
-#define UART_FIFO_BUFFER_SIZE 1024
+#if CLI_ENABLE
+ #define UART_FIFO_BUFFER_SIZE    1024
+#else /* CLI_ENABLE */
+ #define UART_FIFO_BUFFER_SIZE    128
+#endif /* CLI_ENABLE */
 
 
 typedef struct

@@ -5,9 +5,9 @@
  *      Author: marku
  */
 
-#include "history.h"
+#include "cli/cli.h"
 
-#include <string.h>
+#if CLI_ENABLE
 
 static history_entry_t history[HISTORY_COUNT] = {0};
 static history_state_t state = { .count = 1, .newest = 0, .selected = 0};
@@ -82,7 +82,4 @@ uint16_t history_get_next(char* buffer, uint16_t length) {
   }
 }
 
-
-
-
-
+#endif /* CLI_ENABLE */

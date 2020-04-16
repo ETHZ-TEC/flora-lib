@@ -5,14 +5,8 @@
  *      Author: marku
  */
 
+#include "arch/arch.h"
 
-#include <stdbool.h>
-
-#include "led/led.h"
-#include "time/hs_timer.h"
-
-#include "main.h"
-#include "stm32l4xx_hal.h"
 
 #ifndef DEVKIT
 #define LED_SYSTEM_GPIO_Port LED_GREEN_GPIO_Port

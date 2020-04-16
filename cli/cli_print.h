@@ -8,19 +8,6 @@
 #ifndef CLI_CLI_PRINT_H_
 #define CLI_CLI_PRINT_H_
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-
-#include "main.h"
-
-#include "cli/cJSON/cJSON.h"
-
-#ifndef CLI_ENABLE
-#define CLI_ENABLE    1
-#endif /* CLI_ENABLE */
 
 #define VT100_OUTPUT cli_interactive_mode
 
@@ -72,8 +59,6 @@ typedef enum {
 
 void cli_set_vt100_modes();
 
-#if CLI_ENABLE
-
 void cli_print(char* buffer);
 void cli_nprint(char* buffer, uint16_t size);
 void cli_println(char* buffer);
@@ -89,8 +74,8 @@ bool cli_delete_prompt();
 void cli_set_color(uint8_t color);
 bool cli_string_is_printable(const char *s, uint16_t size);
 
-#else /* CLI_ENABLE */
 
+/*
 #define cli_print(str)
 #define cli_nprint(str, n)
 #define cli_println(str)
@@ -102,8 +87,6 @@ bool cli_string_is_printable(const char *s, uint16_t size);
 #define cli_delete_prompt()
 #define cli_set_color(c)
 #define cli_string_is_printable(str, n)   0
-
-#endif /* CLI_ENABLE */
-
+*/
 
 #endif /* CLI_CLI_PRINT_H_ */

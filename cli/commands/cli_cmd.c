@@ -5,11 +5,9 @@
  *      Author: marku
  */
 
-#include <string.h>
-
-#include "cli/commands/cli_cmd.h"
-#include "cli/command.h"
 #include "cli/cli.h"
+
+#if CLI_ENABLE
 
 extern bool cli_interactive_mode;
 
@@ -165,3 +163,5 @@ static command_return_t cli_interactive_command_handler(command_execution_t exec
     return CMD_RET_FAILURE;
   }
 }
+
+#endif /* CLI_ENABLE */

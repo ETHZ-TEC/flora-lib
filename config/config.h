@@ -8,6 +8,7 @@
 #ifndef CONFIG_CONFIG_H_
 #define CONFIG_CONFIG_H_
 
+#include "flora_lib.h"
 #include "config_def.h"
 
 void config_init();

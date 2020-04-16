@@ -8,9 +8,6 @@
 #ifndef CLI_HISTORY_H_
 #define CLI_HISTORY_H_
 
-#include <stdbool.h>
-#include "cli.h"
-
 
 #define HISTORY_COUNT 4
 

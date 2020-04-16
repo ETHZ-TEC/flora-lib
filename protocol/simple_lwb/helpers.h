@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#include "cli/cli_print.h"
+//#include "cli/cli_print.h"
 #include "protocol/protocol.h"
 #include "led/led.h"
 #include "time/hs_timer.h"
@@ -19,7 +19,6 @@
 #include "time/hs_timer.h"
 #include "led/led.h"
 #include "main.h"
-#include "cli/cli_print.h"
 #include "config/config.h"
 #include "radio/semtech/sx126x/sx126x.h"
 #include "radio/semtech/boards/sx126x-board.h"

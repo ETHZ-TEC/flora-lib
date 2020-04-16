@@ -5,33 +5,9 @@
  *      Author: marku
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
-
 #include "cli/cli.h"
-#include "cli/cli_print.h"
-#include "cli/command.h"
-#include "cli/history.h"
-#include "cli/uart.h"
-#if CLI_ENABLE
-#include "cli/commands/gloria_cmd.h"
-#include "cli/commands/develop_cmd.h"
-#include "cli/commands/slwb_cmd.h"
-#include "cli/commands/system_cmd.h"
-#include "cli/commands/radio_cmd.h"
-#include "cli/commands/config_cmd.h"
-#include "cli/commands/led_cmd.h"
-#include "cli/commands/cli_cmd.h"
-#include "cli/commands/test_cmd.h"
-#endif /* CLI_ENABLE */
 
-#include "time/rtc.h"
-#include "system/system.h"
-#include "config/config.h"
-#include "flocklab/flocklab.h"
+#if CLI_ENABLE
 
 bool cli_interactive_mode = true; // Enables interactive command line mode (character get echoed back)
 
@@ -411,3 +387,5 @@ static void cli_execute() {
 
   return;
 }
+
+#endif /* CLI_ENABLE */

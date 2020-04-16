@@ -5,22 +5,9 @@
  *      Author: marku
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "radio/flora_radio.h"
-#include "cli/commands/radio_cmd.h"
-#include "radio/radio_helpers.h"
-
-#include "cli/command.h"
 #include "cli/cli.h"
-#include "time/hs_timer.h"
 
-#include "radio/semtech/radio.h"
-#include "radio/radio_constants.h"
-#include "radio/semtech/sx126x/sx126x.h"
-#include "radio/semtech/boards/sx126x-board.h"
+#if CLI_ENABLE
 
 /*!
  * \brief Sets the whitening mode.
@@ -1902,3 +1889,5 @@ command_return_t radio_register_command_handler(command_execution_t execution) {
 
   return CMD_RET_SUCCESS;
 }
+
+#endif /* CLI_ENABLE */

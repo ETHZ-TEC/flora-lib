@@ -5,10 +5,9 @@
  *      Author: marku
  */
 
+#include "cli/cli.h"
 
-#include "cli/commands/config_cmd.h"
-#include "cli/command.h"
-#include "config/config.h"
+#if CLI_ENABLE
 
 command_return_t config_get_command_handler(command_execution_t execution);
 command_return_t config_set_command_handler(command_execution_t execution);
@@ -148,3 +147,4 @@ command_return_t config_store_command_handler(command_execution_t execution)
   return CMD_RET_SUCCESS;
 }
 
+#endif /* CLI_ENABLE */

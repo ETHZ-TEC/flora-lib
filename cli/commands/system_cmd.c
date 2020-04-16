@@ -5,14 +5,9 @@
  *      Author: marku
  */
 
+#include "cli/cli.h"
 
-#include "cli/commands/system_cmd.h"
-
-#include <stdlib.h>
-
-#include "system/system.h"
-#include "cli/command.h"
-
+#if CLI_ENABLE
 
 command_return_t system_reset_command_handler(command_execution_t execution);
 command_return_t system_bootloader_command_handler(command_execution_t execution);
@@ -112,3 +107,5 @@ command_return_t system_sleep_command_handler(command_execution_t execution)
   system_sleep(false);
   return CMD_RET_SUCCESS;
 }
+
+#endif /* CLI_ENABLE */

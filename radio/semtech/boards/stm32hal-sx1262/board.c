@@ -31,7 +31,7 @@
 #include "radio/semtech/boards/sx126x-board.h"
 #include "radio/semtech/boards/utilities.h"
 #include "stm32l4xx_hal.h"
-#include "cli/cli_print.h"
+//#include "cli/cli_print.h"
 
 
 #ifndef DEVKIT

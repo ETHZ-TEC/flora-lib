@@ -5,14 +5,11 @@
  *      Author: marku
  */
 
-#include "stm32l4xx_hal.h"
+#include "cli/cli.h"
 
-#include "cli/commands/rtc_cmd.h"
+#if CLI_ENABLE
 
 #ifdef HAL_RTC_MODULE_ENABLED
-
-#include "time/rtc.h"
-#include "cli/command.h"
 
 
 extern RTC_HandleTypeDef hrtc;
@@ -190,3 +187,5 @@ static command_return_t rtc_sleep_command_handler(command_execution_t execution)
 }
 
 #endif /* HAL_RTC_MODULE_ENABLED */
+
+#endif /* CLI_ENABLE */

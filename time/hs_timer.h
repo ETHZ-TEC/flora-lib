@@ -9,17 +9,17 @@
 #define TIME_HS_TIMER_H_
 
 
-#include <math.h>
-#include <stdint.h>
+#include "flora_lib.h"
 
-#define HS_TIMER_FREQUENCY 8000000 // High speed timer (htim2) cycles per second
-#define HS_TIMER_FREQUENCY_MS 8000 // High speed timer (htim2) cycles per ms
-#define HS_TIMER_FREQUENCY_US 8 // High speed timer (htim2) cycles per us
+
+#define HS_TIMER_FREQUENCY      8000000   // High speed timer (htim2) cycles per second
+#define HS_TIMER_FREQUENCY_MS   8000      // High speed timer (htim2) cycles per ms
+#define HS_TIMER_FREQUENCY_US   8         // High speed timer (htim2) cycles per us
 
 #ifdef DOZER
-#define TIM5_TIMER_FREQUENCY 1000     // ms timer (htim5) cycles per second
-#define TIM5_TIMER_FREQUENCY_MS 1     // ms timer (htim5) cycles per ms
-#define TIM5_TIMER_FREQUENCY_US 0.001 // ms timer (htim5) cycles per us
+#define TIM5_TIMER_FREQUENCY    1000      // ms timer (htim5) cycles per second
+#define TIM5_TIMER_FREQUENCY_MS 1         // ms timer (htim5) cycles per ms
+#define TIM5_TIMER_FREQUENCY_US 0.001     // ms timer (htim5) cycles per us
 #endif
 
 #define TIMER_GUARD_TIME 800 // 100us; worst case time needed so set the timer correctly (schedule and generic)
