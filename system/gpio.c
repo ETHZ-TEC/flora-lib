@@ -27,6 +27,17 @@ void gpio_init(void)
   HAL_GPIO_Init(SWO_GPIO_Port, &GPIO_InitStruct);
 #endif /* SWO_ENABLE */
 
+#if BASEBOARD
+ #ifdef BASEBOARD_VEXT3_SWITCH_Pin
+  /* configure COM_PROG2 as output */
+  GPIO_InitStruct.Pin   = BASEBOARD_VEXT3_SWITCH_Pin;
+  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(BASEBOARD_VEXT3_SWITCH_GPIO_Port, &GPIO_InitStruct);
+ #endif /* BASEBOARD_VEXT3_SWITCH_Pin */
+#endif /* BASEBOARD */
+
   (void)GPIO_InitStruct;
 }
 
