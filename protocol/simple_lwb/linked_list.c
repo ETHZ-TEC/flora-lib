@@ -7,6 +7,7 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
 
 /*
  * allocate memory for new list and initialize it
@@ -261,3 +262,4 @@ void ll_free_tail(linked_list_t* list) {
   }
 }
 
+#endif /* SLWB_ENABLE */

@@ -7,6 +7,7 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
 
 protocol_config_t protocol_config;
 bool lr_base = false;
@@ -174,3 +175,5 @@ inline bool slwb_is_lr_node() {
 inline bool slwb_is_lr_participant() {
   return slwb_is_lr_node() || slwb_is_lr_base();
 }
+
+#endif /* SLWB_ENABLE */

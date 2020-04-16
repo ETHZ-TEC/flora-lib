@@ -7,6 +7,8 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
+
 static slwb_timer_sync_markers_t timer_markers[NUMBER_SAVED_MARKERS] = {0};
 static uint8_t latest_markers = NUMBER_SAVED_MARKERS-1;
 uint8_t n_markers = 0;
@@ -120,3 +122,5 @@ void slwb_reset_timer() {
 bool slwb_timer_drift_comp_active() {
   return n_markers >= SLWB_MIN_MARKERS_FOR_DRIFT_COMP;
 }
+
+#endif /* SLWB_ENABLE */

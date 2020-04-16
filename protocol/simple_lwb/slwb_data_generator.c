@@ -7,6 +7,8 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
+
 linked_list_t* data_streams = NULL;
 linked_list_t* data_queue = NULL;
 uint16_t packet_id = 0;      // packet counter
@@ -314,3 +316,5 @@ void slwb_data_generatior_print_stats() {
 
   cli_log_json(slwb_stats, "slwb", CLI_LOG_LEVEL_DEBUG);
 }
+
+#endif /* SLWB_ENABLE */

@@ -7,6 +7,8 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
+
 #ifndef MIN
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #endif /* MIN */
@@ -321,3 +323,5 @@ void slwb_scheduler_update_streams() {
     }
   }
 }
+
+#endif /* SLWB_ENABLE */

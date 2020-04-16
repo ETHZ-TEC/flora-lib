@@ -7,6 +7,8 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
+
 static slwb_round_t* current_round;
 static slwb_round_schedule_t* current_schedule;
 static slwb_stream_t* current_stream;
@@ -759,3 +761,5 @@ void slwb_set_flood_rx_defaults() {
   slwb_flood.initial = false;
   slwb_flood.sync_timer = false;
 }
+
+#endif /* SLWB_ENABLE */

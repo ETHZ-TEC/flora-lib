@@ -7,6 +7,8 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
+
 slwb_round_t slwb_round = {0};
 slwb_round_schedule_t round_schedule = {0};
 
@@ -88,3 +90,4 @@ void slwb_round_finished() {
   }
 }
 
+#endif /* SLWB_ENABLE */

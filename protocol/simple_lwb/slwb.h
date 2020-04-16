@@ -9,6 +9,10 @@
 #define PROTOCOL_SIMPLE_LWB_SLWB_H_
 
 
+#ifndef SLWB_ENABLE
+#define SLWB_ENABLE       0
+#endif /* SLWB_ENABLE */
+
 /* include all sLWB related files */
 #include "protocol/simple_lwb/slwb_constants.h"
 #include "protocol/simple_lwb/slwb_structures.h"

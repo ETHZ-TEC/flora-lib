@@ -7,6 +7,8 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
+
 const uint8_t slwb_max_flood_slots[] = {1, 1, 2, 2, 3, 3, 3, 3, 10, 10};
 const uint8_t slwb_default_power_levels[] =  {0,0,0,0,0,0,0,0,22,22};
 const slwb_slot_times_t slwb_slot_times[10] = {
@@ -101,3 +103,5 @@ const slwb_slot_times_t slwb_slot_times[10] = {
     .lr_data_slot_time = 451215, // 56ms
   },
 };
+
+#endif /* SLWB_ENABLE */

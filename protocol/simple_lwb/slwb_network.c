@@ -7,6 +7,8 @@
 
 #include "flora_lib.h"
 
+#if SLWB_ENABLE
+
 #if FLOCKLAB
 slwb_node_list_t cl_0 = {.n_nodes = 8, .nodes = {2, 3, 15, 18, 22, 23, 28, 33}};
 //slwb_node_list_t lr_0 = {.n_nodes = 2, .nodes = {6, 16}};
@@ -92,3 +94,5 @@ void slwb_network_print(uint8_t prio, slwb_network_t* network) {
        }
   }
 }
+
+#endif /* SLWB_ENABLE */
