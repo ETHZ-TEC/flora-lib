@@ -446,7 +446,11 @@ void elwb_src_run(void)
         /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
         stats.sleep_cnt++;
         LOG_WARNING_CONST("timeout");
-        // TODO implement deepsleep mechanism
+
+        /* poll the post process */
+        if (post_task) {
+          xTaskNotify(post_task, 0, eNoAction);
+        }
         ELWB_WAIT_UNTIL(ELWB_RTIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
       }
     } else {

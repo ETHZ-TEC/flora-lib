@@ -9,7 +9,6 @@
 #define SYSTEM_SYSTEM_H_
 
 
-/* include all stm32hal related files */
 #include "stm32l4xx_hal.h"
 #include "system/uart.h"
 #include "system/gpio.h"
