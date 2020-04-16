@@ -9,9 +9,6 @@
 #define CLI_CLI_H_
 
 
-/* include lib and global defines */
-#include "flora_lib.h"
-
 #ifndef CLI_ENABLE
 #define CLI_ENABLE                  1
 #endif /* CLI_ENABLE */
