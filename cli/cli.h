@@ -12,6 +12,10 @@
 /* include lib and global defines */
 #include "flora_lib.h"
 
+#ifndef CLI_ENABLE
+#define CLI_ENABLE                  1
+#endif /* CLI_ENABLE */
+
 
 #define CLI_VERSION_STRING          "FlOS CLI 0.1"
 #define CLI_MAX_INPUT               (304 - 1)
