@@ -8,9 +8,6 @@
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_MANAGER_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_MANAGER_H_
 
-#include "slwb.h"
-#include "slwb_structures.h"
-
 
 void slwb_start_round(slwb_round_t* round);
 void slwb_finish_round();

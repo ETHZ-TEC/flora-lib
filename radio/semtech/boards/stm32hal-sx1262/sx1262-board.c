@@ -24,18 +24,7 @@
  *
  */
 
-#include <stdlib.h>
-
-#include "main.h"
-
-#include "arch/stm32hal/platform.h"
-#include "radio/semtech/boards/board.h"
-#include "radio/semtech/boards/sx126x-board.h"
-#include "radio/semtech/boards/utilities.h"
-#include "radio/radio_platform.h"
-#include "time/rtc.h"
-#include "radio/semtech/radio.h"
-#include "stm32l4xx_hal.h"
+#include "flora_lib.h"
 
 
 void (*RadioOnDioIrqPtr)() = NULL;

@@ -8,10 +8,6 @@
 #ifndef CONFIG_CONFIG_DEF_H_
 #define CONFIG_CONFIG_DEF_H_
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "arch/stm32hal/platform.h"
-
 
 typedef struct {
   uint32_t magic_word;

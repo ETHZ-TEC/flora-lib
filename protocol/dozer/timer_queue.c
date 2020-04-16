@@ -4,10 +4,10 @@
  *  Created on: Jul 17, 2018
  *      Author: kelmicha
  */
-#include "timer_queue.h"
-#include "dozer.h"
 
-#ifdef DOZER
+#include "flora_lib.h"
+
+#if DOZER_ENABLE
 
 timer_queue_element_t* first_element = NULL;
 timer_queue_element_t* current_timer = NULL;
@@ -236,5 +236,4 @@ uint64_t tq_get_fire_ts(timer_name_t timer_name) {
   return 0;
 }
 
-#endif // DOZER
-
+#endif /* DOZER_ENABLE */

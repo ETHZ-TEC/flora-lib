@@ -23,8 +23,6 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-#include <stdint.h>
-#include "utilities.h"
 
 /*!
  * Possible power sources

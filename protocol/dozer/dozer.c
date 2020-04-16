@@ -5,10 +5,9 @@
  *      Author: kelmicha
  */
 
-#include "dozer.h"
-#include "dozer_topology.h"
+#include "flora_lib.h"
 
-
+#if DOZER_ENABLE
 
 extern node_config_t node_config;
 extern current_state_t current_state;
@@ -38,3 +37,4 @@ void dozer_run(bool start) {
   }
 }
 
+#endif /* DOZER_ENABLE */

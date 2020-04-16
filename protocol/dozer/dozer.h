@@ -5,31 +5,16 @@
  *      Author: kelmicha
  */
 
-#ifndef DOZER_DOZER_H_
-#define DOZER_DOZER_H_
-
-#include "protocol/dozer/dozer_messages.h"
-#include "protocol/protocol.h"
-//#include "cli/cli_print.h"
-#include "time/hs_timer.h"
-#include "radio/semtech/sx126x/sx126x.h"
-#include "protocol/dozer/dozer_config.h"
-#include "radio/radio_helpers.h"
-#include "time/rtc.h"
-#include "radio/semtech/boards/sx126x-board.h"
-#include "radio/semtech/boards/utilities.h"
-#include "protocol/dozer/dozer_constants.h"
-#include "protocol/dozer/timer_queue.h"
-#include "config/config.h"
-#include "protocol/dozer/circular_queue.h"
-#include "protocol/dozer/dozer_radio.h"
-#include "protocol/dozer/dozer_utils.h"
-
+#ifndef PROTOCOL_DOZER_DOZER_H_
+#define PROTOCOL_DOZER_DOZER_H_
 
 /*
  * Typedefs
  */
 
+#ifndef DOZER_ENABLE
+#define DOZER_ENABLE    0
+#endif /* DOZER_ENABLE */
 
 
 typedef enum {
@@ -97,6 +82,16 @@ typedef struct radio_config {
 } radio_config_dozer_t;
 
 
+/* include all dozer related files */
+#include "protocol/dozer/dozer_messages.h"
+#include "protocol/dozer/dozer_config.h"
+#include "protocol/dozer/dozer_constants.h"
+#include "protocol/dozer/dozer_radio.h"
+#include "protocol/dozer/dozer_utils.h"
+#include "protocol/dozer/dozer_topology.h"
+#include "protocol/dozer/dozer_radio_admin.h"
+#include "protocol/dozer/timer_queue.h"
+#include "protocol/dozer/circular_queue.h"
 
 
 /*
@@ -117,4 +112,4 @@ extern radio_config_dozer_t radio_config; // radio configurations
 
 
 
-#endif /* DOZER_DOZER_H_ */
+#endif /* PROTOCOL_DOZER_DOZER_H_ */

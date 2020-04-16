@@ -5,13 +5,8 @@
  *      Author: rdaforno
  */
 
-#ifndef ARCH_STM32HAL_GPIO_H_
-#define ARCH_STM32HAL_GPIO_H_
-
-
-/* Includes */
-
-#include "main.h"
+#ifndef SYSTEM_GPIO_H_
+#define SYSTEM_GPIO_H_
 
 
 /* Defines */
@@ -40,4 +35,4 @@
 void gpio_init(void);
 
 
-#endif /* ARCH_STM32HAL_GPIO_H_ */
+#endif /* SYSTEM_GPIO_H_ */

@@ -5,7 +5,7 @@
  *      Author: marku
  */
 
-#include "protocol/gloria/gloria.h"
+#include "flora_lib.h"
 
 
 extern volatile uint64_t gloria_last_sync;

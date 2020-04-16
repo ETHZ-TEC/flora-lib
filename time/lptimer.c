@@ -13,7 +13,7 @@
  * - LPTIM1 is sourced by LSE and runs at 32kHz
  */
 
-#include "arch/arch.h"
+#include "flora_lib.h"
 
 
 extern LPTIM_HandleTypeDef hlptim1;

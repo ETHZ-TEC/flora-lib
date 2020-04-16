@@ -8,8 +8,6 @@
 #ifndef PROTOCOL_GLORIA_GLORIA_H_
 #define PROTOCOL_GLORIA_GLORIA_H_
 
-/* include lib and global defines */
-#include "flora_lib.h"
 
 /* include all gloria related files */
 #include "protocol/gloria/gloria.h"

@@ -5,18 +5,13 @@
  *      Author: marku
  */
 
-#ifndef CLI_UART_H_
-#define CLI_UART_H_
+#ifndef SYSTEM_UART_H_
+#define SYSTEM_UART_H_
 
 
-#include "flora_lib.h"
-
-
-#if CLI_ENABLE
- #define UART_FIFO_BUFFER_SIZE    1024
-#else /* CLI_ENABLE */
- #define UART_FIFO_BUFFER_SIZE    128
-#endif /* CLI_ENABLE */
+#ifndef UART_FIFO_BUFFER_SIZE
+#define UART_FIFO_BUFFER_SIZE    1024
+#endif /* UART_FIFO_BUFFER_SIZE */
 
 
 typedef struct
@@ -50,4 +45,4 @@ void uart_transmit_fifo(void);
 
 bool uart_read(char* chr);
 
-#endif /* CLI_UART_H_ */
+#endif /* SYSTEM_UART_H_ */

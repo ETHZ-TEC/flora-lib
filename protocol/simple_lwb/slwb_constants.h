@@ -5,15 +5,6 @@
  *      Author: kelmicha
  */
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "protocol/gloria/gloria_structures.h"
-#include "protocol/gloria/gloria_time.h"
-#include "protocol/simple_lwb/slwb_structures.h"
-
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_CONSTANTS_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_CONSTANTS_H_
 

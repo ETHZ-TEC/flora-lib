@@ -5,10 +5,9 @@
  *      Author: kelmicha
  */
 
-#ifndef DOZER_MESSAGES_H
-#define DOZER_MESSAGES_H
+#ifndef PROTOCOL_DOZER_DOZER_MESSAGES_H
+#define PROTOCOL_DOZER_DOZER_MESSAGES_H
 
-#include "stdint.h"
 
 #ifndef MAX_DATA_LENGTH
     #define MAX_DATA_LENGTH    (23)
@@ -103,4 +102,4 @@ enum {
 }; // TODO: check message sizes
 
 
-#endif /* DOZER_MESSAGES_H */
+#endif /* PROTOCOL_DOZER_DOZER_MESSAGES_H */

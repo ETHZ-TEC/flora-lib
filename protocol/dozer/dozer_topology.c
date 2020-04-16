@@ -5,8 +5,9 @@
  *      Author: kelmicha
  */
 
-#include "dozer_topology.h"
+#include "flora_lib.h"
 
+#if DOZER_ENABLE
 
 /********************************* Defines *********************************/
 #define INVALID 0xFFFFFFFF
@@ -1374,4 +1375,4 @@ void rand_data_gen() {
 
 }
 
-
+#endif /* DOZER_ENABLE */

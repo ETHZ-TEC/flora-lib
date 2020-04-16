@@ -8,7 +8,6 @@
 #ifndef PROTOCOL_SIMPLE_LWB_LINKED_LIST_H_
 #define PROTOCOL_SIMPLE_LWB_LINKED_LIST_H_
 
-#include <stdint.h>
 
 typedef struct list_element_t list_element_t;
 

@@ -5,8 +5,8 @@
  *      Author: user
  */
 
-#ifndef DOZER_CONSTANTS_H_
-#define DOZER_CONSTANTS_H_
+#ifndef PROTOCOL_DOZER_DOZER_CONSTANTS_H_
+#define PROTOCOL_DOZER_DOZER_CONSTANTS_H_
 
 
 // TODO: adapt timeouts and other time ralated constants to new platform
@@ -112,4 +112,4 @@ enum {
 };
 
 
-#endif /* DOZER_CONSTANTS_H_ */
+#endif /* PROTOCOL_DOZER_DOZER_CONSTANTS_H_ */

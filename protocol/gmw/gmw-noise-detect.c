@@ -51,7 +51,7 @@
  *            - DPP-CC430
  */
 
-#include "protocol/gmw/gmw.h"
+#include "flora_lib.h"
 
 #if GMW_ENABLE
 

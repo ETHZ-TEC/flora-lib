@@ -5,23 +5,8 @@
  *      Author: marku
  */
 
-#include "main.h"
-#include <flocklab/flocklab.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <locale.h>
-#include <string.h>
+#include "flora_lib.h"
 
-#include "radio/flora_radio.h"
-#include "radio/radio_platform.h"
-#include "radio/radio_constants.h"
-#include "radio/radio_helpers.h"
-#include "time/hs_timer.h"
-#include "led/led.h"
-#include "cli/cli.h"
-
-#include "stm32l4xx_hal.h"
-#include "radio/semtech/boards/sx126x-board.h"
 
 extern void (*RadioOnDioIrqCallback)(void);
 

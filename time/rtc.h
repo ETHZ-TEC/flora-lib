@@ -9,8 +9,6 @@
 #define TIME_RTC_H_
 
 
-#include "stm32l4xx_hal.h" // potentially defines HAL_RTC_MODULE_ENABLED => needs to stay before "#ifdef HAL_RTC_MODULE_ENABLE"
-
 #ifdef HAL_RTC_MODULE_ENABLED
 
 void rtc_init();

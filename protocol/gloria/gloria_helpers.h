@@ -8,7 +8,6 @@
 #ifndef PROTOCOL_GLORIA_GLORIA_HELPERS_H_
 #define PROTOCOL_GLORIA_GLORIA_HELPERS_H_
 
-#include "gloria.h"
 
 uint8_t gloria_calculate_last_active_slot(gloria_flood_t* flood);
 bool gloria_is_not_finished(gloria_flood_t* flood);

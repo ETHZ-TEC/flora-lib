@@ -8,10 +8,13 @@
 #ifndef SYSTEM_SYSTEM_H_
 #define SYSTEM_SYSTEM_H_
 
-/* include lib and global defines */
-#include "flora_lib.h"
 
 /* include all stm32hal related files */
+#include "stm32l4xx_hal.h"
+#include "system/uart.h"
+#include "system/gpio.h"
+#include "system/gpio_exti.h"
+#include "system/platform.h"
 #include "system_boot.h"
 #include "system_backup_registers.h"
 

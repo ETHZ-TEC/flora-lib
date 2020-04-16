@@ -9,8 +9,6 @@
 #define LED_LED_H_
 
 
-#include <stdint.h>
-
 #define LED_PULSE_PERIOD_DEFAULT 2000
 
 typedef enum

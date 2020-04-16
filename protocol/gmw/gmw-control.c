@@ -46,7 +46,7 @@
  */
 
 /*---------------------------------------------------------------------------*/
-#include "protocol/gmw/gmw.h"
+#include "flora_lib.h"
 
 #if GMW_ENABLE
 /*---------------------------------------------------------------------------*/
@@ -63,14 +63,14 @@ static const uint8_t slot_times[GMW_CONTROL_SLOT_CONFIG_TIMELIST_SIZE] = {
 };
 #endif /* GMW_CONF_USE_CONTROL_SLOT_CONFIG */
 /*---------------------------------------------------------------------------*/
-static void config_init(  gmw_config_t*   config  );
-static void schedule_init(gmw_schedule_t* schedule);
+static void gmw_config_init(  gmw_config_t*   config  );
+static void gmw_schedule_init(gmw_schedule_t* schedule);
 /*---------------------------------------------------------------------------*/
 void
 gmw_control_init(gmw_control_t *control)
 {
-  schedule_init(&control->schedule);
-  config_init(&control->config);
+  gmw_schedule_init(&control->schedule);
+  gmw_config_init(&control->config);
   GMW_CONTROL_SET_CONFIG(control);
 
 #if GMW_CONF_USE_CONTROL_SLOT_CONFIG
@@ -260,7 +260,7 @@ gmw_control_decompile_from_buffer(gmw_control_t* control,
 }
 /*---------------------------------------------------------------------------*/
 static void
-config_init(gmw_config_t* config)
+gmw_config_init(gmw_config_t* config)
 {
   config->n_retransmissions    = GMW_CONF_TX_CNT_DATA;
   config->channel_hopping_mode = 0;
@@ -272,7 +272,7 @@ config_init(gmw_config_t* config)
 }
 /*---------------------------------------------------------------------------*/
 static void
-schedule_init(gmw_schedule_t* schedule)
+gmw_schedule_init(gmw_schedule_t* schedule)
 {
   schedule->n_slots             = 0;
   schedule->time                = 0;

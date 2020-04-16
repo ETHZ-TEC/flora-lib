@@ -5,11 +5,8 @@
  *      Author: kelmicha
  */
 
-#ifndef DOZER_RADIO_H_
-#define DOZER_RADIO_H_
-
-#include "dozer.h"
-
+#ifndef PROTOCOL_DOZER_DOZER_RADIO_H_
+#define PROTOCOL_DOZER_DOZER_RADIO_H_
 
 
 // rx and tx config functions
@@ -46,4 +43,4 @@ void radio_shut_down();
 void dozer_alloc_msg();
 
 
-#endif /* DOZER_DOZER_RADIO_H_ */
+#endif /* PROTOCOL_DOZER_DOZER_RADIO_H_ */

@@ -5,7 +5,7 @@
  *      Author: Roman Trub
  */
 
-#include "protocol/gloria/gloria.h"
+#include "flora_lib.h"
 
 
 #ifndef GLORIA_START_IND

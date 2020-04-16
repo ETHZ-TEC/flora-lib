@@ -1,4 +1,4 @@
-/*!
+#include "radio/flora_radio.h"/*!
  * \file      radio.h
  *
  * \brief     Radio driver API definition
@@ -23,8 +23,6 @@
 #ifndef __RADIO_H__
 #define __RADIO_H__
 
-#include <stdint.h>
-#include <stdbool.h>
 
 /*!
  * \brief Timer object description

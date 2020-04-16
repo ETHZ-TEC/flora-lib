@@ -5,7 +5,9 @@
  *      Author: kelmicha
  */
 
-#include "dozer.h"
+#include "flora_lib.h"
+
+#if DOZER_ENABLE
 
 /*
  * returns the absolute value of a 16 bit int as an uint16_t
@@ -137,3 +139,4 @@ void print_ts(uint8_t prio) {
   dozer_print(prio, char_buff);
 }
 
+#endif /* DOZER_ENABLE */

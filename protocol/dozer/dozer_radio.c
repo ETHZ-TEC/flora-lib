@@ -5,10 +5,9 @@
  *      Author: kelmicha
  */
 
-#include "dozer_radio.h"
-#include "dozer_radio_admin.h"
+#include "flora_lib.h"
 
-#ifdef DOZER
+#if DOZER_ENABLE
 
 
 /********************************* Variables *********************************/
@@ -448,4 +447,4 @@ void radio_shut_down() {
         radio_stats_off();
 }
 
-#endif // DOZER
+#endif // DOZER_ENABLE

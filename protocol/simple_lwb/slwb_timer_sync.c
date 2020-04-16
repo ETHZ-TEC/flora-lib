@@ -5,7 +5,7 @@
  *      Author: kelmicha
  */
 
-#include "slwb_timer_sync.h"
+#include "flora_lib.h"
 
 static slwb_timer_sync_markers_t timer_markers[NUMBER_SAVED_MARKERS] = {0};
 static uint8_t latest_markers = NUMBER_SAVED_MARKERS-1;

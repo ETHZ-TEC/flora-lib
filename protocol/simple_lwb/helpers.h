@@ -5,27 +5,8 @@
  *      Author: kelmicha
  */
 
-#ifndef PROTOCOL_LWB_TEST_HELPERS_H_
-#define PROTOCOL_LWB_TEST_HELPERS_H_
-
-#include <stdarg.h>
-#include <stdint.h>
-
-//#include "cli/cli_print.h"
-#include "protocol/protocol.h"
-#include "led/led.h"
-#include "time/hs_timer.h"
-
-#include "time/hs_timer.h"
-#include "led/led.h"
-#include "main.h"
-#include "config/config.h"
-#include "radio/semtech/sx126x/sx126x.h"
-#include "radio/semtech/boards/sx126x-board.h"
-
-#include "protocol/simple_lwb/slwb_structures.h"
-#include "protocol/simple_lwb/slwb.h"
-#include "flocklab/flocklab.h"
+#ifndef PROTOCOL_SIMPLE_LWB_HELPERS_H_
+#define PROTOCOL_SIMPLE_LWB_HELPERS_H_
 
 
 extern char char_buff[100];
@@ -62,4 +43,4 @@ bool slwb_is_lr_node();
 
 bool slwb_is_lr_participant();
 
-#endif /* PROTOCOL_LWB_TEST_HELPERS_H_ */
+#endif /* PROTOCOL_SIMPLE_LWB_HELPERS_H_ */

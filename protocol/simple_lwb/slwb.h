@@ -8,8 +8,6 @@
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_H_
 
-/* include lib and global defines */
-#include "flora_lib.h"
 
 /* include all sLWB related files */
 #include "protocol/simple_lwb/slwb_constants.h"
@@ -22,7 +20,6 @@
 
 #include "protocol/simple_lwb/helpers.h"
 #include "protocol/simple_lwb/linked_list.h"
-
 
 
 extern uint16_t slwb_round_period;

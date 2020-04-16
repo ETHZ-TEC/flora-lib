@@ -5,12 +5,7 @@
  *      Author: marku
  */
 
-
-
-#include <stdbool.h>
-
-#include "protocol/protocol.h"
-#include "config/config.h"
+#include "flora_lib.h"
 
 
 protocol_config_t protocol_config = {0};

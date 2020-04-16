@@ -5,11 +5,9 @@
  *      Author: kelmicha
  */
 
-#ifndef DOZER_TOPOLOGY_H_
-#define DOZER_TOPOLOGY_H_
+#ifndef PROTOCOL_DOZER_DOZER_TOPOLOGY_H_
+#define PROTOCOL_DOZER_DOZER_TOPOLOGY_H_
 
-#include "dozer.h"
-#include "dozer_radio_admin.h"
 
 /*
  * start the protocol
@@ -96,4 +94,4 @@ void rand_data_gen();
 
 
 
-#endif /* DOZER_DOZER_TOPOLOGY_H_ */
+#endif /* PROTOCOL_DOZER_DOZER_TOPOLOGY_H_ */

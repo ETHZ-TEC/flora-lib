@@ -8,7 +8,6 @@
 #ifndef SYSTEM_SYSTEM_BOOT_H_
 #define SYSTEM_SYSTEM_BOOT_H_
 
-#include <stdbool.h>
 
 #define SYSTEM_BOOTLOADER_ROM_ADDRESS 0x1FFF0000U
 

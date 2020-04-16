@@ -6,10 +6,12 @@
  *
  */
 
+#include "flora_lib.h"
+
+#if DOZER_ENABLE
 
 #define MAX_TRANSMISSION_LENGTH 100
 
-#include "circular_queue.h"
 
 
 
@@ -236,3 +238,5 @@ void cq_open(){
 bool cq_isClosed(){
   return QueueClosed;
 }
+
+#endif /* DOZER_ENABLE */

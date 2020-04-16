@@ -8,11 +8,6 @@
 #ifndef RADIO_HELPERS_H_
 #define RADIO_HELPERS_H_
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "flora_radio.h"
-#include "radio_constants.h"
 
 void radio_set_lora_syncword(radio_lora_syncword_t syncword);
 uint16_t radio_get_syncword();

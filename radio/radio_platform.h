@@ -8,10 +8,6 @@
 #ifndef RADIO_RADIO_PLATFORM_H_
 #define RADIO_RADIO_PLATFORM_H_
 
-#include <stdbool.h>
-
-#include "main.h"
-
 // Platform specific commands
 
 void radio_set_nss_pin();

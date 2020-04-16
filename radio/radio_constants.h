@@ -3,10 +3,6 @@
 #ifndef RADIO_RADIO_CONSTANTS_H_
 #define RADIO_RADIO_CONSTANTS_H_
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "radio/semtech/sx126x/sx126x.h"
 
 #define HS_TIMER_SCHEDULE_MARGIN 800 // 100.000 us
 
@@ -51,8 +47,9 @@ typedef enum
 
 #define RADIO_FSK_SYNCWORD ( uint8_t[] ){ 0x45, 0x54, 0x0x48, 0x00, 0x00, 0x00, 0x00, 0x00 } // "ETH"
 
-typedef struct {
-    RadioModems_t modem;
+typedef struct
+{
+  RadioModems_t modem;
   uint32_t bandwidth;
   uint32_t datarate;
   uint8_t coderate;

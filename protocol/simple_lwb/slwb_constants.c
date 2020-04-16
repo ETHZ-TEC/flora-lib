@@ -5,7 +5,7 @@
  *      Author: kelmicha
  */
 
-#include "slwb_constants.h"
+#include "flora_lib.h"
 
 const uint8_t slwb_max_flood_slots[] = {1, 1, 2, 2, 3, 3, 3, 3, 10, 10};
 const uint8_t slwb_default_power_levels[] =  {0,0,0,0,0,0,0,0,22,22};

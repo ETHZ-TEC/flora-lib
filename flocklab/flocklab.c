@@ -5,9 +5,7 @@
  *      Author: kelmicha
  */
 
-#include "main.h"
-#include "flocklab/flocklab.h"
-
+#include "flora_lib.h"
 
 volatile uint16_t FLOCKLAB_NODE_ID = 0xbeef;    // any value is ok, will be binary patched with respective node ID by FlockLab, see https://gitlab.ethz.ch/tec/public/flocklab/flocklab/wikis/Man/HowTo
 

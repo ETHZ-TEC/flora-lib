@@ -44,7 +44,6 @@
 #include "cli/cli_print.h"
 #include "cli/command.h"
 #include "cli/history.h"
-#include "cli/uart.h"
 
 
 void cli_init();

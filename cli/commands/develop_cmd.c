@@ -5,7 +5,7 @@
  *      Author: rtrueb
  */
 
-#include "cli/cli.h"
+#include "flora_lib.h"
 
 #if CLI_ENABLE
 

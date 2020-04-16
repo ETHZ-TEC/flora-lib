@@ -10,9 +10,6 @@
 #ifndef PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_
 #define PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include "protocol/gloria/gloria_constants.h"
 
 typedef struct __attribute__((__packed__)) {
   uint8_t dst;

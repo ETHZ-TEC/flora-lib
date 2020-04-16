@@ -23,10 +23,6 @@
 #ifndef __SX126x_H__
 #define __SX126x_H__
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <math.h>
-#include "radio/semtech/radio.h"
 
 #define SX1261                                      1
 #define SX1262                                      2

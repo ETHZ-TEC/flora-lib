@@ -8,8 +8,6 @@
 #ifndef BOLT_BOLT_H_
 #define BOLT_BOLT_H_
 
-/* include app config to override default parameters */
-#include "main.h"
 
 /* DEFAULT CONFIG */
 

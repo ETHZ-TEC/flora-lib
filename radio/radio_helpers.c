@@ -5,21 +5,8 @@
  *      Author: marku
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
+#include "flora_lib.h"
 
-#include "main.h"
-
-#include "radio/radio_helpers.h"
-#include "radio/radio_platform.h"
-#include "radio/radio_constants.h"
-#include "radio/flora_radio.h"
-#include "radio/semtech/radio.h"
-#include "radio/semtech/sx126x/sx126x.h"
-#include "radio/semtech/boards/sx126x-board.h"
-#include "cli/cli.h"
-#include "time/hs_timer.h"
 
 extern volatile bool radio_receive_continuous;
 extern volatile bool radio_command_scheduled;

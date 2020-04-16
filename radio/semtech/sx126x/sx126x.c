@@ -20,16 +20,8 @@
  *
  * \author    Gregory Cristian ( Semtech )
  */
-#include <string.h>
 
-#include "main.h"
-#include "arch/stm32hal/platform.h"
-#include "time/rtc.h"
-#include "radio/semtech/boards/utilities.h"
-#include "radio/semtech/radio.h"
-#include "radio/semtech/sx126x/sx126x.h"
-#include "radio/semtech/boards/sx126x-board.h"
-#include "radio/radio_platform.h"
+#include "flora_lib.h"
 
 
 /*!

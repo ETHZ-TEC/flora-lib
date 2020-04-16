@@ -5,16 +5,9 @@
  *      Author: marku
  */
 
-#include "arch/arch.h"
-
+#include "flora_lib.h"
 
 #ifdef HAL_RTC_MODULE_ENABLED
-
-#include "time/rtc.h"
-#include "time/hs_timer.h"
-#include "cli/cli.h"
-#include "cli/command.h"
-#include "system/system.h"
 
 bool rtc_initialized = false;
 RTC_TimeTypeDef rtc_time = {0};

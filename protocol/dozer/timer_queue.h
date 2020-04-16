@@ -5,11 +5,8 @@
  *      Author: kelmicha
  */
 
-
-#include "dozer.h"
-
-#ifndef TIMER_QUEUE_H_
-#define TIMER_QUEUE_H_
+#ifndef PROTOCOL_DOZER_TIMER_QUEUE_H_
+#define PROTOCOL_DOZER_TIMER_QUEUE_H_
 
 typedef enum timer_name {
   BEACON_SEND_TIMER,
@@ -56,4 +53,4 @@ uint64_t tq_get_fire_ts(timer_name_t timer_name);
 
 
 
-#endif /* TIMER_QUEUE_H_ */
+#endif /* PROTOCOL_DOZER_TIMER_QUEUE_H_ */

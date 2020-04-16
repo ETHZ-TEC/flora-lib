@@ -8,7 +8,6 @@
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_STRUCTURES_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_STRUCTURES_H_
 
-#include "slwb_constants.h"
 
 enum slwb_messages {
   SLWB_ROUND_SCHEDULE,    // round schedule for a normal round without any long range information

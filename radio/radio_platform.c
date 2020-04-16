@@ -5,8 +5,7 @@
  *      Author: marku
  */
 
-
-#include "arch/arch.h"
+#include "flora_lib.h"
 
 
 inline void radio_set_nss_pin() {

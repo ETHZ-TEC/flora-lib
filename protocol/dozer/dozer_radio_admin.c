@@ -5,9 +5,9 @@
  *      Author: kelmicha
  */
 
+#include "flora_lib.h"
 
-#include "dozer_radio_admin.h"
-
+#if DOZER_ENABLE
 
 /********************************* Variables *********************************/
 node_config_t node_config;
@@ -850,3 +850,5 @@ void print_radio_stats() {
 bool radio_is_idle() {
   return current_state == STATE_IDLE;
 }
+
+#endif /* DOZER_ENABLE */

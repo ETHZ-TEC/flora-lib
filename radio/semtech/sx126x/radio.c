@@ -20,17 +20,8 @@
  *
  * \author    Gregory Cristian ( Semtech )
  */
-#include <math.h>
-#include <string.h>
-#include "stm32l4xx_hal.h"
-#include "main.h"
-#include "radio/semtech/radio.h"
-#include "radio/semtech/sx126x/sx126x.h"
-#include "radio/semtech/boards/board.h"
-#include "radio/semtech/boards/sx126x-board.h"
-#include "radio/radio_platform.h"
-#include "time/rtc.h"
-#include "flocklab/flocklab.h"
+
+#include "flora_lib.h"
 
 TimerEvent_t RxTimeoutTimer = {.Timestamp = 0, .ReloadValue = 0, .IsRunning = false, .Callback = NULL};
 TimerEvent_t TxTimeoutTimer = {.Timestamp = 0, .ReloadValue = 0, .IsRunning = false, .Callback = NULL};

@@ -5,7 +5,7 @@
  *      Author: kelmicha
  */
 
-#include "slwb_network.h"
+#include "flora_lib.h"
 
 #if FLOCKLAB
 slwb_node_list_t cl_0 = {.n_nodes = 8, .nodes = {2, 3, 15, 18, 22, 23, 28, 33}};

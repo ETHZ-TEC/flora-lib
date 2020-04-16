@@ -5,8 +5,7 @@
  *      Author: marku
  */
 
-#include "main.h"
-#include "protocol/gloria/gloria_radio.h"
+#include "flora_lib.h"
 
 
 extern radio_sleeping_t radio_sleeping;

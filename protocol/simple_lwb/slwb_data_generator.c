@@ -5,8 +5,7 @@
  *      Author: kelmicha
  */
 
-#include "cli/cJSON/cJSON.h"
-#include "protocol/simple_lwb/slwb_data_generator.h"
+#include "flora_lib.h"
 
 linked_list_t* data_streams = NULL;
 linked_list_t* data_queue = NULL;

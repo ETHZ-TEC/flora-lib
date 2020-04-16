@@ -129,8 +129,8 @@ typedef struct __attribute__((packed)) gmw_control {
  *                              post process to run before/after GMW rounds
  */
 typedef struct gmw_pre_post_processes {
-  TaskHandle_t post_process_current_round;
-  TaskHandle_t pre_process_next_round;
+  void* post_process_current_round;
+  void* pre_process_next_round;
 } gmw_pre_post_processes_t;
 /*---------------------------------------------------------------------------*/
 

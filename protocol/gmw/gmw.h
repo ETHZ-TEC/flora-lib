@@ -55,7 +55,6 @@
 #ifndef PROTOCOL_GMW_GMW_H_
 #define PROTOCOL_GMW_GMW_H_
 
-#include "main.h"
 
 /* the correct include order is important */
 #include "protocol/gmw/gmw-platform-conf.h"
@@ -171,11 +170,11 @@ uint8_t gmw_primitive;                              /* current primitive */
  * @param task_handle           Handle to the GMW task
  */
 void
-gmw_init(TaskHandle_t pre_gmw_proc,
-         TaskHandle_t post_gmw_proc,
+gmw_init(void* pre_gmw_proc,
+         void* post_gmw_proc,
          gmw_protocol_impl_t* host_protocol_impl,
          gmw_protocol_impl_t* src_protocol_impl,
-         TaskHandle_t task_handle);
+         void* task_handle);
 
 /**
  * @brief       Starts the GMW, function does not return (blocking call).

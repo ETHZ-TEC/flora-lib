@@ -5,8 +5,8 @@
  *      Author: kelmicha
  */
 
-#ifndef DOZER_UTILS_H_
-#define DOZER_UTILS_H_
+#ifndef PROTOCOL_DOZER_DOZER_UTILS_H_
+#define PROTOCOL_DOZER_DOZER_UTILS_H_
 
 // returns the absolute value of a 16 bit int as an uint16_t
 uint16_t abs16(int16_t value);
@@ -24,4 +24,4 @@ void print_ts(uint8_t prio);
 
 
 
-#endif /* DOZER_UTILS_H_ */
+#endif /* PROTOCOL_DOZER_DOZER_UTILS_H_ */

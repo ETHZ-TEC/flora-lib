@@ -5,7 +5,7 @@
  *      Author: rtrueb
  */
 
-#include "arch/arch.h"
+#include "flora_lib.h"
 
 /**
   * @brief  EXTI line detection callback.

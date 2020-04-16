@@ -8,7 +8,6 @@
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_TIMER_SYNC_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_TIMER_SYNC_H_
 
-#include "slwb.h"
 
 typedef struct {
   bool valid;

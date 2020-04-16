@@ -24,14 +24,8 @@
  *
  * \author    Markus Wegmann ( Technokrat )
  */
-#include <string.h>
-#include <stdio.h>
 
-#include "radio/semtech/boards/board.h"
-#include "radio/semtech/boards/sx126x-board.h"
-#include "radio/semtech/boards/utilities.h"
-#include "stm32l4xx_hal.h"
-//#include "cli/cli_print.h"
+#include "flora_lib.h"
 
 
 #ifndef DEVKIT

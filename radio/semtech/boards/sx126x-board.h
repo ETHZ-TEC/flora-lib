@@ -23,9 +23,6 @@
 #ifndef __SX126x_BOARD_H__
 #define __SX126x_BOARD_H__
 
-#include <stdint.h>
-#include <stdbool.h>
-#include "radio/semtech/sx126x/sx126x.h"
 
 /*!
  * \brief HW Reset of the radio

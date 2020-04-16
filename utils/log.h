@@ -9,10 +9,6 @@
 #define UTILS_LOG_H_
 
 
-/* include global config */
-#include "flora_lib.h"
-
-
 /* --- default CONFIG --- */
 
 #ifndef LOG_ENABLE

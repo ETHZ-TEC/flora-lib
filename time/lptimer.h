@@ -9,10 +9,6 @@
 #define TIME_LPTIMER_H_
 
 
-/* include lib and global defines */
-#include "flora_lib.h"
-
-
 #define LPTIMER_SECOND      32768       /* ticks per second */
 
 /* returns relative time (elapsed time since MCU start) in milliseconds */

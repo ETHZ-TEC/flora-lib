@@ -8,7 +8,6 @@
 #ifndef PROTOCOL_PROTOCOL_H_
 #define PROTOCOL_PROTOCOL_H_
 
-#include <stdint.h>
 
 typedef enum {
   RELAY = 0,

@@ -32,10 +32,6 @@
 #define PROTOCOL_ELWB_ELWB_H_
 
 
-/* include lib and global defines */
-#include "flora_lib.h"
-
-
 #ifndef ELWB_ENABLE
 #define ELWB_ENABLE               0
 #endif /* ELWB_ENABLE */

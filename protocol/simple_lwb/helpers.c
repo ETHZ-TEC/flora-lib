@@ -5,7 +5,7 @@
  *      Author: kelmicha
  */
 
-#include "protocol/simple_lwb/slwb.h"
+#include "flora_lib.h"
 
 
 protocol_config_t protocol_config;

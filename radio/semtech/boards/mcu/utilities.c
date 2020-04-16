@@ -20,9 +20,8 @@
  *
  * \author    Gregory Cristian ( Semtech )
  */
-#include "radio/semtech/boards/utilities.h"
-#include <stdlib.h>
-#include <stdio.h>
+
+#include "flora_lib.h"
 
 /*!
  * Redefinition of rand() and srand() standard C functions.

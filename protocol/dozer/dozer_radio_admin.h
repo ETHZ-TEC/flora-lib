@@ -5,10 +5,9 @@
  *      Author: kelmicha
  */
 
-#ifndef DOZER_RADIO_ADMIN_H_
-#define DOZER_RADIO_ADMIN_H_
+#ifndef PROTOCOL_DOZER_DOZER_RADIO_ADMIN_H_
+#define PROTOCOL_DOZER_DOZER_RADIO_ADMIN_H_
 
-#include "dozer_topology.h"
 
 enum {
   BROADCAST_ADDR = 0xFF,
@@ -73,4 +72,4 @@ uint8_t fill_buffer(uint8_t num_msgs_remaining);
 
 
 
-#endif /* DOZER_RADIO_ADMIN_H_ */
+#endif /* PROTOCOL_DOZER_DOZER_RADIO_ADMIN_H_ */

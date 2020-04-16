@@ -9,9 +9,6 @@
 #define SYSTEM_SYSTEM_BACKUP_REGISTERS_H_
 
 
-#include <stdint.h>
-
-
 #define SYSTEM_RTC_WPR ((uint32_t*) (RTC_BASE + 0x24U))
 #define SYSTEM_RTC_BKUPR0 ((uint32_t*) (RTC_BASE + 0x50U))
 

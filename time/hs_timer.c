@@ -5,7 +5,7 @@
  *      Author: marku
  */
 
-#include "arch/arch.h"
+#include "flora_lib.h"
 
 
 extern TIM_HandleTypeDef htim2;
@@ -33,7 +33,7 @@ bool hs_timer_initialized = false;
 static uint64_t timeout_offset = 0;
 
 
-#ifdef DOZER
+#if DOZER_ENABLE
 
 static void (*timeout2_callback)() = NULL;
 volatile static uint64_t timeout2_offset = 0;
@@ -57,7 +57,7 @@ static void (*data_gen_timer_callback)() = NULL;
 //static void (*rec_rx_timeout_watchdog_callback)() = NULL;
 //static void (*con_req_timer_callback)() = NULL;
 
-#endif
+#endif /* DOZER_ENABLE */
 
 
 void hs_timer_init()
@@ -306,9 +306,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
   }
 }
 
-void hs_timer_handle_overflow(void)
+void hs_timer_handle_overflow(TIM_HandleTypeDef *htim)
 {
-#ifdef DOZER
+#if DOZER_ENABLE
 
   if (hs_timer_initialized && htim->Instance == TIM2) {
     hs_timer_counter_extension++;
@@ -323,17 +323,17 @@ void hs_timer_handle_overflow(void)
   }
  #endif
 
-#else /* DOZER */
+#else /* DOZER_ENABLE */
 
   if (hs_timer_initialized) {
      hs_timer_counter_extension++;
   }
 
-#endif /* DOZER */
+#endif /* DOZER_ENABLE */
 }
 
 
-#ifndef DOZER
+#if !DOZER_ENABLE
 
 // TIM2 output compare interrupt handler
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
@@ -353,7 +353,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
         generic_callback();
       }
     }
-#else
+#else /* DOZER_ENABLE */
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
       if((hs_timer_scheduled_timestamp >> 32) == hs_timer_counter_extension) {
         hs_timer_scheduled = false;
@@ -369,7 +369,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
         generic_callback();
       }
     }
-#endif
+#endif /* DOZER_ENABLE */
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
       timeout_offset = 0;
@@ -382,13 +382,13 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 #endif
 
 
-#ifdef DOZER
+#if DOZER_ENABLE
 // TIM2 output compare interrupt handler
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if(htim->Instance == TIM2)
   {
-#ifndef DEVKIT
+ #ifndef DEVKIT
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
       if(schedule_callback) {
@@ -403,7 +403,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
         timeout2_callback();
       }
     }
-#else
+ #else /* DEVKIT */
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
       if((hs_timer_scheduled_timestamp >> 32) == hs_timer_counter_extension) {
         hs_timer_scheduled = false;
@@ -421,7 +421,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
         timeout2_callback();
       }
     }
-#endif
+ #endif /* DEVKIT */
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
       timeout_offset = 0;
@@ -432,10 +432,9 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 
 
   }
-#ifndef DEVKIT
+ #ifndef DEVKIT
   else if (htim->Instance == TIM15)
   {
-    cli_println("tim15");
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
       HAL_TIM_OC_Stop_IT(&htim15, TIM_CHANNEL_1);
 
@@ -451,7 +450,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
       }
     }
   }
-#else
+ #else /* DEVKIT */
   else if (htim->Instance == TIM5)
   {
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
@@ -487,15 +486,15 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 
 
   }
-#endif
+ #endif /* DEVKIT */
 }
 
-#endif
+#endif /* DOZER_ENABLE */
 
 
 
 
-#ifdef DOZER
+#if DOZER_ENABLE
 
 void hs_timer_set_timeout2_timestamp(uint32_t timestamp) {
 #ifndef DEVKIT
@@ -533,12 +532,6 @@ void hs_timer_timeout2_stop() {
 
 
 #ifndef DEVKIT
-void tim15_init()
-{
-  uint64_t timestamp = rtc_get_timestamp(false); // TODO: hs_timer ???
-  tim15_set_current_timestamp(timestamp);
-  tim15_initialized = true;
-}
 
 uint32_t tim15_get_current_timestamp() {
   uint32_t timestamp = htim15.Instance->CNT;
@@ -551,6 +544,13 @@ void tim15_set_current_timestamp(uint32_t timestamp) {
   htim15.Instance->CNT = timestamp & 0xffffU;
   counter_extension_tim15 = (timestamp >> 16);
   HAL_TIM_Base_Start_IT(&htim15);
+}
+
+void tim15_init()
+{
+  uint64_t timestamp = rtc_get_timestamp(false); // TODO: hs_timer ???
+  tim15_set_current_timestamp((uint32_t)timestamp);
+  tim15_initialized = true;
 }
 
 
@@ -598,11 +598,7 @@ void tim15_data_gen_timer_stop() {
 #else
 void tim5_init()
 {
-#ifdef DOZER
   uint64_t timestamp = rtc_get_timestamp(false);
-#else
-  uint64_t timestamp = rtc_get_timestamp();
-#endif
   tim5_set_current_timestamp(timestamp);
   tim5_initialized = true;
 }
@@ -709,4 +705,4 @@ void tim5_data_gen_timer_stop() {
 //}
 #endif
 
-#endif
+#endif /* DOZER_ENABLE */

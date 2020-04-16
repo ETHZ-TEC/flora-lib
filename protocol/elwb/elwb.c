@@ -28,7 +28,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "protocol/elwb/elwb.h"
+#include "flora_lib.h"
 
 #if ELWB_ENABLE
 /*---------------------------------------------------------------------------*/

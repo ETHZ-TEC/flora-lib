@@ -5,11 +5,9 @@
  *      Author: kelmicha
  */
 
-#ifndef CIRCULAR_QUEUE_H_
-#define CIRCULAR_QUEUE_H_
+#ifndef PROTOCOL_DOZER_CIRCULAR_QUEUE_H_
+#define PROTOCOL_DOZER_CIRCULAR_QUEUE_H_
 
-#include "dozer_messages.h"
-#include "dozer.h"
 
 #ifndef CQUEUEH_BUFFER_SIZE
   // TODO migrate to constants
@@ -92,4 +90,4 @@ bool cq_isClosed();
 
 
 
-#endif /* CIRCULAR_QUEUE_H_ */
+#endif /* PROTOCOL_DOZER_CIRCULAR_QUEUE_H_ */

@@ -8,8 +8,6 @@
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_SCHEDULER_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_SCHEDULER_H_
 
-#include "slwb.h"
-#include "slwb_constants.h"
 
 void slwb_initialize_scheduler();
 

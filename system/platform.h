@@ -5,10 +5,8 @@
  *      Author: marku
  */
 
-#ifndef ARCH_STM32HAL_PLATFORM_H_
-#define ARCH_STM32HAL_PLATFORM_H_
-
-#include "stm32l4xx_hal.h"
+#ifndef SYSTEM_PLATFORM_H_
+#define SYSTEM_PLATFORM_H_
 
 
 #ifndef DEVKIT
@@ -34,4 +32,4 @@ SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi1;
 #endif
 
-#endif /* PLATFORM_H_ */
+#endif /* SYSTEM_PLATFORM_H_ */

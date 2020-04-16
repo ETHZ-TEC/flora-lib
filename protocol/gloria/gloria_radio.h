@@ -8,8 +8,6 @@
 #ifndef PROTOCOL_GLORIA_GLORIA_RADIO_H_
 #define PROTOCOL_GLORIA_GLORIA_RADIO_H_
 
-#include "gloria.h"
-
 typedef enum {
   GLORIA_RADIO_TX,
   GLORIA_RADIO_ACK_TX,

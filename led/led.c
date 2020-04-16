@@ -5,8 +5,7 @@
  *      Author: marku
  */
 
-#include "arch/arch.h"
-
+#include "flora_lib.h"
 
 #ifndef DEVKIT
 #define LED_SYSTEM_GPIO_Port LED_GREEN_GPIO_Port

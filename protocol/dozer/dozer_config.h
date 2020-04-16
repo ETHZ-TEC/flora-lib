@@ -5,8 +5,8 @@
  *      Author: kelmicha
  */
 
-#ifndef DOZER_CONFIG_H_
-#define DOZER_CONFIG_H_
+#ifndef PROTOCOL_DOZER_DOZER_CONFIG_H_
+#define PROTOCOL_DOZER_DOZER_CONFIG_H_
 
 enum {
   INTERVAL_TIME_IN_MS = 10000,
@@ -36,4 +36,4 @@ enum {
 
 };
 
-#endif /* DOZER_DOZER_CONFIG_H_ */
+#endif /* PROTOCOL_DOZER_DOZER_DOZER_CONFIG_H_ */

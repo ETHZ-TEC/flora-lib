@@ -9,20 +9,17 @@
 #define TIME_HS_TIMER_H_
 
 
-#include "flora_lib.h"
-
-
 #define HS_TIMER_FREQUENCY      8000000   // High speed timer (htim2) cycles per second
 #define HS_TIMER_FREQUENCY_MS   8000      // High speed timer (htim2) cycles per ms
 #define HS_TIMER_FREQUENCY_US   8         // High speed timer (htim2) cycles per us
 
-#ifdef DOZER
+#if DOZER_ENABLE
 #define TIM5_TIMER_FREQUENCY    1000      // ms timer (htim5) cycles per second
 #define TIM5_TIMER_FREQUENCY_MS 1         // ms timer (htim5) cycles per ms
 #define TIM5_TIMER_FREQUENCY_US 0.001     // ms timer (htim5) cycles per us
-#endif
+#endif /* DOZER_ENABLE */
 
-#define TIMER_GUARD_TIME 800 // 100us; worst case time needed so set the timer correctly (schedule and generic)
+#define TIMER_GUARD_TIME        800       // 100us; worst case time needed so set the timer correctly (schedule and generic)
 
 void hs_timer_init();
 
@@ -57,12 +54,12 @@ void hs_timer_schedule_stop();
 void hs_timer_timeout_stop();
 void hs_timer_generic_stop();
 
-void hs_timer_handle_overflow(void);
+void hs_timer_handle_overflow(TIM_HandleTypeDef *htim);
 
 
 
 
-#ifdef DOZER
+#if DOZER_ENABLE
 
 void hs_timer_set_timeout2_timestamp(uint32_t timestamp);
 void hs_timer_timeout2_start(uint64_t compare_timestamp, void (*callback));
@@ -86,7 +83,7 @@ void tim15_set_data_gen_timer_timestamp(uint32_t timestamp);
 void tim15_data_gen_timer_start(uint64_t compare_timestamp, void (*callback));
 void tim15_data_gen_timer_stop();
 
-#else
+#else /* DEVKIT */
 
 void tim5_init();
 void tim5_set_current_timestamp(uint64_t timestamp);
@@ -111,8 +108,8 @@ void tim5_data_gen_timer_stop();
 //void tim5_con_req_timer_start(uint64_t compare_timestamp, void (*callback));
 //void tim5_con_req_timer_stop();
 
-#endif
-#endif
+#endif /* DEVKIT */
+#endif /* DOZER_ENABLE */
 
 
 #endif /* TIME_HS_TIMER_H_ */

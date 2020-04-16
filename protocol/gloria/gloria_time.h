@@ -10,9 +10,6 @@
 
 #define GLORIA_SYNC_SEARCH_SPACE 3
 
-#include "gloria.h"
-
-
 uint32_t gloria_calculate_slot_time(gloria_flood_t* flood, uint8_t index, uint8_t msg_size);
 uint32_t gloria_calculate_flood_time(gloria_flood_t* flood);
 

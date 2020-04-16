@@ -8,8 +8,6 @@
 #ifndef PROTOCOL_SIMPLE_LWB_SLWB_NETWORK_H_
 #define PROTOCOL_SIMPLE_LWB_SLWB_NETWORK_H_
 
-#include "slwb.h"
-
 
 typedef enum {
   CLUSTER_NODE,
