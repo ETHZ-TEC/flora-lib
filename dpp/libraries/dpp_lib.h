@@ -9,6 +9,16 @@
 #define __DPP_LIB_H__
 
 
+/* macros */
+
+#ifndef MIN
+#define MIN(x, y)     (((x) < (y)) ? (x) : (y))
+#endif
+#ifndef MAX
+#define MAX(x, y)     (((x) > (y)) ? (x) : (y))
+#endif
+
+
 /* function prototypes */
 
 uint16_t crc16(const uint8_t* data, uint8_t num_bytes, uint16_t init_value);

@@ -11,6 +11,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/* include all stm32hal related files */
+#include "stm32l4xx_hal.h"
+#include "arch/stm32hal/gpio.h"
+#include "arch/stm32hal/gpio_exti.h"
+#include "arch/stm32hal/misc.h"
+
+
 void system_boot();
 void system_init();
 void system_run();

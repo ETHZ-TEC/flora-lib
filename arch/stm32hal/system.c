@@ -12,12 +12,12 @@
 
 #include "radio/radio_helpers.h"
 #include "system/system.h"
-
-#include "system/system_backup_registers.h"
-#include "time/rtc.h"
-
 #include "system/system_boot.h"
+#include "system/system_backup_registers.h"
+
+#include "time/rtc.h"
 #include "time/hs_timer.h"
+
 #include "config/config.h"
 #include "led/led.h"
 #include "cli/uart.h"
@@ -28,7 +28,6 @@
 
 #include "radio/flora_radio.h"
 
-#include "stm32l4xx_hal.h"
 
 extern void SystemClock_Config(void);
 extern bool lwb_cad_sleep_flag;
@@ -66,29 +65,10 @@ void system_init()
 #endif /* CLI_ENABLE */
   protocol_init();
 
-#if !USE_SWO
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  #if BASEBOARD || !FLOCKLAB
-    HAL_GPIO_WritePin(COM_GPIO2_GPIO_Port, COM_GPIO2_Pin, GPIO_PIN_SET);
-    GPIO_InitStruct.Pin = COM_GPIO2_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP; // default set to pull-up because on BaseBoard COM_GPIO2 is connected to Colibri_EN
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  #else /* BASEBOARD || !FLOCKLAB */
-    // configure as input
-    HAL_GPIO_WritePin(COM_GPIO2_GPIO_Port, COM_GPIO2_Pin, GPIO_PIN_SET);
-    GPIO_InitStruct.Pin = COM_GPIO2_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP; // default set to pull-up because on BaseBoard COM_GPIO2 is connected to Colibri_EN
-    // GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  #endif /* BASEBOARD || !FLOCKLAB */
-  HAL_GPIO_Init(COM_GPIO2_GPIO_Port, &GPIO_InitStruct);
-#endif /* USE_SWO */
-
+  leds_init();
+  gpio_init();
 #if FLOCKLAB
   flocklab_init();
-#else /* FLOCKLAB */
-  leds_init();
 #endif /* FLOCKLAB */
 
   srand((unsigned int) hs_timer_get_current_timestamp());

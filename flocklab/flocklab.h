@@ -8,6 +8,10 @@
 #ifndef FLOCKLAB_FLOCKLAB_H_
 #define FLOCKLAB_FLOCKLAB_H_
 
+#ifndef FLOCKLAB
+#define FLOCKLAB      0
+#endif /* FLOCKLAB */
+
 #if FLOCKLAB
 
 #include <stdint.h>
