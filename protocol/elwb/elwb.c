@@ -31,7 +31,8 @@
 #include "flora_lib.h"
 
 #if ELWB_ENABLE
-/*---------------------------------------------------------------------------*/
+
+
 /* internal sync state of the eLWB */
 typedef enum {
   BOOTSTRAP = 0,
@@ -40,13 +41,15 @@ typedef enum {
   UNSYNCED2,
   NUM_OF_SYNC_STATES
 } elwb_syncstate_t;
-/*---------------------------------------------------------------------------*/
+
+
 typedef enum {
   EVT_SCHED_RCVD = 0,
   EVT_SCHED_MISSED,
   NUM_OF_SYNC_EVENTS
 } sync_event_t;
-/*---------------------------------------------------------------------------*/
+
+
 static const 
 elwb_syncstate_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] = 
 {/* STATES:                                         EVENTS:         */
@@ -57,12 +60,14 @@ elwb_syncstate_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] =
 static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
   "BOOTSTRAP", "SYN", "USYN", "USYN2"
 };
-/*---------------------------------------------------------------------------*/
+
+
 #ifndef ELWB_RESUMED
   #define ELWB_RESUMED()
   #define ELWB_SUSPENDED()
 #endif /* ELWB_RESUMED */
-/*---------------------------------------------------------------------------*/
+
+
 #define ELWB_SEND_SCHED() \
 {\
   ELWB_GLOSSY_START(NODE_ID, (uint8_t *)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
@@ -87,7 +92,8 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
   ELWB_WAIT_UNTIL(lptimer_get() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
   ELWB_GLOSSY_STOP();\
 }
-/*---------------------------------------------------------------------------*/
+
+
 #define ELWB_WAIT_UNTIL(time) \
 {\
   ELWB_TIMER_SET(time, elwb_notify);\
@@ -95,15 +101,15 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
   ulTaskNotifyTake(pdTRUE, portMAX_DELAY);\
   ELWB_RESUMED();\
 }
-/*---------------------------------------------------------------------------*/
+
+
 static void*              post_task;
 static void*              pre_task;
 static elwb_schedule_t    schedule;
 static elwb_stats_t       stats;
 static elwb_time_t        last_synced;
 static elwb_time_t        start_of_next_round;
-static uint32_t           global_time;
-static uint32_t           t_preprocess;
+static elwb_time_t        network_time;
 static uint32_t           t_slot;
 static uint32_t           t_slot_ofs;
 static void*              task_handle = 0;
@@ -111,7 +117,18 @@ static void*              rx_queue = 0;
 static void*              tx_queue = 0;
 static uint16_t           payload[(ELWB_CONF_MAX_PKT_LEN + 1) / 2];
 static uint32_t           payload_len = 0;
-/*---------------------------------------------------------------------------*/
+static bool               call_preprocess = false;
+
+
+/* private scheduler functions */
+uint32_t elwb_sched_init(elwb_schedule_t* sched);
+void     elwb_sched_process_req(uint16_t id,
+                                uint32_t n_pkts);
+uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
+                            uint32_t reserve_slots_host);
+bool     elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots);
+
+
 /*
  * This function can be called from an interrupt context to poll the GMW task.
  */
@@ -122,7 +139,8 @@ void elwb_notify(void)
     xTaskNotifyFromISR(task_handle, 0, eNoAction, 0);
   }
 }
-/*---------------------------------------------------------------------------*/
+
+
 #if ELWB_CONF_DATA_ACK
 void elwb_requeue_pkt(uint32_t pkt_addr)
 {
@@ -142,26 +160,31 @@ void elwb_requeue_pkt(uint32_t pkt_addr)
   }
 }
 #endif /* ELWB_CONF_DATA_ACK */
-/*---------------------------------------------------------------------------*/
+
+
 const elwb_stats_t * const elwb_get_stats(void)
 {
   return &stats;
 }
-/*---------------------------------------------------------------------------*/
-uint32_t elwb_get_time(elwb_time_t* reception_time)
+
+
+void elwb_get_time(elwb_time_t* time, elwb_time_t* rx_timestamp)
 {
-  if (reception_time) {
-    *reception_time = last_synced;
+  if (network_time) {
+    *time = network_time;
   }
-  return global_time;
+  if (rx_timestamp) {
+    *rx_timestamp = last_synced;
+  }
 }
-/*---------------------------------------------------------------------------*/
+
+
 elwb_time_t elwb_get_timestamp(void)
 {
-  return (elwb_time_t)global_time * 1000000 +
-         (ELWB_RTIMER_NOW() - last_synced) * 1000000 / ELWB_TIMER_SECOND;
+  return network_time + (ELWB_RTIMER_NOW() - last_synced) * 1000000 / ELWB_TIMER_SECOND;
 }
-/*---------------------------------------------------------------------------*/
+
+
 /**
  * @brief thread of the host node
  */
@@ -183,18 +206,18 @@ void elwb_host_run(void)
   while (1) {
   
   #if ELWB_CONF_T_PREPROCESS
-    if (t_preprocess) {
+    if (call_preprocess) {
       if (pre_task) {
         xTaskNotify(pre_task, 0, eNoAction);
       }
-      start_of_next_round += t_preprocess;
+      start_of_next_round += ELWB_CONF_T_PREPROCESS;
       ELWB_WAIT_UNTIL(start_of_next_round);
-      t_preprocess = 0;
+      call_preprocess = false;
     }
   #endif /* ELWB_CONF_T_PREPROCESS */
-      
+
     /* --- COMMUNICATION ROUND STARTS --- */
-        
+
     t_start = start_of_next_round;
 
     /* --- SEND SCHEDULE --- */
@@ -202,17 +225,8 @@ void elwb_host_run(void)
    
     if (ELWB_SCHED_IS_FIRST(&schedule)) {
       /* sync point */
-      global_time = schedule.time;
-      last_synced = t_start;
-      /* collect some stats */
-      /*  TODO
-      stats.glossy_snr     = glossy_get_rssi();
-      stats.relay_cnt      = glossy_get_relay_cnt();
-      stats.glossy_t_to_rx = glossy_get_t_to_first_rx();
-      stats.glossy_t_flood = glossy_get_flood_duration();
-      stats.glossy_n_rx    = glossy_get_n_rx();
-      stats.glossy_n_tx    = glossy_get_n_tx();
-      */
+      network_time = schedule.time;
+      last_synced  = t_start;
     }
     t_slot_ofs = (ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP);
     
@@ -235,8 +249,8 @@ void elwb_host_run(void)
       } else {
         t_slot = ELWB_CONF_T_CONT;
       }
-      static uint16_t i;
-      for(i = 0; i < ELWB_SCHED_N_SLOTS(&schedule); i++) {
+      uint16_t i;
+      for (i = 0; i < ELWB_SCHED_N_SLOTS(&schedule); i++) {
         /* is this our slot? Note: slots assigned to node ID 0 always belong 
          * to the host */
         if (schedule.slot[i] == 0 || schedule.slot[i] == NODE_ID) {
@@ -276,8 +290,6 @@ void elwb_host_run(void)
               } else {
                 LOG_WARNING_CONST("RX queue full, message dropped");
               }
-
-              /* update statistics */
               stats.pkt_rcv++;
             }
           } else {
@@ -355,20 +367,19 @@ void elwb_host_run(void)
      * order they were started/created) */
     if (ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
       /* print out some stats */
-      LOG_INFO("%lu T=%lus n=%u rcv=%u fwd=%u snd=%u rssi=%ddBm",
-               global_time,
+      LOG_INFO("%llu | period: %lus, slots: %u, rcvd: %u, forwarded: %u, sent: %u",
+               network_time,
                elwb_sched_get_period(),
                ELWB_SCHED_N_SLOTS(&schedule),
                stats.pkt_rcv,
                stats.pkt_fwd,
-               stats.pkt_snd,
-               stats.glossy_snr);
+               stats.pkt_snd);
 
       if (post_task) {
         xTaskNotify(post_task, 0, eNoAction);
       }
     #if ELWB_CONF_T_PREPROCESS
-      t_preprocess = ELWB_CONF_T_PREPROCESS;
+      call_preprocess = true;
     #endif /* ELWB_CONF_T_PREPROCESS */
     }
     
@@ -377,15 +388,18 @@ void elwb_host_run(void)
     schedule_len = elwb_sched_compute(&schedule, ELWB_QUEUE_SIZE(tx_queue));
     
     /* suspend this task and wait for the next round */
-    start_of_next_round = t_start + curr_period * ELWB_TIMER_SECOND /
-                          ELWB_PERIOD_SCALE - t_preprocess;
-    if (start_of_next_round == 0) {
-      LOG_ERROR_CONST("next wakeup is 0");
+    start_of_next_round = t_start + (uint32_t)curr_period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE;
+    if (call_preprocess) {
+      start_of_next_round -= ELWB_CONF_T_PREPROCESS;
+    }
+    if (lptimer_now() > start_of_next_round) {
+      LOG_ERROR_CONST("wakeup time is in the past");
     }
     ELWB_WAIT_UNTIL(start_of_next_round);
   }
 }
-/*---------------------------------------------------------------------------*/
+
+
 /**
  * @brief source node
  */
@@ -412,13 +426,13 @@ void elwb_src_run(void)
   while (1) {
     
   #if ELWB_CONF_T_PREPROCESS
-    if (t_preprocess) {
+    if (call_preprocess) {
       if (pre_task) {
         xTaskNotify(pre_task, 0, eNoAction);
       }
-      start_of_next_round += t_preprocess;
+      start_of_next_round += ELWB_CONF_T_PREPROCESS;
       ELWB_WAIT_UNTIL(start_of_next_round);
-      t_preprocess = 0;
+      call_preprocess = false;
     }
   #endif /* ELWB_CONF_T_PREPROCESS */
     
@@ -484,36 +498,26 @@ void elwb_src_run(void)
       t_ref_hf = ELWB_GLOSSY_GET_T_REF_HF() - ELWB_T_REF_OFS * RTIMER_HF_LF_RATIO;
   #endif /* ELWB_CONF_CONT_USE_HFTIMER */
       if (ELWB_SCHED_IS_FIRST(&schedule)) {
-        /* collect some stats of the schedule flood */
-        /* TODO
-        stats.relay_cnt      = glossy_get_relay_cnt();
-        stats.glossy_snr     = glossy_get_snr();
-        stats.glossy_t_to_rx = glossy_get_t_to_first_rx();
-        stats.glossy_t_flood = glossy_get_flood_duration();
-        stats.glossy_n_rx    = glossy_get_n_rx();
-        stats.glossy_n_tx    = glossy_get_n_tx();
-        */
-        /* do some basic drift estimation: measured elapsed time minus
-         * effective elapsed time (given by host) */
-        uint16_t elapsed_time = (uint16_t)(schedule.time - global_time);
-        int16_t drift = (int16_t)((int32_t)(t_ref - last_synced) - 
-                                  (int32_t)(elapsed_time * ELWB_TIMER_SECOND));
+        /* do some basic drift estimation:
+         * measured elapsed time minus effective elapsed time (given by host) */
+        uint32_t elapsed_time = (schedule.time - network_time);
+        int32_t drift = ((int32_t)(t_ref - last_synced) - (int32_t)(elapsed_time * ELWB_TIMER_SECOND));
         /* now scale the difference from ticks to ppm */
-        drift = drift * (int16_t)(1000000 / ELWB_TIMER_SECOND) / elapsed_time;
+        drift = drift * (int32_t)(1000000 / ELWB_TIMER_SECOND) / elapsed_time;
         if (drift < ELWB_CONF_MAX_CLOCK_DRIFT &&
            drift > -ELWB_CONF_MAX_CLOCK_DRIFT) {
           stats.drift = (stats.drift + drift) / 2;
         }
         /* only update the timestamp during the idle period */
-        period_idle = schedule.period;
-        global_time = schedule.time;
-        last_synced = t_ref;
+        period_idle  = schedule.period;
+        network_time = schedule.time;
+        last_synced  = t_ref;
       }
     } else {
       /* update the sync state machine */
       sync_state = next_state[EVT_SCHED_MISSED][sync_state];
       if (sync_state == BOOTSTRAP) {
-        t_preprocess = 0;
+        call_preprocess = false;
         continue;
       }
       stats.unsynced_cnt++;
@@ -722,9 +726,9 @@ void elwb_src_run(void)
         ELWB_WAIT_UNTIL(t_ref + t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
         if (ELWB_GLOSSY_RX_CNT()) {
-          if (payload[0] != 0) {               /* zero means no change */
+          if (payload[0] != 0) {            /* zero means no change */
             schedule.period  = payload[0];  /* extract updated period */
-            schedule.n_slots = 0;                                  /* clear! */
+            schedule.n_slots = 0;           /* clear! */
           } /* else: all good, no need to change anything */
         } else {
           LOG_WARNING_CONST("2nd schedule missed");
@@ -732,24 +736,23 @@ void elwb_src_run(void)
       }
     }
     
-    /* --- COMMUNICATION ROUND ENDS --- */    
+    /* --- COMMUNICATION ROUND ENDS --- */
+
     /* time for other computations */
     
     if (ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
       /* print out some stats (note: takes ~2ms to compose this string!) */
-      LOG_INFO("%s %lu T=%u n=%u rcv=%u fwd=%u snd=%u ack=%u h=%u b=%u u=%u snr=%d dr=%d",
+      LOG_INFO("%s %llu | period: %us, slots: %u, rcvd: %u, forwarded: %u, sent: %u, acks: %u, usyn: %u, boot: %u, drift: %d",
                elwb_syncstate_to_string[sync_state],
                schedule.time,
-               schedule.period * (1000 / ELWB_PERIOD_SCALE),
+               schedule.period / ELWB_PERIOD_SCALE,
                ELWB_SCHED_N_SLOTS(&schedule),
                stats.pkt_rcv,
                stats.pkt_fwd,
                stats.pkt_snd,
                stats.pkt_ack,
-               stats.relay_cnt,
-               stats.bootstrap_cnt,
                stats.unsynced_cnt,
-               stats.glossy_snr,
+               stats.bootstrap_cnt,
                stats.drift);
 
       /* poll the post process */
@@ -757,7 +760,7 @@ void elwb_src_run(void)
         xTaskNotify(post_task, 0, eNoAction);
       }
     #if ELWB_CONF_T_PREPROCESS
-      t_preprocess = ELWB_CONF_T_PREPROCESS;
+      call_preprocess = true;
     #endif /* ELWB_CONF_T_PREPROCESS */
     }
     /* erase the schedule (slot allocations only) */
@@ -766,13 +769,19 @@ void elwb_src_run(void)
     
     /* schedule the wakeup for the next round */
     start_of_next_round = t_ref +
-                    schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE -
-                    ELWB_CONF_T_GUARD_ROUND -
-                    t_preprocess;
+                          (uint32_t)schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE -
+                          ELWB_CONF_T_GUARD_ROUND;
+    if (call_preprocess) {
+      start_of_next_round -= ELWB_CONF_T_PREPROCESS;
+    }
+    if (lptimer_now() > start_of_next_round) {
+      LOG_ERROR_CONST("wakeup time is in the past");
+    }
     ELWB_WAIT_UNTIL(start_of_next_round);
   }
 }
-/*---------------------------------------------------------------------------*/
+
+
 void elwb_start(void* elwb_task,
                 void* pre_elwb_task,
                 void* post_elwb_task,
@@ -812,6 +821,5 @@ void elwb_start(void* elwb_task,
     elwb_src_run();
   }
 }
-/*---------------------------------------------------------------------------*/
 
 #endif /* ELWB_ENABLE */

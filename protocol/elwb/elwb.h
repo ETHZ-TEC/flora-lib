@@ -192,14 +192,14 @@
 /* --------------- END OF CONFIG, do not change values below --------------- */
 
 
-#define ELWB_PERIOD_SCALE         100
+#define ELWB_PERIOD_SCALE         100     // 1/scale = granularity (10ms -> allows for periods between 10 and 655350ms)
 #define ELWB_REQ_PKT_LEN          2
 #define ELWB_2ND_SCHED_LEN        2
 #define ELWB_SCHED_CRC_LEN        (ELWB_CONF_SCHED_CRC ? 2 : 0)
 #define ELWB_SCHED_PERIOD_MAX     (65535 / ELWB_PERIOD_SCALE)
 
 #ifndef ELWB_T_REF_OFS
-#define ELWB_T_REF_OFS            0
+#define ELWB_T_REF_OFS            (ELWB_TIMER_SECOND / 1000)
 #endif /* ELWB_T_REF_OFS */
 
 #define ELWB_T_HOP(len)           ((ELWB_TIMER_SECOND * \
@@ -291,7 +291,6 @@
 #define ELWB_HFTIMER_SCHEDULE           //TODO
 
 /* glossy-style communication primitive */
-#if 1 /* with radio */
 #define ELWB_GLOSSY_START(initiator, data, data_len, n_tx, is_schedule) \
                                         gloria_start(initiator, data, data_len, n_tx, is_schedule)
 #define ELWB_GLOSSY_STOP()              gloria_stop()
@@ -301,16 +300,6 @@
 #define ELWB_GLOSSY_GET_T_REF()         gloria_get_t_ref()
 #define ELWB_GLOSSY_GET_T_REF_HF()      0  //TODO
 #define ELWB_GLOSSY_IS_T_REF_UPDATED()  gloria_is_t_ref_updated()
-#else /* without radio */
-#define ELWB_GLOSSY_START(initiator, data, data_len, n_tx, is_schedule)
-#define ELWB_GLOSSY_STOP()
-#define ELWB_GLOSSY_GET_PAYLOAD_LEN()   0
-#define ELWB_GLOSSY_SIGNAL_DETECTED()   0
-#define ELWB_GLOSSY_RX_CNT()            0
-#define ELWB_GLOSSY_GET_T_REF()         0
-#define ELWB_GLOSSY_GET_T_REF_HF()      0
-#define ELWB_GLOSSY_IS_T_REF_UPDATED()  0
-#endif
 
 /* message passing */
 #define ELWB_QUEUE_SIZE(handle)         uxQueueMessagesWaiting(handle)          /* polls the queue size (# elements in queue) */
@@ -326,36 +315,29 @@
 
 /* structs and typedefs */
 
-#define ELWB_STATS_LEN  26
 typedef struct {
-  uint8_t  bootstrap_cnt;  /* #times bootstrap state was entered */
-  uint8_t  unsynced_cnt;   /* #times a schedule was missed */
-  uint8_t  sleep_cnt;   /* #times node went into LPM due to rf silence */
-  uint8_t  relay_cnt;   /* relay counter of first received packet */
-  int16_t  glossy_snr;  /* SNR measured in last schedule slot */
-  uint16_t glossy_t_to_rx; /* time from glossy_start() to packet start in ms */
-  uint16_t glossy_t_flood; /* flood duration in ms */
-  uint8_t  glossy_n_tx; /* # packet retransmissions */
-  uint8_t  glossy_n_rx; /* # packet receptions */
-  int16_t  drift;       /* current estimated drift in ppm */
-  uint16_t pkt_rcv;     /* total number of received packets */
-  uint16_t pkt_snd;     /* total number of sent data packets */
-  uint16_t pkt_ack;     /* not acknowledged data packets */
-  uint16_t pkt_fwd;     /* packets forwarded to the App task */
-  uint16_t rxbuf_drop;  /* packets dropped due to input buffer full */
-  uint16_t txbuf_drop;  /* packets dropped due to output buffer full */
-  uint16_t load;        /* bandwidth utilization */
+  uint16_t bootstrap_cnt; /* #times bootstrap state was entered */
+  uint16_t unsynced_cnt;  /* #times a schedule was missed */
+  uint16_t sleep_cnt;     /* #times node went into LPM due to rf silence */
+  int16_t  drift;         /* current estimated drift in ppm */
+  uint16_t pkt_rcv;       /* total number of received packets */
+  uint16_t pkt_snd;       /* total number of sent data packets */
+  uint16_t pkt_ack;       /* not acknowledged data packets */
+  uint16_t pkt_fwd;       /* packets forwarded to the App task */
+  uint16_t rxbuf_drop;    /* packets dropped due to input buffer full */
+  uint16_t txbuf_drop;    /* packets dropped due to output buffer full */
+  uint16_t load;          /* bandwidth utilization */
 } elwb_stats_t;
 
-#define ELWB_SCHED_HDR_LEN   8
+#define ELWB_SCHED_HDR_LEN   12
 #define ELWB_SCHED_MAX_SLOTS ((ELWB_CONF_MAX_PKT_LEN - ELWB_SCHED_HDR_LEN - \
                                ELWB_SCHED_CRC_LEN) / 2)
 /* note: ELWB_SCHED_MAX_SLOTS != ELWB_CONF_MAX_DATA_SLOTS */
 typedef struct {
-  uint32_t time;
+  uint64_t time;        /* current time in microseconds */
   uint16_t period;
-    /* store num. of data slots and last two bits to indicate whether there is
-    * a contention or an s-ack slot in this round */
+  /* store num. of data slots and last two bits to indicate whether there is
+   * a contention or an s-ack slot in this round */
   uint16_t n_slots;
   uint16_t slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN];
 } elwb_schedule_t;
@@ -378,22 +360,15 @@ void     elwb_start(void* elwb_task,
                     void* post_elwb_task,
                     void* in_queue_handle,
                     void* out_queue_handle);    /* queue data type must be dpp_message_t */
-uint32_t elwb_get_time(elwb_time_t* reception_time);
+void        elwb_get_time(elwb_time_t* time, elwb_time_t* rx_timestamp);
 elwb_time_t elwb_get_timestamp(void);
 const elwb_stats_t * const elwb_get_stats(void);
 
 /* scheduler functions */
-uint32_t elwb_sched_init(elwb_schedule_t* sched);
-void     elwb_sched_register_nodes(void);
-void     elwb_sched_process_req(uint16_t id,
-                                uint32_t n_pkts);
-uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
-                            uint32_t reserve_slots_host);
-bool     elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots);
 uint32_t elwb_sched_get_period(void);
 void     elwb_sched_set_period(uint32_t p);
-uint32_t elwb_sched_get_time(void);
-void     elwb_sched_set_time(uint32_t new_time);
+elwb_time_t elwb_sched_get_time(void);
+void     elwb_sched_set_time(elwb_time_t new_time);
 
 /*---------------------------------------------------------------------------*/
 

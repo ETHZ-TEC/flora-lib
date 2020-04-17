@@ -61,7 +61,7 @@
                                TICKS_TO_SCHEDUNITS(2 * \
                                 ELWB_CONF_SCHED_COMP_TIME))
 
-/*---------------------------------------------------------------------------*/
+
 /**
  * @brief struct to store information about active nodes on the host
  */
@@ -70,24 +70,27 @@ typedef struct elwb_node_info {
   uint16_t               id;        /* node ID */
   uint16_t               n_pkts;    /* bandwidth demand in number of packets */
   /* note: use 16 bits due to alignment */
-  uint32_t               t_last_req;/* time of the last request */
+  uint32_t               t_last_req; /* time of the last request, in seconds */
 } elwb_node_list_t;
-/*---------------------------------------------------------------------------*/
+
+
 typedef enum {
   ELWB_SCHED_STATE_IDLE = 0,
   ELWB_SCHED_STATE_CONT_DET,
   ELWB_SCHED_STATE_REQ,
   ELWB_SCHED_STATE_DATA,
 } elwb_sched_state_t;
-/*---------------------------------------------------------------------------*/
-static uint64_t            elwb_time;                         /* global time */
+
+
+static elwb_time_t         elwb_time;         /* global time in microseconds */
 static uint32_t            period;          /* base (idle) period in seconds */
 static uint32_t            n_nodes;                        /* # active nodes */
 static elwb_sched_state_t  sched_state;
 static elwb_node_list_t    node_list[ELWB_CONF_MAX_N_NODES];  /* actual list */
 static elwb_node_list_t*   head;                  /* head of the linked list */
 static uint16_t            slots_buffer[ELWB_CONF_MAX_DATA_SLOTS];
-/*---------------------------------------------------------------------------*/
+
+
 /* the number of bits for depth and length are stored in the thirds slot;
  * 5 bits are reserved to store the number of bits needed for the depth 
  * (i.e. 0 to 31 bits) */
@@ -100,7 +103,8 @@ static uint16_t            slots_buffer[ELWB_CONF_MAX_DATA_SLOTS];
 #ifndef MIN
 #define MIN(x, y)          ((x) < (y) ? (x) : (y))
 #endif /* MIN */
-/*---------------------------------------------------------------------------*/
+
+
 static inline uint32_t get_min_bits(uint32_t a)
 {
   uint32_t i;
@@ -111,7 +115,8 @@ static inline uint32_t get_min_bits(uint32_t a)
   }
   return i + 1;
 }
-/*---------------------------------------------------------------------------*/
+
+
 uint32_t elwb_sched_compress(uint8_t* compressed_data, uint32_t n_slots)
 {
   if (!compressed_data || n_slots > ELWB_CONF_MAX_DATA_SLOTS) {
@@ -187,7 +192,8 @@ uint32_t elwb_sched_compress(uint8_t* compressed_data, uint32_t n_slots)
   /* return the size of the compressed schedule */
   return 3 + (((n_runs * run_bits) + 7) >> 3);
 }
-/*---------------------------------------------------------------------------*/
+
+
 bool elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots)
 {
   if (!compressed_data || n_slots > ELWB_SCHED_MAX_SLOTS) {
@@ -233,7 +239,8 @@ bool elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots)
   
   return true;
 }
-/*---------------------------------------------------------------------------*/
+
+
 void elwb_sched_add_node(uint16_t id)
 {
   if (id == 0) {
@@ -260,7 +267,7 @@ void elwb_sched_add_node(uint16_t id)
   }
   node->id         = id;
   node->n_pkts     = 0;
-  node->t_last_req = (elwb_time / ELWB_PERIOD_SCALE);
+  node->t_last_req = elwb_time / 1000000;
   /* insert the node into the list, ordered by node id */
   if (!head || id < head->id) {
     node->next = head;
@@ -280,7 +287,8 @@ void elwb_sched_add_node(uint16_t id)
   LOG_INFO("node %u registered", id);
   EVENT_INFO(EVENT_CC430_NODE_ADDED, id);
 }
-/*---------------------------------------------------------------------------*/
+
+
 void elwb_sched_remove_node(elwb_node_list_t* node)
 {
   while (node == 0 || n_nodes == 0) {
@@ -304,7 +312,8 @@ void elwb_sched_remove_node(elwb_node_list_t* node)
     }
   }
 }
-/*---------------------------------------------------------------------------*/
+
+
 void elwb_sched_process_req(uint16_t id,
                             uint32_t n_pkts)
 {
@@ -316,14 +325,15 @@ void elwb_sched_process_req(uint16_t id,
   for (node = head; node != 0; node = node->next) {
     if (id == node->id) {
       node->n_pkts = MIN(n_pkts, ELWB_CONF_MAX_DATA_SLOTS);
-      node->t_last_req = (elwb_time / ELWB_PERIOD_SCALE);
+      node->t_last_req = elwb_time / 1000000;
       return;
     }
   }
   /* does not exist: add the node */
   elwb_sched_add_node(id);
 }
-/*---------------------------------------------------------------------------*/
+
+
 uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
                             uint32_t reserve_slots_host)
 {
@@ -346,7 +356,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     return 2;                            /* return value doesn't matter here */
   }
   /* use the period of the last round to update the network time */
-  elwb_time += sched->period;
+  elwb_time += sched->period * (1000000 / ELWB_PERIOD_SCALE);
   
   if (sched_state == ELWB_SCHED_STATE_CONT_DET) {
     /* contention has been detected, now schedule request slots for all 
@@ -449,8 +459,8 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     memset(sched->slot, 0, sizeof(sched->slot));        /* clear the content */
     /* reset all requests (set n_pkts to 0) */
     elwb_node_list_t* curr_node = head;
-    uint32_t time_s = (elwb_time / ELWB_PERIOD_SCALE);
-    uint32_t print_cnt = snprintf(print_buffer, ELWB_SCHED_PRINT_BUFFER_SIZE, "registered nodes: ");
+    uint32_t time_s = elwb_time / 1000000;
+    uint32_t print_cnt = snprintf(print_buffer, ELWB_SCHED_PRINT_BUFFER_SIZE, "registered node IDs: ");
     while (curr_node != 0) {
       /* remove old nodes */
       if ((time_s - curr_node->t_last_req) > ELWB_CONF_SCHED_NODE_TIMEOUT) {
@@ -495,7 +505,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
   }
   
   /* increment the timestamp */
-  sched->time = elwb_time / ELWB_PERIOD_SCALE;
+  sched->time = elwb_time;
   
   uint32_t compressed_size;
 #if ELWB_CONF_SCHED_COMPRESS
@@ -525,7 +535,8 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
 
   return compressed_size;
 }
-/*---------------------------------------------------------------------------*/
+
+
 uint32_t elwb_sched_init(elwb_schedule_t* sched)
 {
   LOG_INFO("rounds [ms]: T=%u000 idle=%lu req=%lu data=%lu sum=%lu",
@@ -556,19 +567,6 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   ELWB_SCHED_SET_CONT_SLOT(sched);              /* include a contention slot */
   ELWB_SCHED_SET_STATE_IDLE(sched);
 
-  elwb_sched_register_nodes();
-
-#if ELWB_CONF_SCHED_CRC
-  uint16_t crc = crc16((uint8_t*)sched, ELWB_SCHED_HDR_LEN, 0);
-  memcpy((uint8_t*)sched + ELWB_SCHED_HDR_LEN, &crc, 2);
-  return ELWB_SCHED_HDR_LEN + 2;   /* empty schedule, no slots allocated yet */
-#else
-  return ELWB_SCHED_HDR_LEN;       /* empty schedule, no slots allocated yet */
-#endif /* ELWB_CONF_SCHED_CRC */
-}
-/*---------------------------------------------------------------------------*/
-void elwb_sched_register_nodes(void)
-{
 #ifdef ELWB_CONF_SCHED_NODE_LIST
   const uint16_t node_ids[] = { ELWB_CONF_SCHED_NODE_LIST };
   uint32_t cnt = sizeof(node_ids) / 2;
@@ -578,31 +576,43 @@ void elwb_sched_register_nodes(void)
     elwb_sched_add_node(node_ids[i]);
   }
 #endif /* ELWB_CONF_SCHED_NODE_LIST */
+
+#if ELWB_CONF_SCHED_CRC
+  uint16_t crc = crc16((uint8_t*)sched, ELWB_SCHED_HDR_LEN, 0);
+  memcpy((uint8_t*)sched + ELWB_SCHED_HDR_LEN, &crc, 2);
+  return ELWB_SCHED_HDR_LEN + 2;   /* empty schedule, no slots allocated yet */
+#else
+  return ELWB_SCHED_HDR_LEN;       /* empty schedule, no slots allocated yet */
+#endif /* ELWB_CONF_SCHED_CRC */
 }
-/*---------------------------------------------------------------------------*/
+
+
 uint32_t elwb_sched_get_period(void)
 {
   /* period in seconds */
   return period / ELWB_PERIOD_SCALE;
 }
-/*---------------------------------------------------------------------------*/
+
+
 void elwb_sched_set_period(uint32_t p)
 {
   if (p >= ELWB_CONF_SCHED_PERIOD_MIN && p <= ELWB_SCHED_PERIOD_MAX) {
     period = (uint16_t)((uint32_t)p * ELWB_PERIOD_SCALE);
   }
 }
-/*---------------------------------------------------------------------------*/
-uint32_t elwb_sched_get_time(void)
+
+
+elwb_time_t elwb_sched_get_time(void)
 {
   /* network time in seconds */
-  return (elwb_time / ELWB_PERIOD_SCALE);
+  return elwb_time;
 }
-/*---------------------------------------------------------------------------*/
-void elwb_sched_set_time(uint32_t new_time)
+
+
+void elwb_sched_set_time(elwb_time_t new_time)
 {
-  elwb_time = (uint64_t)new_time * ELWB_PERIOD_SCALE;
+  elwb_time = new_time;
 }
-/*---------------------------------------------------------------------------*/
+
 
 #endif /* ELWB_ENABLE */

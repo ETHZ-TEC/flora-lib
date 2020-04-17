@@ -58,3 +58,26 @@ void delay_us(volatile uint32_t us)
     us--;
   }
 }
+
+bool swo_println(const char* str)
+{
+  while (*str)
+  {
+    ITM_SendChar(*str);
+    str++;
+  }
+  ITM_SendChar('\r');
+  ITM_SendChar('\n');
+
+  return true;
+}
+
+bool swo_print(const char* str)
+{
+  while (*str)
+  {
+    ITM_SendChar(*str);
+    str++;
+  }
+  return true;
+}

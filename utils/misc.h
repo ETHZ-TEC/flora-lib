@@ -15,5 +15,7 @@
 void delay(volatile uint32_t loop_passes);
 void delay_us(volatile uint32_t us);
 
+bool swo_println(const char* str);
+bool swo_print(const char* str);
 
 #endif /* UTILS_MISC_H_ */
