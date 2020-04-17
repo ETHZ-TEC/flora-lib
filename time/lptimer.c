@@ -17,11 +17,12 @@
 
 
 extern LPTIM_HandleTypeDef hlptim1;
+extern TIM_HandleTypeDef   htim2;
 
-static uint32_t         lptimer_ext = 0;
-static lptimer_cb_func_t lptimer_cb = 0;
-static uint64_t         lptimer_exp = 0;             /* next expiration time */
-static LPTIM_HandleTypeDef* const hrtim = &hlptim1;    /* immutable pointer */
+static uint32_t                   lptimer_ext = 0;           /* software extension */
+static lptimer_cb_func_t          lptimer_cb  = 0;           /* callback function */
+static uint64_t                   lptimer_exp = 0;           /* next expiration time */
+static LPTIM_HandleTypeDef* const hrtim       = &hlptim1;    /* immutable pointer */
 
 void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 {
@@ -81,7 +82,6 @@ uint64_t lptimer_now(void)
 
   while (1) {
     timestamp = lptimer_ext;
-    timestamp <<= 16;
     do {
       hw  = __HAL_TIM_GET_COUNTER(hrtim);
       hw2 = __HAL_TIM_GET_COUNTER(hrtim);
@@ -92,8 +92,9 @@ uint64_t lptimer_now(void)
     }
     /* an overflow occurred -> get a new timestamp */
     __HAL_LPTIM_CLEAR_FLAG(hrtim, LPTIM_FLAG_ARRM);
-    lptimer_update();
+    lptimer_ext++;
   }
+  timestamp <<= 16;
   timestamp |= hw;
 
   if (!int_status) {
@@ -101,6 +102,54 @@ uint64_t lptimer_now(void)
   }
 
   return timestamp;
+}
+
+bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
+{
+  uint16_t lp_cnt, lp_cnt2;
+  uint32_t hs_cnt, hs_cnt2;
+
+  /* arguments must be non-zero and timers must be running */
+  if (!lp_timestamp || !hs_timestamp ||
+      IS_INTERRUPT() ||
+      !(hrtim->Instance->CR & LPTIM_CR_ENABLE) ||
+      !(htim2.Instance->CR1 & TIM_CR1_CEN)) {
+    return false;
+  }
+  /* disable interrupts */
+  uint32_t int_status = __get_PRIMASK();
+  if (!int_status) {
+    __disable_irq();
+  }
+  hs_cnt = __HAL_TIM_GET_COUNTER(&htim2);
+
+  /* sample until we have a consistent timestamp */
+  do {
+    lp_cnt  = __HAL_TIM_GET_COUNTER(hrtim);
+    lp_cnt2 = __HAL_TIM_GET_COUNTER(hrtim);
+  } while (lp_cnt != lp_cnt2);
+
+  /* now wait for the timestamp to change */
+  lp_cnt++;
+  while (__HAL_TIM_GET_COUNTER(hrtim) != lp_cnt);
+  hs_cnt2 = __HAL_TIM_GET_COUNTER(&htim2);
+  /* append the timer extensions */
+  uint32_t hs_ext = hs_timer_get_counter_extension();
+  if (hs_cnt2 < hs_cnt) {
+    hs_ext++;     /* rolled over */
+  }
+  if (__HAL_LPTIM_GET_FLAG(hrtim, LPTIM_FLAG_ARRM)) {
+    __HAL_LPTIM_CLEAR_FLAG(hrtim, LPTIM_FLAG_ARRM);    /* an overflow occurred */
+    lptimer_ext++;
+  }
+  *lp_timestamp = ((uint64_t)lptimer_ext << 16) | lp_cnt;
+  *hs_timestamp = ((uint64_t)hs_ext << 32) | hs_cnt2;
+
+  /* re-enable interrupts if necessary */
+  if (!int_status) {
+    __enable_irq();
+  }
+  return true;
 }
 
 void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef *hlptim)

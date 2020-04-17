@@ -40,6 +40,12 @@ uint64_t lptimer_get(void);
 uint64_t lptimer_now(void);
 
 /*
+ * Get synchronized timestamps of both timers, lptimer and hs_timer.
+ * Mustn't be called from an interrupt context.
+ */
+bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp);
+
+/*
  * Clear the timer value.
  */
 void lptimer_clear(void);
