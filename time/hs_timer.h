@@ -21,14 +21,26 @@
 
 #define TIMER_GUARD_TIME        800       // 100us; worst case time needed so set the timer correctly (schedule and generic)
 
+#ifndef HS_TIMER_COMPENSATE_DRIFT
+#define HS_TIMER_COMPENSATE_DRIFT   1
+#endif /* HS_TIMER_COMPENSATE_DRIFT */
+
+
 void hs_timer_init();
 
-void hs_timer_set_offset(double_t offset);
-void hs_timer_adapt_offset(double_t delta);
+#if HS_TIMER_COMPENSATE_DRIFT
+void     hs_timer_set_offset(double_t offset);
+void     hs_timer_adapt_offset(double_t delta);
 double_t hs_timer_get_offset();
-
-void hs_timer_set_drift(double_t drift);
+void     hs_timer_set_drift(double_t drift);
 double_t hs_timer_get_drift();
+#else /* HS_TIMER_COMPENSATE_DRIFT */
+#define hs_timer_set_offset(offset)
+#define hs_timer_adapt_offset(delta)
+#define hs_timer_get_offset()     0
+#define hs_timer_set_drift(drift)
+#define hs_timer_get_drift()      1
+#endif /* HS_TIMER_COMPENSATE_DRIFT */
 
 void hs_timer_set_counter(uint64_t timestamp);
 void hs_timer_set_lower_counter(uint32_t timestamp);
@@ -42,9 +54,14 @@ uint32_t hs_timer_get_schedule_timestamp();
 uint64_t hs_timer_get_compare_timestamp();
 uint64_t hs_timer_get_timeout_timestamp();
 uint64_t hs_timer_get_generic_timestamp();
+uint32_t hs_timer_get_counter_extension();
+
+/* non-deterministic and uncompensated version of hs_timer_get_current_timestamp()
+ * the returned timestamp is consistent
+ * this function can't be called from an interrupt context */
+uint64_t hs_timer_now();
 
 void hs_timer_capture(void (*callback));
-void hs_timer_capture4(void (*callback));
 void hs_timer_schedule(uint64_t timestamp, void (*callback)());
 void hs_timer_timeout(uint64_t offset, void (*callback));
 void hs_timer_timeout_start(uint64_t compare_timestamp);
