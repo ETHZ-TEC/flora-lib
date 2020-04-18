@@ -181,7 +181,7 @@ void elwb_get_time(elwb_time_t* time, elwb_time_t* rx_timestamp)
 
 elwb_time_t elwb_get_timestamp(void)
 {
-  return network_time + (ELWB_RTIMER_NOW() - last_synced) * 1000000 / (ELWB_TIMER_SECOND + stats.drift);
+  return network_time + (ELWB_RTIMER_NOW() - last_synced) * (1000000 - stats.drift) / (ELWB_TIMER_SECOND);
 }
 
 
