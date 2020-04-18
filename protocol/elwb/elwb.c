@@ -118,6 +118,8 @@ static void*              tx_queue = 0;
 static uint16_t           payload[(ELWB_CONF_MAX_PKT_LEN + 1) / 2];
 static uint32_t           payload_len = 0;
 static bool               call_preprocess = false;
+static uint32_t           drift_counter = 0;
+static uint32_t           drift_comp = 0;
 
 
 /* private (not exposed) scheduler functions */
@@ -185,12 +187,18 @@ elwb_time_t elwb_get_timestamp(void)
 }
 
 
+void elwb_set_drift(uint32_t drift_ppm)
+{
+  stats.drift = drift_ppm;
+}
+
+
 /**
  * @brief thread of the host node
  */
 void elwb_host_run(void)
 {
-  /* variables specific to the host (all must be static) */
+  /* variables specific to the host */
   static elwb_time_t    t_start;
   static uint_fast16_t  curr_period = 0;
   static uint_fast8_t   schedule_len;
@@ -393,8 +401,22 @@ void elwb_host_run(void)
     curr_period  = schedule.period;   /* required to schedule the next wake-up */
     schedule_len = elwb_sched_compute(&schedule, ELWB_QUEUE_SIZE(tx_queue));
     
+    uint32_t round_ticks = (uint32_t)curr_period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE;
+
+    /* calculate extra ticks for drift compensation */
+    if (stats.drift != 0) {
+      drift_counter    += round_ticks;
+      int32_t drift_div = 1000000 / stats.drift;
+      drift_comp        = drift_counter / drift_div;
+      drift_counter    -= drift_comp * drift_div;
+      //LOG_VERBOSE("extra ticks: %lu, counter: %lu", drift_comp, drift_counter);
+    } else {
+      drift_counter = 0;
+      drift_comp = 0;
+    }
+
     /* suspend this task and wait for the next round */
-    start_of_next_round = t_start + (uint32_t)curr_period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE;
+    start_of_next_round = t_start + round_ticks + drift_comp;
     if (call_preprocess) {
       start_of_next_round -= ELWB_CONF_T_PREPROCESS;
     }
@@ -411,7 +433,7 @@ void elwb_host_run(void)
  */
 void elwb_src_run(void)
 {
-  /* variables specific to the source node (all must be static) */
+  /* variables specific to the source node */
   static elwb_time_t      t_ref;
 #if ELWB_CONF_CONT_USE_HFTIMER
   static elwb_time_t      t_ref_hf,
@@ -425,8 +447,6 @@ void elwb_src_run(void)
                           num_slots  = 0;
 #endif /* ELWB_CONF_DATA_ACK */
   static uint8_t          rand_backoff = 0;
-  static uint32_t         drift_counter = 0;
-  static uint32_t         drift_comp = 0;
 
   sync_state      = BOOTSTRAP;
   node_registered = 0;
@@ -560,7 +580,6 @@ void elwb_src_run(void)
                             ELWB_SCHED_N_SLOTS(&schedule));
     #endif /* ELWB_CONF_SCHED_COMPRESS */
       
-      static uint16_t i;
       t_slot_ofs = (ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP);
     
       /* --- DATA SLOTS --- */
@@ -579,7 +598,8 @@ void elwb_src_run(void)
           node_registered = 0;
           rand_backoff = 0;              /* reset, contention was successful */
         }
-        for(i = 0; i < ELWB_SCHED_N_SLOTS(&schedule); i++) {
+        uint16_t i;
+        for (i = 0; i < ELWB_SCHED_N_SLOTS(&schedule); i++) {
           if (schedule.slot[i] == NODE_ID) {
             node_registered = 1;
             /* this is our data slot, send a data packet (if there is any) */

@@ -345,6 +345,7 @@ void     elwb_start(void* elwb_task,
 void        elwb_get_time(elwb_time_t* time, elwb_time_t* rx_timestamp);
 elwb_time_t elwb_get_timestamp(void);
 const elwb_stats_t * const elwb_get_stats(void);
+void     elwb_set_drift(uint32_t drift_ppm);
 
 /* scheduler functions */
 uint32_t elwb_sched_get_period(void);
