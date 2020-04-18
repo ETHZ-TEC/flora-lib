@@ -83,6 +83,7 @@ typedef enum {
 
 
 static elwb_time_t         elwb_time;         /* global time in microseconds */
+static uint32_t            elwb_time_ofs;                     /* time offset */
 static uint32_t            period;          /* base (idle) period in seconds */
 static uint32_t            n_nodes;                        /* # active nodes */
 static elwb_sched_state_t  sched_state;
@@ -611,8 +612,14 @@ elwb_time_t elwb_sched_get_time(void)
 
 void elwb_sched_set_time(elwb_time_t new_time)
 {
-  elwb_time = new_time;
+  elwb_time = new_time + elwb_time_ofs;
 }
 
+
+void elwb_sched_set_time_offset(uint32_t ofs)
+{
+  /* convert from ticks to us */
+  elwb_time_ofs = ofs * 1000000 / ELWB_TIMER_SECOND;
+}
 
 #endif /* ELWB_ENABLE */

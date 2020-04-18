@@ -120,14 +120,14 @@ static uint32_t           payload_len = 0;
 static bool               call_preprocess = false;
 
 
-/* private scheduler functions */
+/* private (not exposed) scheduler functions */
 uint32_t elwb_sched_init(elwb_schedule_t* sched);
 void     elwb_sched_process_req(uint16_t id,
                                 uint32_t n_pkts);
 uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
                             uint32_t reserve_slots_host);
 bool     elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots);
-
+void     elwb_sched_set_time_offset(uint32_t ofs);
 
 /*
  * This function can be called from an interrupt context to poll the GMW task.
@@ -181,7 +181,7 @@ void elwb_get_time(elwb_time_t* time, elwb_time_t* rx_timestamp)
 
 elwb_time_t elwb_get_timestamp(void)
 {
-  return network_time + (ELWB_RTIMER_NOW() - last_synced) * 1000000 / ELWB_TIMER_SECOND;
+  return network_time + (ELWB_RTIMER_NOW() - last_synced) * 1000000 / (ELWB_TIMER_SECOND + stats.drift);
 }
 
 
@@ -194,6 +194,7 @@ void elwb_host_run(void)
   static elwb_time_t    t_start;
   static uint_fast16_t  curr_period = 0;
   static uint_fast8_t   schedule_len;
+  static uint32_t       t_ref_ofs = 0;
 #if ELWB_CONF_DATA_ACK
   static uint8_t  data_ack[(ELWB_CONF_MAX_DATA_SLOTS + 7) / 8] = { 0 };
 #endif /* ELWB_CONF_DATA_ACK */
@@ -226,7 +227,11 @@ void elwb_host_run(void)
     if (ELWB_SCHED_IS_FIRST(&schedule)) {
       /* sync point */
       network_time = schedule.time;
-      last_synced  = t_start;
+      last_synced  = ELWB_GLOSSY_GET_T_REF();  // was t_start before
+      if (t_start) {
+        t_ref_ofs = (t_ref_ofs + (last_synced - t_start)) / 2;
+        elwb_sched_set_time_offset(t_ref_ofs);
+      }
     }
     t_slot_ofs = (ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP);
     
@@ -367,13 +372,14 @@ void elwb_host_run(void)
      * order they were started/created) */
     if (ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
       /* print out some stats */
-      LOG_INFO("%llu | period: %lus, slots: %u, rcvd: %u, forwarded: %u, sent: %u",
+      LOG_INFO("%llu | period: %lus, slots: %u, pck cnt: %u, rcvd: %u, sent: %u, ref ofs: %lu",
                network_time,
                elwb_sched_get_period(),
                ELWB_SCHED_N_SLOTS(&schedule),
                stats.pkt_rcv,
                stats.pkt_fwd,
-               stats.pkt_snd);
+               stats.pkt_snd,
+               t_ref_ofs);
 
       if (post_task) {
         xTaskNotify(post_task, 0, eNoAction);
@@ -419,6 +425,8 @@ void elwb_src_run(void)
                           num_slots  = 0;
 #endif /* ELWB_CONF_DATA_ACK */
   static uint8_t          rand_backoff = 0;
+  static uint32_t         drift_counter = 0;
+  static uint32_t         drift_comp = 0;
 
   sync_state      = BOOTSTRAP;
   node_registered = 0;
@@ -492,21 +500,22 @@ void elwb_src_run(void)
       /* update the sync state machine */
       sync_state = next_state[EVT_SCHED_RCVD][sync_state];
       /* subtract const offset to align src and host */
-      t_ref = ELWB_GLOSSY_GET_T_REF() - ELWB_T_REF_OFS;
+      t_ref = ELWB_GLOSSY_GET_T_REF();
   #if ELWB_CONF_CONT_USE_HFTIMER
       /* also store the HF timestamp in case LF is used for slot wakeups */
-      t_ref_hf = ELWB_GLOSSY_GET_T_REF_HF() - ELWB_T_REF_OFS * RTIMER_HF_LF_RATIO;
+      t_ref_hf = ELWB_GLOSSY_GET_T_REF_HF();
   #endif /* ELWB_CONF_CONT_USE_HFTIMER */
       if (ELWB_SCHED_IS_FIRST(&schedule)) {
         /* do some basic drift estimation:
          * measured elapsed time minus effective elapsed time (given by host) */
-        uint32_t elapsed_time = (schedule.time - network_time);
-        int32_t drift = ((int32_t)(t_ref - last_synced) - (int32_t)(elapsed_time * ELWB_TIMER_SECOND));
-        /* now scale the difference from ticks to ppm */
-        drift = drift * (int32_t)(1000000 / ELWB_TIMER_SECOND) / elapsed_time;
-        if (drift < ELWB_CONF_MAX_CLOCK_DRIFT &&
-           drift > -ELWB_CONF_MAX_CLOCK_DRIFT) {
-          stats.drift = (stats.drift + drift) / 2;
+        int32_t elapsed_network_us = (schedule.time - network_time);   // NOTE: max. difference is ~2100s
+        int32_t elapsed_local_us   = (t_ref - last_synced) * 1000000 / ELWB_TIMER_SECOND;
+        int32_t delta_us           = (elapsed_local_us - elapsed_network_us);
+        /* now scale the difference from ticks to ppm (note: a negative drift means the local clock runs slower than the network clock) */
+        int32_t drift_ppm = (delta_us * 1000) / (elapsed_network_us / 1000);
+        if (drift_ppm < ELWB_CONF_MAX_CLOCK_DRIFT &&
+            drift_ppm > -ELWB_CONF_MAX_CLOCK_DRIFT) {
+          stats.drift = (stats.drift + drift_ppm) / 2;
         }
         /* only update the timestamp during the idle period */
         period_idle  = schedule.period;
@@ -530,7 +539,7 @@ void elwb_src_run(void)
         ELWB_SCHED_SET_STATE_IDLE(&schedule);
       } else {
         /* missed schedule is at beginning of a round: add last period */
-        t_ref += schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE;
+        t_ref += schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE + drift_comp;
       }
       schedule.period = period_idle;  /* reset period to idle period */
     }
@@ -742,7 +751,7 @@ void elwb_src_run(void)
     
     if (ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
       /* print out some stats (note: takes ~2ms to compose this string!) */
-      LOG_INFO("%s %llu | period: %us, slots: %u, rcvd: %u, forwarded: %u, sent: %u, acks: %u, usyn: %u, boot: %u, drift: %d",
+      LOG_INFO("%s %llu | period: %us, slots: %u, pck cnt: %u, rcvd: %u, sent: %u, acks: %u, usyn: %u, boot: %u, drift: %d",
                elwb_syncstate_to_string[sync_state],
                schedule.time,
                schedule.period / ELWB_PERIOD_SCALE,
@@ -767,10 +776,22 @@ void elwb_src_run(void)
     memset(&schedule.slot, 0, sizeof(schedule.slot));
     ELWB_SCHED_CLR_SLOTS(&schedule);
     
+    uint32_t round_ticks = (uint32_t)schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE;
+
+    /* calculate extra ticks for drift compensation */
+    if (stats.drift != 0) {
+      drift_counter    += round_ticks;
+      int32_t drift_div = 1000000 / stats.drift;
+      drift_comp        = drift_counter / drift_div;
+      drift_counter    -= drift_comp * drift_div;
+      //LOG_VERBOSE("extra ticks: %lu, counter: %lu", drift_comp, drift_counter);
+    } else {
+      drift_counter = 0;
+      drift_comp = 0;
+    }
+
     /* schedule the wakeup for the next round */
-    start_of_next_round = t_ref +
-                          (uint32_t)schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE -
-                          ELWB_CONF_T_GUARD_ROUND;
+    start_of_next_round = t_ref + round_ticks - ELWB_CONF_T_GUARD_ROUND + drift_comp;
     if (call_preprocess) {
       start_of_next_round -= ELWB_CONF_T_PREPROCESS;
     }

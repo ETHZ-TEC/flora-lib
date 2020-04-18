@@ -56,10 +56,6 @@
 #define ELWB_CONF_RADIO_HDR_LEN   2
 #endif /* ELWB_CONF_RADIO_HDR_LEN */
 
-#ifndef ELWB_CONF_RADIO_BITRATE
-#define ELWB_CONF_RADIO_BITRATE   250000
-#endif /* ELWB_CONF_RADIO_BITRATE */
-
 #ifndef ELWB_CONF_N_HOPS
 #define ELWB_CONF_N_HOPS          3     /* average number of hops in the network */
 #endif /* ELWB_CONF_N_HOPS */
@@ -95,13 +91,13 @@
 /* duration of a schedule slot in ticks, if not defined, the minimum
  * required slot time is calculated based on the network N_HOPS and N_TX */
 #ifndef ELWB_CONF_T_SCHED
-#define ELWB_CONF_T_SCHED         ELWB_T_SLOT_MIN(ELWB_CONF_MAX_PKT_LEN + ELWB_CONF_RADIO_HDR_LEN)
+#define ELWB_CONF_T_SCHED         (ELWB_TIMER_SECOND / 50)      /* 20ms */
 #endif /* ELWB_CONF_T_SCHED */
 
 /* duration of a data slot in ticks, if not defined, the minimum required
  * slot time is calculated based on the network N_HOPS and N_TX */
 #ifndef ELWB_CONF_T_DATA
-#define ELWB_CONF_T_DATA          ELWB_T_SLOT_MIN(ELWB_CONF_MAX_PKT_LEN + ELWB_CONF_RADIO_HDR_LEN)
+#define ELWB_CONF_T_DATA          (ELWB_TIMER_SECOND / 50)      /* 20ms */
 #endif /* ELWB_CONF_T_DATA */
 
 /* duration of a contention slot in ticks */
@@ -116,7 +112,7 @@
 
 /* gap time between 2 slots in ticks */
 #ifndef ELWB_CONF_T_GAP
-#define ELWB_CONF_T_GAP           (ELWB_TIMER_SECOND / 100)     /* 10ms */
+#define ELWB_CONF_T_GAP           (ELWB_TIMER_SECOND / 200)     /* 5ms */
 #endif /* ELWB_CONF_T_GAP */
 
 /* guard time before RX slots in ticks */
@@ -197,20 +193,6 @@
 #define ELWB_2ND_SCHED_LEN        2
 #define ELWB_SCHED_CRC_LEN        (ELWB_CONF_SCHED_CRC ? 2 : 0)
 #define ELWB_SCHED_PERIOD_MAX     (65535 / ELWB_PERIOD_SCALE)
-
-#ifndef ELWB_T_REF_OFS
-#define ELWB_T_REF_OFS            (ELWB_TIMER_SECOND / 1000)
-#endif /* ELWB_T_REF_OFS */
-
-#define ELWB_T_HOP(len)           ((ELWB_TIMER_SECOND * \
-                                   (3 + 24 + 192 + 192 + ((1000000 * \
-                                   (len) * 8) / ELWB_CONF_RADIO_BITRATE))) \
-                                    / 1000000)
-/*#define ELWB_T_HOP(len)         ((ELWB_TIMER_SECOND * (300 + (len) * 32)) /\
-                                   1000000)*/
-#define ELWB_T_SLOT_MIN(len)      ((ELWB_CONF_N_HOPS + \
-                                   (2 * ELWB_CONF_N_TX) - 2) * \
-                                   ELWB_T_HOP(len) + (ELWB_TIMER_SECOND/4000))
 
 #ifndef RF_CONF_MAX_PKT_LEN
 #define RF_CONF_MAX_PKT_LEN       (ELWB_CONF_MAX_PKT_LEN + \
