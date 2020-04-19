@@ -170,7 +170,7 @@ const elwb_stats_t * const elwb_get_stats(void)
 }
 
 
-void elwb_get_time(elwb_time_t* time, elwb_time_t* rx_timestamp)
+void elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp)
 {
   if (network_time) {
     *time = network_time;
@@ -181,9 +181,17 @@ void elwb_get_time(elwb_time_t* time, elwb_time_t* rx_timestamp)
 }
 
 
-elwb_time_t elwb_get_timestamp(void)
+/* if argument is given, converts the timestamp (in lptimer ticks) to global network time
+ * returns the current network time if no argument is given */
+elwb_time_t elwb_get_time(const uint64_t* timestamp)
 {
-  return network_time + (ELWB_RTIMER_NOW() - last_synced) * (1000000 - stats.drift) / (ELWB_TIMER_SECOND);
+  uint64_t ts;
+  if (timestamp) {
+    ts = *timestamp;
+  } else {
+    ts = ELWB_TIMER_NOW();
+  }
+  return network_time + ((int64_t)ts - (int64_t)last_synced) * (1000000 - stats.drift) / (ELWB_TIMER_SECOND);
 }
 
 
@@ -473,7 +481,7 @@ void elwb_src_run(void)
       while (1) {
         schedule.n_slots = 0;   /* reset */
         stats.bootstrap_cnt++;
-        elwb_time_t bootstrap_started = ELWB_RTIMER_NOW();
+        elwb_time_t bootstrap_started = ELWB_TIMER_NOW();
         LOG_INFO_CONST("bootstrap");
         /* synchronize first! wait for the first schedule... */
         do {
@@ -481,7 +489,7 @@ void elwb_src_run(void)
           watchdog_reset();
   #endif /* WATCHDOG_CONF_ON */
           ELWB_RCV_SCHED();
-        } while (!ELWB_GLOSSY_IS_T_REF_UPDATED() && ((ELWB_RTIMER_NOW() - bootstrap_started) < ELWB_CONF_BOOTSTRAP_TIMEOUT));
+        } while (!ELWB_GLOSSY_IS_T_REF_UPDATED() && ((ELWB_TIMER_NOW() - bootstrap_started) < ELWB_CONF_BOOTSTRAP_TIMEOUT));
         if (ELWB_GLOSSY_IS_T_REF_UPDATED()) {
           break;  /* schedule received, exit bootstrap state */
         }
@@ -493,7 +501,7 @@ void elwb_src_run(void)
         if (post_task) {
           xTaskNotify(post_task, 0, eNoAction);
         }
-        ELWB_WAIT_UNTIL(ELWB_RTIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
+        ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
       }
     } else {
       ELWB_RCV_SCHED();
