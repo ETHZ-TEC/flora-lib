@@ -76,14 +76,6 @@
 #define ELWB_CONF_MAX_DATA_SLOTS  10
 #endif /* ELWB_CONF_MAX_DATA_SLOTS */
 
-/* by default, forward all received packets to the app task on the source nodes
- * that originated from the host (or ID 0) */
-#ifndef ELWB_CONF_SRC_PKT_FILTER
-/* if expression evaluates to 'true', the packet is forwarded/kept (by default
- * keep packets originating from the host (first field in pkt is device ID) */
-#define ELWB_CONF_SRC_PKT_FILTER(data)  (schedule.slot[i] == 0 || schedule.slot[i] == HOST_ID)
-#endif /* ELWB_CONF_SRC_PKT_FILTER */
-
 #ifndef ELWB_CONF_MAX_SLOTS_HOST
 #define ELWB_CONF_MAX_SLOTS_HOST  (ELWB_CONF_MAX_DATA_SLOTS / 2)
 #endif /* ELWB_CONF_MAX_SLOTS_HOST */
@@ -290,7 +282,16 @@
 #define ELWB_QUEUE_PUSH(handle, data)   xQueueSend(handle, data, 0)
 
 /* misc */
-#define ELWB_IS_HOST                    (HOST_ID == NODE_ID)
+#ifndef ELWB_IS_HOST
+#define ELWB_IS_HOST()                  (HOST_ID == NODE_ID)
+#endif /* ELWB_IS_HOST */
+#ifndef ELWB_IS_SINK
+#define ELWB_IS_SINK()                  ELWB_IS_HOST()
+#endif /* ELWB_IS_SINK */
+/* a custom packet filter (if expression evaluates to 'true', the packet will be forwarded to the application layer) */
+#ifndef ELWB_RCV_PKT_FILTER
+#define ELWB_RCV_PKT_FILTER()    0
+#endif /* ELWB_RCV_PKT_FILTER */
 #define ELWB_PAYLOAD_LEN(msg)           (DPP_MSG_LEN((dpp_message_t*)msg))
 
 /*---------------------------------------------------------------------------*/
@@ -298,17 +299,16 @@
 /* structs and typedefs */
 
 typedef struct {
-  uint16_t bootstrap_cnt; /* #times bootstrap state was entered */
-  uint16_t unsynced_cnt;  /* #times a schedule was missed */
-  uint16_t sleep_cnt;     /* #times node went into LPM due to rf silence */
-  int16_t  drift;         /* current estimated drift in ppm */
-  uint16_t pkt_rcv;       /* total number of received packets */
-  uint16_t pkt_snd;       /* total number of sent data packets */
-  uint16_t pkt_ack;       /* not acknowledged data packets */
-  uint16_t pkt_fwd;       /* packets forwarded to the App task */
-  uint16_t rxbuf_drop;    /* packets dropped due to input buffer full */
-  uint16_t txbuf_drop;    /* packets dropped due to output buffer full */
-  uint16_t load;          /* bandwidth utilization */
+  uint32_t bootstrap_cnt; /* #times bootstrap state was entered */
+  uint32_t unsynced_cnt;  /* #times a schedule was missed */
+  uint32_t sleep_cnt;     /* #times node went into LPM due to rf silence */
+  int32_t  drift;         /* current estimated drift in ppm */
+  uint32_t ref_ofs;       /* reference offset in timer ticks */
+  uint32_t pkt_cnt;       /* total number of 'seen' data packets */
+  uint32_t pkt_sent;      /* total number of sent data packets */
+  uint32_t pkt_ack;       /* total number acknowledged data packets */
+  uint32_t pkt_rcvd;      /* total number of received packets (forwarded to the application) */
+  uint32_t pkt_dropped;   /* packets dropped due to input buffer full */
 } elwb_stats_t;
 
 #define ELWB_SCHED_HDR_LEN   12
@@ -352,7 +352,7 @@ elwb_time_t elwb_get_time(const uint64_t* timestamp);
 
 const elwb_stats_t * const elwb_get_stats(void);
 
-void     elwb_set_drift(uint32_t drift_ppm);
+void     elwb_set_drift(int32_t drift_ppm);
 
 /* scheduler functions */
 uint32_t elwb_sched_get_period(void);
