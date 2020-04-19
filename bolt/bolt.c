@@ -38,14 +38,15 @@ bool bolt_init(void)
 {
   /* note: control signals and SPI must be initialized before calling bolt_init! */
 
-  if (bolt_status()) {
+  bolt_state = BOLT_STATE_IDLE;
+  if (!bolt_status()) {
     LOG_ERROR_CONST("not accessible, init failed");
-    return 0;
+    bolt_state = BOLT_STATE_INVALID;
+    return false;
   }
   LOG_VERBOSE_CONST("initialized");
-  bolt_state = BOLT_STATE_IDLE;
 
-  return 1;
+  return true;
 }
 
 
@@ -56,20 +57,20 @@ void bolt_release(void)
   bolt_state = BOLT_STATE_IDLE;
 }
 
-uint8_t bolt_acquire(bolt_op_mode_t mode)
+bool bolt_acquire(bolt_op_mode_t mode)
 {
   if (BOLT_ACK_STATUS || BOLT_REQ_STATUS) {
     LOG_ERROR_CONST("request failed (REQ or ACK still high)");
-    return 0;
+    return false;
   }
   if (BOLT_STATE_IDLE != bolt_state) {
     LOG_WARNING_CONST("not in idle state, operation skipped");
-    return 0;
+    return false;
   }
   if (BOLT_OP_READ == mode) {
     if (!BOLT_DATA_AVAILABLE) {
       LOG_WARNING_CONST("no data available");
-      return 0;
+      return false;
     }
     PIN_CLR(BOLT_MODE); /* 0 = READ */
 
@@ -79,22 +80,21 @@ uint8_t bolt_acquire(bolt_op_mode_t mode)
 
   PIN_SET(BOLT_REQ);
   /* now wait for a rising edge on the ACK line */
-  uint8_t cnt = 5;
+  uint8_t cnt = 6;
   while (!BOLT_ACK_STATUS && cnt) {
     delay_us(10);
     cnt--;
   }
   if (!BOLT_ACK_STATUS) {
     /* ACK line is still low -> failed */
-    bolt_state = BOLT_STATE_IDLE;
     PIN_CLR(BOLT_REQ);
-    return 0;
+    return false;
   }
 
   /* update state */
   bolt_state = (mode == BOLT_OP_READ) ? BOLT_STATE_READ : BOLT_STATE_WRITE;
 
-  return 1;
+  return true;
 }
 
 uint32_t bolt_read(uint8_t* out_data)
@@ -145,9 +145,9 @@ bool bolt_status(void)
 {
   if (bolt_acquire(BOLT_OP_WRITE)) {
     bolt_release();
-    return 1;
+    return true;
   }
-  return 0;
+  return false;
 }
 
 void bolt_flush(void)
