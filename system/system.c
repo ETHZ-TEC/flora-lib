@@ -43,6 +43,9 @@ void system_init()
   cli_init();
 #endif /* CLI_ENABLE */
   protocol_init();
+#if BOLT_ENABLE
+  bolt_init();
+#endif /* BOLT_ENABLE */
 
   leds_init();
   gpio_init();

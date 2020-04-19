@@ -21,14 +21,10 @@
 #define BOLT_MAX_MSG_LEN                128  /* bytes */
 #endif /* BOLT_MAX_MSG_LEN */
 
-#ifndef BOLT_DEBUG_ON
-#define BOLT_DEBUG_ON                   0
-#endif /* BOLT_DEBUG_ON */
-
 /* interface to SPI HAL functions */
 #ifndef BOLT_SPI_WRITE
-#define BOLT_SPI_WRITE(data, len)       HAL_SPI_Transmit(&hspi1, data, len, 100)
-#define BOLT_SPI_READ(data, len)        HAL_SPI_Receive(&hspi1, data, len, 100)
+#define BOLT_SPI_WRITE(data, len)       HAL_SPI_Transmit(&hspi1, data, len, pdMS_TO_TICKS(10))
+#define BOLT_SPI_READ(data, len)        HAL_SPI_Receive(&hspi1, data, len, pdMS_TO_TICKS(10))
 #endif /* BOLT_SPI_WRITE */
 
 #define BOLT_DATA_AVAILABLE             (PIN_GET(BOLT_IND) > 0)
