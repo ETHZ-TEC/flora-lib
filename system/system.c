@@ -60,6 +60,9 @@ void system_init()
   HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH);
 #endif
 
+  /* make sure PC13 (RF_DIO1) EXTI is disabled (only needed for wakeup from LPM) */
+  HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+
   system_initialized = true;
 }
 

@@ -59,6 +59,8 @@ void delay_us(volatile uint32_t us)
   }
 }
 
+#if SWO_ENABLE
+
 bool swo_println(const char* str)
 {
   while (*str)
@@ -81,3 +83,17 @@ bool swo_print(const char* str)
   }
   return true;
 }
+
+int _write(int32_t file, uint8_t *ptr, int32_t len)
+{
+  /* Implement your write code here, this is used by puts and printf for example */
+  /* return len; */
+  uint32_t i;
+  for (i = 0; i < len; i++)
+  {
+    ITM_SendChar(ptr[i]);
+  }
+  return len;
+}
+
+#endif /* SWO_ENABLE */
