@@ -46,7 +46,7 @@
  * depends on the max. # nodes (= ELWB_CONF_MAX_N_NODES), + add 10ms slack */
 #define ELWB_T_REQ_ROUND_MAX  (TICKS_TO_SCHEDUNITS( \
                                 ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP + \
-                                ELWB_CONF_MAX_N_NODES * \
+                                ELWB_CONF_MAX_NODES * \
                                  (ELWB_CONF_T_CONT + ELWB_CONF_T_GAP) + \
                                 ELWB_CONF_SCHED_COMP_TIME))
 
@@ -87,7 +87,7 @@ static uint32_t            elwb_time_ofs;                     /* time offset */
 static uint32_t            period;          /* base (idle) period in seconds */
 static uint32_t            n_nodes;                        /* # active nodes */
 static elwb_sched_state_t  sched_state;
-static elwb_node_list_t    node_list[ELWB_CONF_MAX_N_NODES];  /* actual list */
+static elwb_node_list_t    node_list[ELWB_CONF_MAX_NODES];    /* actual list */
 static elwb_node_list_t*   head;                  /* head of the linked list */
 static uint16_t            slots_buffer[ELWB_CONF_MAX_DATA_SLOTS];
 
@@ -247,7 +247,7 @@ void elwb_sched_add_node(uint16_t id)
   if (id == 0) {
     return;     /* invalid argument */
   }
-  if (n_nodes >= ELWB_CONF_MAX_N_NODES) {
+  if (n_nodes >= ELWB_CONF_MAX_NODES) {
     LOG_WARNING("request ignored, max #nodes reached");
     EVENT_WARNING(EVENT_CC430_NODE_REMOVED, id);
     return;
@@ -255,7 +255,7 @@ void elwb_sched_add_node(uint16_t id)
   elwb_node_list_t* node = 0;
   uint32_t i;
   /* find a free spot */
-  for (i = 0; i < ELWB_CONF_MAX_N_NODES; i++) {
+  for (i = 0; i < ELWB_CONF_MAX_NODES; i++) {
     if (node_list[i].id == 0) {
       node = &node_list[i];   /* use this spot */
       break;
@@ -556,7 +556,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
     return 0;
   }
   /* initialize node list */
-  memset(node_list, 0, sizeof(elwb_node_list_t) * ELWB_CONF_MAX_N_NODES);
+  memset(node_list, 0, sizeof(elwb_node_list_t) * ELWB_CONF_MAX_NODES);
   head           = 0;
   n_nodes        = 0;
   elwb_time      = 0;

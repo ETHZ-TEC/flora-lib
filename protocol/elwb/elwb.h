@@ -51,15 +51,6 @@
 #define ELWB_CONF_MAX_PKT_LEN     DPP_MSG_PKT_LEN
 #endif /* ELWB_CONF_MAX_PKT_LEN */
 
-/* additional header bytes that are added to a data packet by the radio driver */
-#ifndef ELWB_CONF_RADIO_HDR_LEN
-#define ELWB_CONF_RADIO_HDR_LEN   2
-#endif /* ELWB_CONF_RADIO_HDR_LEN */
-
-#ifndef ELWB_CONF_N_HOPS
-#define ELWB_CONF_N_HOPS          3     /* average number of hops in the network */
-#endif /* ELWB_CONF_N_HOPS */
-
 #ifndef ELWB_CONF_N_TX
 #define ELWB_CONF_N_TX            3     /* how many times a packet is retransmitted */
 #endif /* ELWB_CONF_N_TX */
@@ -68,14 +59,17 @@
 #define ELWB_CONF_BOOTSTRAP_TIMEOUT   (120 * ELWB_TIMER_SECOND)     /* in ticks */
 #endif /* ELWB_CONF_BOOTSTRAP_TIMEOUT */
 
-#ifndef ELWB_CONF_MAX_N_NODES
-#define ELWB_CONF_MAX_N_NODES     10
-#endif /* ELWB_CONF_MAX_N_NODES */
+/* max. number of nodes in the network */
+#ifndef ELWB_CONF_MAX_NODES
+#define ELWB_CONF_MAX_NODES       10
+#endif /* ELWB_CONF_MAX_NODES */
 
+/* max. number of data slots per round */
 #ifndef ELWB_CONF_MAX_DATA_SLOTS
 #define ELWB_CONF_MAX_DATA_SLOTS  10
 #endif /* ELWB_CONF_MAX_DATA_SLOTS */
 
+/* how many slots the host may allocate for himself, per round */
 #ifndef ELWB_CONF_MAX_SLOTS_HOST
 #define ELWB_CONF_MAX_SLOTS_HOST  (ELWB_CONF_MAX_DATA_SLOTS / 2)
 #endif /* ELWB_CONF_MAX_SLOTS_HOST */
@@ -166,9 +160,14 @@
 #define ELWB_CONF_MAX_CLOCK_DRIFT 100    /* in ppm */
 #endif /* ELWB_CONF_MAX_CLOCK_DRIFT */
 
+/* contention threshold, how many elements need to be in the queue before participating in a contention round */
 #ifndef ELWB_CONF_CONT_TH
 #define ELWB_CONF_CONT_TH         1
 #endif /* ELWB_CONF_CONT_TH */
+
+#ifndef ELWB_CONF_STARTUP_DELAY
+#define ELWB_CONF_STARTUP_DELAY   1000   /* delay in milliseconds */
+#endif /* ELWB_CONF_STARTUP_DELAY */
 
 /* use more accurate high frequency reference clock to schedule the contention slot
  * (requires an implementation of ELWB_GLOSSY_GET_T_REF_HF()) */
@@ -280,6 +279,15 @@
 #define ELWB_QUEUE_SPACE(handle)        uxQueueSpacesAvailable(handle)          /* polls the empty queue space */
 #define ELWB_QUEUE_POP(handle, data)    xQueueReceive(handle, data, 0)          /* don't block */
 #define ELWB_QUEUE_PUSH(handle, data)   xQueueSend(handle, data, 0)
+
+/* task related stuff */
+#define ELWB_TASK_YIELD()               ulTaskNotifyTake(pdTRUE, portMAX_DELAY) /* function used to yield the eLWB task (and allow other, lower priority tasks to run) */
+#define ELWB_TASK_NOTIFY(task)          xTaskNotify(task, 0, eNoAction);        /* function used to notify (poll) a task, i.e. giving it permission to run */
+#define ELWB_TASK_NOTIFY_FROM_ISR(task) xTaskNotifyFromISR(task, 0, eNoAction, 0);
+#ifndef ELWB_RESUMED
+  #define ELWB_RESUMED()
+  #define ELWB_SUSPENDED()
+#endif /* ELWB_RESUMED */
 
 /* misc */
 #ifndef ELWB_IS_HOST

@@ -50,8 +50,7 @@ typedef enum {
 } sync_event_t;
 
 
-static const 
-elwb_syncstate_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] = 
+static const elwb_syncstate_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] =
 {/* STATES:                                         EVENTS:         */
  /* BOOTSTRAP, SYNCED,   UNSYNCED,  UNSYNCED2                       */
   { SYNCED,    SYNCED,   SYNCED,    SYNCED    }, /* schedule rcvd   */
@@ -60,12 +59,6 @@ elwb_syncstate_t next_state[NUM_OF_SYNC_EVENTS][NUM_OF_SYNC_STATES] =
 static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
   "BOOTSTRAP", "SYN", "USYN", "USYN2"
 };
-
-
-#ifndef ELWB_RESUMED
-  #define ELWB_RESUMED()
-  #define ELWB_SUSPENDED()
-#endif /* ELWB_RESUMED */
 
 
 #define ELWB_SEND_SCHED() \
@@ -98,7 +91,7 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 {\
   ELWB_TIMER_SET(time, elwb_notify);\
   ELWB_SUSPENDED();\
-  ulTaskNotifyTake(pdTRUE, portMAX_DELAY);\
+  ELWB_TASK_YIELD();\
   ELWB_RESUMED();\
 }
 
@@ -128,7 +121,7 @@ void elwb_notify(void)
 {
   if (task_handle) {
     ELWB_ON_WAKEUP();
-    xTaskNotifyFromISR(task_handle, 0, eNoAction, 0);
+    ELWB_TASK_NOTIFY_FROM_ISR(task_handle);
   }
 }
 
@@ -206,7 +199,7 @@ void elwb_run(void)
     LOG_INFO_CONST("host node");
     schedule_len = elwb_sched_init(&schedule);
     if (!schedule_len) {
-      ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+      LOG_ERROR_CONST("schedule has length 0");
     }
   } else {
     LOG_INFO_CONST("source node");
@@ -221,7 +214,7 @@ void elwb_run(void)
   #if ELWB_CONF_T_PREPROCESS
     if (call_preprocess) {    /* call the preprocess task? */
       if (pre_task) {
-        xTaskNotify(pre_task, 0, eNoAction);
+        ELWB_TASK_NOTIFY(pre_task);
         /* note: this is cooperative multitasking, the pre-task must complete within ELWB_CONF_T_PREPROCESS time */
       }
       start_of_next_round += ELWB_CONF_T_PREPROCESS;
@@ -274,7 +267,7 @@ void elwb_run(void)
           LOG_WARNING_CONST("timeout");
           /* poll the post process */
           if (post_task) {
-            xTaskNotify(post_task, 0, eNoAction);
+            ELWB_TASK_NOTIFY(post_task);
           }
           ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
         }
@@ -404,9 +397,6 @@ void elwb_run(void)
                   payload_len = 0;
                 }
               }
-              if (payload_len) {
-                stats.pkt_sent++;   /* only count data packets */
-              }
             }
             /* send the packet */
             if (payload_len) {
@@ -419,7 +409,10 @@ void elwb_run(void)
               /* wait until the data slot starts */
               ELWB_WAIT_UNTIL(t_start + t_slot_ofs);
               ELWB_SEND_PACKET();
-              LOG_VERBOSE("packet sent (%lub)", payload_len);
+              if (ELWB_SCHED_HAS_DATA_SLOTS(&schedule)) {
+                stats.pkt_sent++;   /* only count data packets */
+                LOG_VERBOSE("packet sent (%lub)", payload_len);
+              }
             }
 
           } else {
@@ -542,7 +535,7 @@ void elwb_run(void)
         /* contention slot requires precise timing: better to use HF timer for this wake-up! */
         ELWB_HFTIMER_SCHEDULE(t_ref_hf + t_slot_ofs * RTIMER_HF_LF_RATIO, elwb_notify);
         ELWB_SUSPENDED();
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        ELWB_TASK_YIELD();
         ELWB_RESUMED();
   #else /* ELWB_CONF_CONT_USE_HFTIMER */
         /* wait until the contention slot starts */
@@ -634,7 +627,7 @@ end_of_round:
       }
       /* poll the post process */
       if (post_task) {
-        xTaskNotify(post_task, 0, eNoAction);
+        ELWB_TASK_NOTIFY(post_task);
       }
     #if ELWB_CONF_T_PREPROCESS
       call_preprocess = true;
@@ -697,17 +690,22 @@ void elwb_start(void* elwb_task,
 
   memset(&stats, 0, sizeof(elwb_stats_t));
 
-  LOG_INFO("pkt_len=%u slots=%u n_tx=%u hops=%u",
+  LOG_INFO("pkt_len: %u, slots: %u, n_tx: %u, t_sched: %lu, t_data: %lu, t_cont: %lu",
            ELWB_CONF_MAX_PKT_LEN,
            ELWB_CONF_MAX_DATA_SLOTS,
            ELWB_CONF_N_TX,
-           ELWB_CONF_N_HOPS);
-
-  /* ceil the values (therefore + ELWB_TIMER_SECOND / 1000 - 1) */
-  LOG_INFO("slots [ms]: sched=%lu data=%lu cont=%lu",
            (uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_SCHED),
            (uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_DATA),
            (uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_CONT));
+
+  /* instead of calling elwb_run(), schedule the start */
+#if ELWB_CONF_STARTUP_DELAY > 0
+  ELWB_WAIT_UNTIL(lptimer_get() + ELWB_CONF_STARTUP_DELAY * LPTIMER_SECOND / 1000);
+  /* let post task run */
+  if (post_task) {
+    ELWB_TASK_NOTIFY(post_task);
+  }
+#endif /* ELWB_CONF_STARTUP_DELAY */
 
   elwb_run();
 }
