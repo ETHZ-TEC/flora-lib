@@ -33,6 +33,7 @@
 #include "dpp/definitions/messages/dpp_message.h"
 #include "dpp/libraries/dpp_lib.h"
 
+
 /* drivers */
 #include "system/system.h"
 #include "time/rtc.h"
@@ -41,7 +42,8 @@
 #include "radio/flora_radio.h"
 #include "bolt/bolt.h"
 
-/* protocols */
+/* protocols, networking */
+#include "flocklab/flocklab.h"
 #include "protocol/protocol.h"
 #include "protocol/gloria/gloria.h"
 #if DOZER_ENABLE
@@ -61,7 +63,6 @@
 #include "utils/misc.h"
 #include "utils/log.h"
 #include "led/led.h"
-#include "flocklab/flocklab.h"
 #include "config/config.h"
 #include "cli/cli.h"
 

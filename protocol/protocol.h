@@ -9,6 +9,11 @@
 #define PROTOCOL_PROTOCOL_H_
 
 
+#ifdef HOST_ID
+#define IS_HOST         (HOST_ID == NODE_ID)
+#endif /* HOST_ID */
+
+
 typedef enum {
   RELAY = 0,
   BASE = 1,

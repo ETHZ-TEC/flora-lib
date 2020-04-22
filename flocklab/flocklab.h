@@ -12,7 +12,10 @@
 #define FLOCKLAB      0
 #endif /* FLOCKLAB */
 
-#if FLACKLAB
+#if FLOCKLAB
+
+/* use the flocklab node ID */
+#define NODE_ID       FLOCKLAB_NODE_ID
 
 #ifndef FLOCKLAB_SWD
 #define FLOCKLAB_SWD  0
@@ -24,7 +27,6 @@
 #error "can't use BOLT or SWO on FlockLab"
 #endif
 
-#include <stdint.h>
 
 #define FLOCKLAB_SIG1_Pin GPIO_PIN_0
 #define FLOCKLAB_SIG1_GPIO_Port GPIOA
@@ -80,7 +82,7 @@ void flocklab_reset_pins(void);
 void flocklab_blink(flocklab_trace_pin_t pin, uint8_t count);
 
 
-#else
+#else /* FLOCKLAB */
 
 #define FLOCKLAB_PIN_SET(p)
 #define FLOCKLAB_PIN_CLR(p)

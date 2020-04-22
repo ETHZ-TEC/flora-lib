@@ -258,8 +258,8 @@ typedef struct {
   #error "payload of message_t is too big"
 #endif
 
-#ifdef BOLT_CONF_MAX_MSG_LEN
-  #if BOLT_CONF_MAX_MSG_LEN < MSG_PKT_LEN
+#ifdef BOLT_MAX_MSG_LEN
+  #if BOLT_MAX_MSG_LEN < DPP_MSG_PKT_LEN
     #error "BOLT max msg length is too small"
   #endif
 #endif /* BOLT_CONF_MAX_MSG_LEN */
