@@ -71,4 +71,15 @@
 #include "main.h"
 
 
+/* --- global error checks --- */
+
+#ifndef __OPTIMIZE__
+#error "Compiler optimizations have to be enabled! Recommended setting is -O2."
+#endif
+
+#if __GNUC__ != 7
+#warning "Compiler version has changed."
+#endif
+
+
 #endif /* FLORA_LIB_H_ */
