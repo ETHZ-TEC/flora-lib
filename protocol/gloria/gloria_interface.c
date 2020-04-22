@@ -107,6 +107,7 @@ void gloria_start(uint16_t initiator_id,
   flood.data_slots = GLORIA_INTERFACE_MAX_SLOTS;
   flood.sync_timer = 0;
   flood.lp_listening = false;
+  flood.radio_no_sleep = true;
 
   message.header.type = 0;
   message.header.sync = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)

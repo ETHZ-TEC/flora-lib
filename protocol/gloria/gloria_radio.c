@@ -18,9 +18,7 @@ static gloria_flood_t* current_flood;
 static void (*callback)(void) = NULL;
 static void (*rx_callback)(uint8_t* payload, uint8_t size) = NULL;
 
-#if GLORIA_RADIO_SLEEP
 static uint64_t gloria_try_to_sleep(uint64_t future_timestamp);
-#endif /* GLORIA_RADIO_SLEEP */
 
 static void gloria_radio_setup_callback();
 static void gloria_radio_tx_callback();
@@ -40,30 +38,31 @@ void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
   current_flood = flood;
   callback = tx_callback;
 
-#if !GLORIA_RADIO_SLEEP
-  gloria_calculate_tx_marker(flood);
-  gloria_radio_setup_callback();
+  uint64_t setup_timestamp = gloria_calculate_tx_marker(flood);
 
-#else /* GLORIA_RADIO_SLEEP */
-  uint64_t setup_timestamp = gloria_calculate_tx_marker(flood) - GLORIA_TX_SETUP - GLORIA_GAP;
-  setup_timestamp = gloria_try_to_sleep(setup_timestamp);
-
-  switch (setup_timestamp) {
-    case 1:
-      // go directly to radio setup
-      gloria_radio_setup_callback();
-      break;
-    case 0:
-      // skip slot
-      LOG_WARNING_CONST("Tx too late!");
-      callback();
-      break;
-    default:
-      // schedule radio wakeup for rx setup
-      hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
-      break;
+  if (flood->radio_no_sleep) {
+    gloria_radio_setup_callback();
   }
-#endif /* GLORIA_RADIO_SLEEP */
+  else {
+    setup_timestamp = setup_timestamp - GLORIA_TX_SETUP - GLORIA_GAP;
+    setup_timestamp = gloria_try_to_sleep(setup_timestamp);
+
+    switch (setup_timestamp) {
+      case 1:
+        // go directly to radio setup
+        gloria_radio_setup_callback();
+        break;
+      case 0:
+        // skip slot
+        LOG_WARNING_CONST("Tx too late!");
+        callback();
+        break;
+      default:
+        // schedule radio wakeup for rx setup
+        hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
+        break;
+    }
+  }
 }
 
 /*
@@ -74,30 +73,31 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
   current_flood = flood;
   callback = tx_callback;
 
-#if !GLORIA_RADIO_SLEEP
-  gloria_calculate_tx_marker(flood);
-  gloria_radio_setup_callback();
+  uint64_t setup_timestamp = gloria_calculate_tx_marker(flood);
 
-#else /* GLORIA_RADIO_SLEEP */
-  uint64_t setup_timestamp = gloria_calculate_tx_marker(flood) - GLORIA_TX_SETUP - GLORIA_GAP;
-  setup_timestamp = gloria_try_to_sleep(setup_timestamp);
-
-  switch (setup_timestamp) {
-    case 1:
-      // go directly to radio setup
-      gloria_radio_setup_callback();
-      break;
-    case 0:
-      // skip slot
-      LOG_WARNING_CONST("Tx ack too late!");
-      callback();
-      break;
-    default:
-      // schedule radio wakeup for rx setup
-      hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
-      break;
+  if (flood->radio_no_sleep) {
+    gloria_radio_setup_callback();
   }
-#endif /* GLORIA_RADIO_SLEEP */
+  else {
+    setup_timestamp = setup_timestamp - GLORIA_TX_SETUP - GLORIA_GAP;
+    setup_timestamp = gloria_try_to_sleep(setup_timestamp);
+
+    switch (setup_timestamp) {
+      case 1:
+        // go directly to radio setup
+        gloria_radio_setup_callback();
+        break;
+      case 0:
+        // skip slot
+        LOG_WARNING_CONST("Tx ack too late!");
+        callback();
+        break;
+      default:
+        // schedule radio wakeup for rx setup
+        hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
+        break;
+    }
+  }
 }
 
 /*
@@ -112,43 +112,44 @@ void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
   rx_callback = callback;
 
   if (current_flood->msg_received || current_flood->marker) {
-#if !GLORIA_RADIO_SLEEP
-    gloria_calculate_rx_marker(flood);
-    gloria_radio_setup_callback();
 
-#else /* GLORIA_RADIO_SLEEP */
-    uint64_t setup_timestamp = gloria_calculate_rx_marker(flood) - GLORIA_RX_SETUP - GLORIA_GAP;
-    setup_timestamp = gloria_try_to_sleep(setup_timestamp);
+    uint64_t setup_timestamp = gloria_calculate_rx_marker(flood);
 
-    switch (setup_timestamp) {
-      case 1:
-        // go directly to radio setup
-        gloria_radio_setup_callback();
-        break;
-      case 0:
-        if (!current_flood->msg_received && !current_flood->lp_listening) {
-          // if this is the first rx, start listening anyhow
-          gloria_radio_setup_callback();
-        }
-        else {
-          // skip slot
-          LOG_WARNING_CONST("Rx too late!");
-          rx_callback(NULL, 0);
-        }
-        break;
-      default:
-        // schedule radio wakeup for rx setup
-        hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
-        break;
+    if (flood->radio_no_sleep) {
+      gloria_radio_setup_callback();
     }
-#endif /* GLORIA_RADIO_SLEEP */
+    else {
+      setup_timestamp = setup_timestamp - GLORIA_RX_SETUP - GLORIA_GAP;
+      setup_timestamp = gloria_try_to_sleep(setup_timestamp);
+
+      switch (setup_timestamp) {
+        case 1:
+          // go directly to radio setup
+          gloria_radio_setup_callback();
+          break;
+        case 0:
+          if (!current_flood->msg_received && !current_flood->lp_listening) {
+            // if this is the first rx, start listening anyhow
+            gloria_radio_setup_callback();
+          }
+          else {
+            // skip slot
+            LOG_WARNING_CONST("Rx too late!");
+            rx_callback(NULL, 0);
+          }
+          break;
+        default:
+          // schedule radio wakeup for rx setup
+          hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
+          break;
+      }
+    }
   }
   else {
     gloria_radio_setup_callback();
   }
 }
 
-#if GLORIA_RADIO_SLEEP
 /*
  * sets radio in sleep mode if the time until the future_timestamp is enough
  * returns the future_timesamp - the wake-up time of the radio, if time is enough to sleep
@@ -175,18 +176,15 @@ static uint64_t gloria_try_to_sleep(uint64_t future_timestamp) {
     return 0;
   }
 }
-#endif /* GLORIA_RADIO_SLEEP */
 
 /*
  * radio setup and start of tx/rx
  */
 static void gloria_radio_setup_callback() {
 
-#if GLORIA_RADIO_SLEEP
-  if (radio_sleeping) {
+  if (!current_flood->radio_no_sleep && radio_sleeping) {
     radio_wakeup();
   }
-#endif /* GLORIA_RADIO_SLEEP */
 
   //radio_set_lora_syncword(LORA_SYNCWORD_PERMASENSE);
 
@@ -246,7 +244,7 @@ static void gloria_radio_setup_callback() {
 }
 
 static void gloria_radio_tx_callback() {
-    current_flood->remaining_retransmissions -= 1;
+  current_flood->remaining_retransmissions -= 1;
   callback();
 }
 

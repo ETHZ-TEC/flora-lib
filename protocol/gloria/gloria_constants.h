@@ -27,10 +27,6 @@
 #define GLORIA_RX_SETUP 5326 // 665.750 us        time needed for the rx radio setup
 #define GLORIA_TX_SETUP 10083 // 1.260 ms        time needed for the tx radio setup
 
-#ifndef GLORIA_RADIO_SLEEP
-#define GLORIA_RADIO_SLEEP 1      // whether or not gloria should put the radio into sleep mode
-#endif /* GLORIA_RADIO_SLEEP */
-
 
 typedef struct {
   uint32_t slotOverhead;

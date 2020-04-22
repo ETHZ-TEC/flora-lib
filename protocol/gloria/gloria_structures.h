@@ -78,6 +78,8 @@ typedef struct {
   int8_t rssi;              // save rssi of received data msg
   uint16_t flood_idx;            // allows to assign the flood an id
 
+  bool radio_no_sleep;      // true: don't put radio into sleep mode even if tx marker is far in the future
+
 } gloria_flood_t;
 
 #endif /* PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_ */
