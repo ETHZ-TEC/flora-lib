@@ -147,6 +147,11 @@ bool bolt_status(void)
     bolt_release();
     return true;
   }
+  /* check if data in output queue */
+  if (BOLT_DATA_IN_OUTPUT_QUEUE) {
+    LOG_WARNING_CONST("can't verify status, output queue is probably full");
+    return true;
+  }
   return false;
 }
 

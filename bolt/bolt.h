@@ -28,6 +28,7 @@
 #endif /* BOLT_SPI_WRITE */
 
 #define BOLT_DATA_AVAILABLE             (PIN_GET(BOLT_IND) > 0)
+#define BOLT_DATA_IN_OUTPUT_QUEUE       (PIN_GET(APP_IND) > 0)
 
 
 bool bolt_init(void);
