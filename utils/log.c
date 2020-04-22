@@ -15,7 +15,7 @@
 static char log_print_buffer[LOG_LINE_LENGTH];
 
 #if !LOG_PRINT_IMMEDIATELY
-  static uint8_t log_buffer[LOG_BUFFER_SIZE];
+  static char log_buffer[LOG_BUFFER_SIZE];
   static int32_t read_idx  = 0;
   static int32_t write_idx = 0;
 #endif /* LOG_PRINT_IMMEDIATELY */
@@ -101,10 +101,10 @@ bool log_flush(void)
     }
   }
   if (buffer_full) {
-    LOG_PRINT_FUNC((uint8_t*)"~", 1);         /* to indicate that the queue was full! */
+    LOG_PRINT_FUNC("~", 1);         /* to indicate that the queue was full! */
   }
   if (log_lock_failed) {
-    LOG_PRINT_FUNC((uint8_t*)LOG_ERR_MSG_LOCK_FAILED, sizeof(LOG_ERR_MSG_LOCK_FAILED));
+    LOG_PRINT_FUNC(LOG_ERR_MSG_LOCK_FAILED, sizeof(LOG_ERR_MSG_LOCK_FAILED));
     log_lock_failed = false;
   }
   flush_lock--;
