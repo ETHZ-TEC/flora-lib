@@ -18,7 +18,9 @@ static gloria_flood_t* current_flood;
 static void (*callback)(void) = NULL;
 static void (*rx_callback)(uint8_t* payload, uint8_t size) = NULL;
 
+#if GLORIA_RADIO_SLEEP
 static uint64_t gloria_try_to_sleep(uint64_t future_timestamp);
+#endif /* GLORIA_RADIO_SLEEP */
 
 static void gloria_radio_setup_callback();
 static void gloria_radio_tx_callback();
@@ -38,6 +40,11 @@ void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
   current_flood = flood;
   callback = tx_callback;
 
+#if !GLORIA_RADIO_SLEEP
+  gloria_calculate_tx_marker(flood);
+  gloria_radio_setup_callback();
+
+#else /* GLORIA_RADIO_SLEEP */
   uint64_t setup_timestamp = gloria_calculate_tx_marker(flood) - GLORIA_TX_SETUP - GLORIA_GAP;
   setup_timestamp = gloria_try_to_sleep(setup_timestamp);
 
@@ -56,6 +63,7 @@ void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
       hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
       break;
   }
+#endif /* GLORIA_RADIO_SLEEP */
 }
 
 /*
@@ -66,6 +74,11 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
   current_flood = flood;
   callback = tx_callback;
 
+#if !GLORIA_RADIO_SLEEP
+  gloria_calculate_tx_marker(flood);
+  gloria_radio_setup_callback();
+
+#else /* GLORIA_RADIO_SLEEP */
   uint64_t setup_timestamp = gloria_calculate_tx_marker(flood) - GLORIA_TX_SETUP - GLORIA_GAP;
   setup_timestamp = gloria_try_to_sleep(setup_timestamp);
 
@@ -84,6 +97,7 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
       hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
       break;
   }
+#endif /* GLORIA_RADIO_SLEEP */
 }
 
 /*
@@ -98,10 +112,13 @@ void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
   rx_callback = callback;
 
   if (current_flood->msg_received || current_flood->marker) {
-    uint64_t rx_marker = gloria_calculate_rx_marker(flood);
-    uint64_t setup_timestamp = rx_marker - GLORIA_RX_SETUP - GLORIA_GAP;
-    setup_timestamp = gloria_try_to_sleep(setup_timestamp);
+#if !GLORIA_RADIO_SLEEP
+    gloria_calculate_rx_marker(flood);
+    gloria_radio_setup_callback();
 
+#else /* GLORIA_RADIO_SLEEP */
+    uint64_t setup_timestamp = gloria_calculate_rx_marker(flood) - GLORIA_RX_SETUP - GLORIA_GAP;
+    setup_timestamp = gloria_try_to_sleep(setup_timestamp);
 
     switch (setup_timestamp) {
       case 1:
@@ -124,12 +141,14 @@ void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
         hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
         break;
     }
+#endif /* GLORIA_RADIO_SLEEP */
   }
   else {
     gloria_radio_setup_callback();
   }
 }
 
+#if GLORIA_RADIO_SLEEP
 /*
  * sets radio in sleep mode if the time until the future_timestamp is enough
  * returns the future_timesamp - the wake-up time of the radio, if time is enough to sleep
@@ -156,14 +175,18 @@ static uint64_t gloria_try_to_sleep(uint64_t future_timestamp) {
     return 0;
   }
 }
+#endif /* GLORIA_RADIO_SLEEP */
 
 /*
  * radio setup and start of tx/rx
  */
 static void gloria_radio_setup_callback() {
+
+#if GLORIA_RADIO_SLEEP
   if (radio_sleeping) {
     radio_wakeup();
   }
+#endif /* GLORIA_RADIO_SLEEP */
 
   //radio_set_lora_syncword(LORA_SYNCWORD_PERMASENSE);
 

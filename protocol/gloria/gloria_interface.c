@@ -108,16 +108,16 @@ void gloria_start(uint16_t initiator_id,
   flood.sync_timer = 0;
   flood.lp_listening = false;
 
-  memset(&message, 0, sizeof(gloria_message_t));
   message.header.type = 0;
+  message.header.sync = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
+  message.header.slot_index = 0;
   // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
 
   if (initiator_id == NODE_ID) {
     // send flood
-    uint64_t marker = ((hs_timer_get_current_timestamp() + GLORIA_RADIO_WAKEUP_TIME + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
+    uint64_t marker = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
     flood.marker = marker;    // marker (timestamp when flood shall start) must be set on the initiator
     message.header.dst = 0;   // 0 means broadcast
-    message.header.sync = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
     flood.initial = true;     // this node is the initator
     memcpy(message.payload, payload, arg_payload_len);
     flood.message = &message;

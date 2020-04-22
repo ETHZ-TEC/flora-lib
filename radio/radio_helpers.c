@@ -298,6 +298,8 @@ void radio_set_tx(uint64_t timestamp)
 {
   radio_command_scheduled = true;
   SX126xSetTxWithoutExecute(0);
+  PIN_XOR(COM_GPIO2);
+  PIN_XOR(COM_GPIO2);
   hs_timer_schedule(timestamp, &radio_execute);
 }
 
