@@ -99,9 +99,9 @@ uint32_t uart_tx(char* buffer, uint32_t size)
 }
 
 /* send directly without using the TX FIFO or DMA support / interrupts (blocking call) */
-bool uart_tx_direct(uint8_t* buffer, uint32_t size)
+bool uart_tx_direct(char* buffer, uint32_t size)
 {
-  return (HAL_OK == HAL_UART_Transmit(&UART, buffer, size, 5000));
+  return (HAL_OK == HAL_UART_Transmit(&UART, (uint8_t*)buffer, size, 5000));
 }
 
 void uart_tx_fifo_send(void)

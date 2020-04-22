@@ -39,7 +39,7 @@ uint32_t uart_tx(char* buffer, uint32_t size);
 /*
  * Write synchronously to the UART device (blocking call)
  */
-bool uart_tx_direct(uint8_t* buffer, uint32_t size);
+bool uart_tx_direct(char* buffer, uint32_t size);
 
 void uart_transmit_fifo(void);
 
