@@ -15,7 +15,7 @@ gloria_flood_t* current_flood = NULL;
 static void (*flood_callback)();
 
 static void gloria_rx_callback(uint8_t* payload, uint8_t size);
-static void gloria_proccess_rx(uint8_t* payload, uint8_t size);
+static void gloria_process_rx(uint8_t* payload, uint8_t size);
 static void gloria_tx_callback();
 
 static void gloria_process_slot();
@@ -151,14 +151,14 @@ static void gloria_rx_callback(uint8_t* payload, uint8_t size) {
     gloria_finish_slot();
   }
   else if (size >= GLORIA_HEADER_LENGTH) {
-    gloria_proccess_rx(payload, size);
+    gloria_process_rx(payload, size);
   }
   else {
     gloria_finish_slot();
   }
 }
 
-static void gloria_proccess_rx(uint8_t* payload, uint8_t size) {
+static void gloria_process_rx(uint8_t* payload, uint8_t size) {
   gloria_message_t* message = (gloria_message_t*) payload;
 
     if (!current_flood->msg_received) {
