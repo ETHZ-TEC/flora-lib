@@ -282,7 +282,7 @@ void elwb_run(void)
         ELWB_RCV_SCHED();
       }
 
-      elwb_time_t t_ref;
+      elwb_time_t t_ref = 0;
       if (ELWB_GLOSSY_IS_T_REF_UPDATED()) {      /* schedule received? */
     #if ELWB_CONF_SCHED_CRC
         /* check the CRC */
