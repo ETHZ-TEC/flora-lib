@@ -99,6 +99,13 @@
   #define LOG_TASK_NOTIFY()
 #endif /* LOG_TASK_HANDLE != 0 */
 
+/* color codes */
+#define LOG_COLOR_RED           "\e[31m"
+#define LOG_COLOR_YELLOW        "\e[33m"
+#define LOG_COLOR_GREEN         "\e[31m"
+#define LOG_COLOR_WHITE         "\e[37m"
+#define LOG_COLOR_RESET         "\e[0m"
+
 
 /* --- TYPEDEFS --- */
 

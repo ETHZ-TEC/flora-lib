@@ -169,17 +169,17 @@ void log_println(log_level_t level, const char* module, const char* msg)
 #if LOG_ADD_LEVEL
   if (level == LOG_LEVEL_ERROR) {
  #if LOG_USE_COLORS
-    log_buffer_add("\e[31m", 0);    // set color red
+    log_buffer_add(LOG_COLOR_RED, 0);
  #endif /* LOG_USE_COLORS */
     log_buffer_add(LOG_LEVEL_ERROR_STR, 0);
   } else if (level == LOG_LEVEL_WARNING) {
  #if LOG_USE_COLORS
-    log_buffer_add("\e[33m", 0);    // set color yellow
+    log_buffer_add(LOG_COLOR_YELLOW, 0);
  #endif /* LOG_USE_COLORS */
     log_buffer_add(LOG_LEVEL_WARNING_STR, 0);
   } else if (level == LOG_LEVEL_INFO) {
  #if LOG_USE_COLORS
-    log_buffer_add("\e[37m", 0);    // set color white
+    log_buffer_add(LOG_COLOR_WHITE, 0);
  #endif /* LOG_USE_COLORS */
     log_buffer_add(LOG_LEVEL_INFO_STR, 0);
   } else if (level == LOG_LEVEL_VERBOSE) {
@@ -205,7 +205,7 @@ void log_println(log_level_t level, const char* module, const char* msg)
 
 #if LOG_USE_COLORS
   // reset color
-  log_buffer_add("\e[0m", 0);
+  log_buffer_add(LOG_COLOR_RESET, 0);
 #endif /* LOG_USE_COLORS */
 
   /* print the newline */
