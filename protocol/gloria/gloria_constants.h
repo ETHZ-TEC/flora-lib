@@ -15,16 +15,16 @@
 
 #define GLORIA_RADIO_SLEEP_TIME 2000 // 250us      TODO: calculate min sleep time for which it's worth going into warm sleep mode
 #define GLORIA_RADIO_SLEEP_TIME_COLD 240000000 // 30s  TODO: calculate min sleep time for which it's worth going into cold sleep mode
-#define GLORIA_RADIO_WAKEUP_TIME 4180 // 522.500 �s;   time needed to wake up from warm sleep
+#define GLORIA_RADIO_WAKEUP_TIME 4180 // 522.500 us;   time needed to wake up from warm sleep
 #define GLORIA_RADIO_WAKEUP_TIME_COLD 36000 // 4.5 ms;   time needed to wake up from cold sleep
 #define GLORIA_MIN_RX_TIME 2000   // 250 us;       min time left before rx timeout for which radio is still set in receive mode
 
-#define GLORIA_BLACK_BOX_SYNC_DELAY 16 // 2.000 �s
-#define GLORIA_GAP 7200 // 900.000 �s;           time buffer
-#define GLORIA_FLOOD_FINISH_OVERHEAD 152 // 19.000 �s
-#define GLORIA_RX_TRIGGER_DELAY 682 // 85.250 �s    delay after the rx command has been sent to the radio until it is executed
-#define GLORIA_TX_TRIGGER_DELAY 1010 // 126.250 �s    delay after the tx command has been sent to the radio until it is executed
-#define GLORIA_RX_SETUP 5326 // 665.750 �s        time needed for the rx radio setup
+#define GLORIA_BLACK_BOX_SYNC_DELAY 16 // 2.000 us
+#define GLORIA_GAP 0  //7200 // 900.000 us;           time buffer
+#define GLORIA_FLOOD_FINISH_OVERHEAD 152 // 19.000 us
+#define GLORIA_RX_TRIGGER_DELAY 682 // 85.250 us    delay after the rx command has been sent to the radio until it is executed
+#define GLORIA_TX_TRIGGER_DELAY 1010 // 126.250 us    delay after the tx command has been sent to the radio until it is executed
+#define GLORIA_RX_SETUP 5326 // 665.750 us        time needed for the rx radio setup
 #define GLORIA_TX_SETUP 10083 // 1.260 ms        time needed for the tx radio setup
 
 
