@@ -21,6 +21,11 @@
 #define FLOCKLAB_SWD  0
 #endif /* FLOCKLAB_SWD */
 
+/* don't print color codes */
+#ifndef LOG_USE_COLORS
+#define LOG_USE_COLORS  0
+#endif /* LOG_USE_COLORS */
+
 /* error check */
 #if BOLT_ENABLE || SWO_ENABLE
 /* SWO cannot be used at the moment since the pin is connected to the DIO1 of the SX1262 radio */
