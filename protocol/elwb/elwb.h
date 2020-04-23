@@ -260,6 +260,7 @@
 /* timer */
 #define ELWB_TIMER_SECOND               LPTIMER_SECOND
 #define ELWB_TIMER_NOW()                lptimer_now()
+#define ELWB_TIMER_LAST_EXP()           lptimer_get()
 #define ELWB_TIMER_SET(t, cb)           lptimer_set(t, cb)
 #define ELWB_HFTIMER_SCHEDULE           //TODO
 

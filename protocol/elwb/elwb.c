@@ -64,25 +64,25 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 #define ELWB_SEND_SCHED() \
 {\
   ELWB_GLOSSY_START(NODE_ID, (uint8_t *)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
-  ELWB_WAIT_UNTIL(lptimer_get() + ELWB_CONF_T_SCHED);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_RCV_SCHED() \
 {\
   ELWB_GLOSSY_START(0, (uint8_t *)&schedule, payload_len, ELWB_CONF_N_TX, 1);\
-  ELWB_WAIT_UNTIL(lptimer_get() + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_SEND_PACKET() \
 {\
   ELWB_GLOSSY_START(NODE_ID, (uint8_t*)payload, payload_len, ELWB_CONF_N_TX, 0);\
-  ELWB_WAIT_UNTIL(lptimer_get() + t_slot);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_RCV_PACKET() \
 {\
   ELWB_GLOSSY_START(0, (uint8_t*)payload, payload_len, ELWB_CONF_N_TX, 0);\
-  ELWB_WAIT_UNTIL(lptimer_get() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
   ELWB_GLOSSY_STOP();\
 }
 
@@ -143,7 +143,7 @@ void elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp)
 }
 
 
-/* if argument is given, converts the timestamp (in lptimer ticks) to global network time
+/* if argument is given, converts the timestamp (in elwb timer ticks) to global network time
  * returns the current network time if no argument is given */
 elwb_time_t elwb_get_time(const uint64_t* timestamp)
 {
@@ -196,16 +196,17 @@ void elwb_run(void)
 
   /* --- INIT --- */
   if (ELWB_IS_HOST()) {
-    LOG_INFO_CONST("host node");
     schedule_len = elwb_sched_init(&schedule);
     if (!schedule_len) {
       LOG_ERROR_CONST("schedule has length 0");
     }
   } else {
-    LOG_INFO_CONST("source node");
     sync_state      = BOOTSTRAP;
     node_registered = false;
   }
+
+  start_of_next_round = ELWB_TIMER_LAST_EXP();
+
 
   /* --- begin MAIN LOOP for eLWB --- */
   while (1) {
@@ -663,7 +664,7 @@ end_of_round:
     if (call_preprocess) {
       start_of_next_round -= ELWB_CONF_T_PREPROCESS;    /* wake up earlier such that the pre task can run */
     }
-    if (lptimer_now() > start_of_next_round) {
+    if (ELWB_TIMER_NOW() > start_of_next_round) {
       LOG_ERROR_CONST("wakeup time is in the past");
     }
     ELWB_WAIT_UNTIL(start_of_next_round);
@@ -690,6 +691,12 @@ void elwb_start(void* elwb_task,
 
   memset(&stats, 0, sizeof(elwb_stats_t));
 
+  if (ELWB_IS_HOST()) {
+    LOG_INFO_CONST("host node");
+  } else {
+    LOG_INFO_CONST("source node");
+  }
+
   LOG_INFO("pkt_len: %u, slots: %u, n_tx: %u, t_sched: %lu, t_data: %lu, t_cont: %lu",
            ELWB_CONF_MAX_PKT_LEN,
            ELWB_CONF_MAX_DATA_SLOTS,
@@ -700,11 +707,11 @@ void elwb_start(void* elwb_task,
 
   /* instead of calling elwb_run(), schedule the start */
 #if ELWB_CONF_STARTUP_DELAY > 0
-  ELWB_WAIT_UNTIL(lptimer_get() + ELWB_CONF_STARTUP_DELAY * LPTIMER_SECOND / 1000);
   /* let post task run */
   if (post_task) {
     ELWB_TASK_NOTIFY(post_task);
   }
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_STARTUP_DELAY * LPTIMER_SECOND / 1000);
 #endif /* ELWB_CONF_STARTUP_DELAY */
 
   elwb_run();

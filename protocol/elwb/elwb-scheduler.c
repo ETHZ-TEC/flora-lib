@@ -249,7 +249,6 @@ void elwb_sched_add_node(uint16_t id)
   }
   if (n_nodes >= ELWB_CONF_MAX_NODES) {
     LOG_WARNING("request ignored, max #nodes reached");
-    EVENT_WARNING(EVENT_CC430_NODE_REMOVED, id);
     return;
   }
   elwb_node_list_t* node = 0;
@@ -286,7 +285,6 @@ void elwb_sched_add_node(uint16_t id)
   }
   n_nodes++;
   LOG_INFO("node %u registered", id);
-  EVENT_INFO(EVENT_CC430_NODE_ADDED, id);
 }
 
 
@@ -297,7 +295,6 @@ void elwb_sched_remove_node(elwb_node_list_t* node)
     return;
   }
   LOG_INFO("node %u removed", node->id);
-  EVENT_INFO(EVENT_CC430_NODE_REMOVED, node->id);
   node->id = 0;   /* mark as 'unused' by setting the ID to zero */
   n_nodes--;
   if (node == head) {
