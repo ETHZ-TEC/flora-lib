@@ -9,7 +9,7 @@
 #define PROTOCOL_PROTOCOL_H_
 
 
-#ifdef HOST_ID
+#ifndef HOST_ID
 #define IS_HOST         (HOST_ID == NODE_ID)
 #endif /* HOST_ID */
 
