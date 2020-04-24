@@ -52,13 +52,19 @@ void flocklab_init(void)
   /* input */
   GPIO_InitStruct.Pin = FLOCKLAB_SIG1_Pin | FLOCKLAB_SIG2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+#if FLOCKLAB_SWD
+  /* if SWD is used, actuation must be enabled -> pins will be driven */
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+#else /* FLOCKLAB_SWD */
+  /* SWD not used, actuation can be disabled -> pins need a pulldown */
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+#endif /* FLOCKLAB_SWD */
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   // LED2 is connected to RF_DIO1 on COM boards on FlockLab -> configure it as input to not drive LED2 signal from MCU as well
-  GPIO_InitStruct.Pin = FLOCKLAB_LED2_Pin;
+  GPIO_InitStruct.Pin = FLOCKLAB_LED2_Pin | BOLT_ACK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 

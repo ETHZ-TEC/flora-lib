@@ -251,7 +251,7 @@ void SX126xSetStandby( RadioStandbyModes_t standbyConfig )
         OperatingMode = MODE_STDBY_XOSC;
     }
 
-    flocklab_reset_pins();
+    //flocklab_reset_pins();
 }
 
 void SX126xSetFs( void )
