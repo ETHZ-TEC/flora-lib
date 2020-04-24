@@ -156,6 +156,11 @@ elwb_time_t elwb_get_time(const uint64_t* timestamp)
   return network_time + ((int64_t)ts - (int64_t)last_synced) * (1000000 - stats.drift) / (ELWB_TIMER_SECOND);
 }
 
+elwb_time_t elwb_get_time_sec(const uint64_t* timestamp)
+{
+  return elwb_get_time(timestamp) / 1000000;
+}
+
 
 void elwb_set_drift(int32_t drift_ppm)
 {

@@ -358,6 +358,7 @@ void     elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp);
 /* if argument is given, converts the timestamp (in ELWB timer ticks) to global network time
  * returns the current network time if no argument is given */
 elwb_time_t elwb_get_time(const uint64_t* timestamp);
+elwb_time_t elwb_get_time_sec(const uint64_t* timestamp);
 
 const elwb_stats_t * const elwb_get_stats(void);
 
