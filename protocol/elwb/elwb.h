@@ -262,6 +262,7 @@
 #define ELWB_TIMER_NOW()                lptimer_now()
 #define ELWB_TIMER_LAST_EXP()           lptimer_get()
 #define ELWB_TIMER_SET(t, cb)           lptimer_set(t, cb)
+#define ELWB_TIMER_STOP()               lptimer_set(0, 0)
 #define ELWB_HFTIMER_SCHEDULE           //TODO
 
 /* glossy-style communication primitive */
@@ -352,6 +353,7 @@ void     elwb_start(void* elwb_task,
                     void* post_elwb_task,
                     void* in_queue_handle,
                     void* out_queue_handle);    /* queue data type must be dpp_message_t */
+void     elwb_stop(void);
 
 void     elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp);
 

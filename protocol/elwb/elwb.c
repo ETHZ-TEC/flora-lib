@@ -89,21 +89,24 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 
 #define ELWB_WAIT_UNTIL(time) \
 {\
-  ELWB_TIMER_SET(time, elwb_notify);\
-  ELWB_SUSPENDED();\
-  ELWB_TASK_YIELD();\
-  ELWB_RESUMED();\
+  if (elwb_running) {\
+    ELWB_TIMER_SET(time, elwb_notify);\
+    ELWB_SUSPENDED();\
+    ELWB_TASK_YIELD();\
+    ELWB_RESUMED();\
+  }\
 }
 
 
 static elwb_stats_t       stats;
 static elwb_time_t        last_synced;
 static elwb_time_t        network_time;
-static void*              task_handle = 0;
-static void*              post_task   = 0;
-static void*              pre_task    = 0;
-static void*              rx_queue    = 0;
-static void*              tx_queue    = 0;
+static void*              task_handle  = 0;
+static void*              post_task    = 0;
+static void*              pre_task     = 0;
+static void*              rx_queue     = 0;
+static void*              tx_queue     = 0;
+static bool               elwb_running = false;
 
 
 /* private (not exposed) scheduler functions */
@@ -212,9 +215,8 @@ void elwb_run(void)
 
   start_of_next_round = ELWB_TIMER_LAST_EXP();
 
-
   /* --- begin MAIN LOOP for eLWB --- */
-  while (1) {
+  while (elwb_running) {
 
     /* --- PREPROCESS --- */
   #if ELWB_CONF_T_PREPROCESS
@@ -252,18 +254,15 @@ void elwb_run(void)
       /* --- RECEIVE SCHEDULE --- */
       payload_len = 0;
       if (sync_state == BOOTSTRAP) {
-        while (1) {
+        while (elwb_running) {
           schedule.n_slots = 0;   /* reset */
           stats.bootstrap_cnt++;
           elwb_time_t bootstrap_started = ELWB_TIMER_NOW();
           LOG_INFO_CONST("bootstrap");
           /* synchronize first! wait for the first schedule... */
           do {
-    #if WATCHDOG_CONF_ON && !WATCHDOG_CONF_RESET_ON_TA1IFG
-            watchdog_reset();
-    #endif /* WATCHDOG_CONF_ON */
             ELWB_RCV_SCHED();
-          } while (!ELWB_GLOSSY_IS_T_REF_UPDATED() && ((ELWB_TIMER_NOW() - bootstrap_started) < ELWB_CONF_BOOTSTRAP_TIMEOUT));
+          } while (elwb_running && !ELWB_GLOSSY_IS_T_REF_UPDATED() && ((ELWB_TIMER_NOW() - bootstrap_started) < ELWB_CONF_BOOTSTRAP_TIMEOUT));
           /* exit bootstrap mode if schedule received, exit bootstrap state */
           if (ELWB_GLOSSY_IS_T_REF_UPDATED()) {
             break;
@@ -674,6 +673,8 @@ end_of_round:
     }
     ELWB_WAIT_UNTIL(start_of_next_round);
   }
+
+  LOG_INFO_CONST("stopped");
 }
 
 
@@ -688,11 +689,12 @@ void elwb_start(void* elwb_task,
     return;
   }
 
-  task_handle = elwb_task;
-  pre_task    = pre_elwb_task;
-  post_task   = post_elwb_task;
-  rx_queue    = in_queue;
-  tx_queue    = out_queue;
+  task_handle  = elwb_task;
+  pre_task     = pre_elwb_task;
+  post_task    = post_elwb_task;
+  rx_queue     = in_queue;
+  tx_queue     = out_queue;
+  elwb_running = true;
 
   memset(&stats, 0, sizeof(elwb_stats_t));
 
@@ -720,6 +722,14 @@ void elwb_start(void* elwb_task,
 #endif /* ELWB_CONF_STARTUP_DELAY */
 
   elwb_run();
+}
+
+
+void elwb_stop(void)
+{
+  ELWB_TIMER_STOP();
+  elwb_running = false;
+  elwb_notify();
 }
 
 #endif /* ELWB_ENABLE */
