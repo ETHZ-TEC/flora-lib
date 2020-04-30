@@ -123,7 +123,7 @@ static void log_buffer_add(const char* str, uint32_t len)
     len = strlen(str);
   }
 #if LOG_PRINT_IMMEDIATELY
-  LOG_PRINT_FUNC((uint8_t*)str, strlen(str));
+  LOG_PRINT_FUNC((char*)str, strlen(str));
 
 #else /* LOG_PRINT_IMMEDIATELY */
   if (!log_buffer_full()) {

@@ -63,6 +63,10 @@ void system_init()
   /* make sure PC13 (RF_DIO1) EXTI is disabled (only needed for wakeup from LPM) */
   HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 
+#if !CLI_ENABLE
+  HAL_NVIC_DisableIRQ(USART1_IRQn);
+#endif /* CLI_ENABLE */
+
   system_initialized = true;
 }
 
