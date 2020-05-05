@@ -64,10 +64,12 @@
 #endif /* LOG_NEWLINE */
 
 #if LOG_ADD_LEVEL
-  #define LOG_LEVEL_ERROR_STR   "ERROR  "
-  #define LOG_LEVEL_WARNING_STR "WARN   "
-  #define LOG_LEVEL_INFO_STR    "INFO   "
-  #define LOG_LEVEL_VERBOSE_STR "DEBUG  "
+  #ifndef LOG_LEVEL_ERROR_STR
+    #define LOG_LEVEL_ERROR_STR   "ERROR  "
+    #define LOG_LEVEL_WARNING_STR "WARN   "
+    #define LOG_LEVEL_INFO_STR    "INFO   "
+    #define LOG_LEVEL_VERBOSE_STR "DEBUG  "
+  #endif /* LOG_LEVEL_ERROR_STR */
 #else /* LOG_ADD_LEVEL */
   #define LOG_LEVEL_ERROR_STR
   #define LOG_LEVEL_WARNING_STR
