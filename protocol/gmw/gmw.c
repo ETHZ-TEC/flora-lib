@@ -464,7 +464,7 @@ void gmw_run(void)
       control_len = gmw_control_compile_to_buffer(&control, gmw_payload,
                                                   GMW_MAX_PKT_LEN);
       if(control_len == 0) {
-        LOG_ERROR_CONST("Packet buffer too small to send the control.");
+        LOG_ERROR("Packet buffer too small to send the control.");
         break;
       }
 
@@ -495,7 +495,7 @@ void gmw_run(void)
                                                   GMW_EVT_CONTROL_RCVD,
                                                   GMW_EVT_PKT_OK);
       if(!(GMW_RUNNING == sync_state || GMW_SUSPENDED == sync_state)) {
-        LOG_ERROR_CONST("host on_control_slot_post returned invalid state!");
+        LOG_ERROR("host on_control_slot_post returned invalid state!");
         while(1);
       }
 
@@ -559,14 +559,14 @@ BOOTSTRAP_MODE:
         /* reconstruct the control struct */
         if(!gmw_control_decompile_from_buffer(&control, gmw_payload,
                                               GMW_GET_PAYLOAD_LEN())) {
-          LOG_WARNING_CONST("Reception of control buggy. Back to bootstrap.");
+          LOG_WARNING("Reception of control buggy. Back to bootstrap.");
           goto BOOTSTRAP_MODE;
         }
 
   #if GMW_CONF_USE_MAGIC_NUMBER
         /* check the magic number */
         if(control.magic_number != GMW_CONF_CONTROL_MAGIC_NUMBER) {
-          LOG_WARNING_CONST("Received packet is not a valid control packet. Back to bootstrap.");
+          LOG_WARNING("Received packet is not a valid control packet. Back to bootstrap.");
           goto BOOTSTRAP_MODE;
         }
   #endif /*GMW_CONF_USE_MAGIC_NUMBER*/
@@ -585,7 +585,7 @@ BOOTSTRAP_MODE:
           goto BOOTSTRAP_MODE;
         }
       } else {
-        LOG_WARNING_CONST("schedule missed or corrupted");
+        LOG_WARNING("schedule missed or corrupted");
         /* we can only estimate t_ref */
         t_ref += ((int32_t)control.schedule.period * GMW_LPTIMER_SECOND +
            GMW_PPM_TO_TICKS((uint32_t)control.schedule.period * stats.drift)) /
@@ -611,7 +611,7 @@ BOOTSTRAP_MODE:
           pkt_event = GMW_EVT_PKT_SILENCE;
 
         } else {
-          LOG_WARNING_CONST("packet reception event is buggy...");
+          LOG_WARNING("packet reception event is buggy...");
         }
   #endif /* GMW_CONF_USE_NOISE_DETECTION */
       }
@@ -743,7 +743,7 @@ BOOTSTRAP_MODE:
             stats.pkt_silence_cnt++;
 
           } else {
-            LOG_ERROR_CONST("invalid packet reception event");
+            LOG_ERROR("invalid packet reception event");
             pkt_event = GMW_EVT_PKT_SILENCE;
           }
         }
@@ -892,7 +892,7 @@ gmw_init(void* pre_gmw_proc,
   /* check if pre_process is correctly set */
   if(((pre_gmw_proc != NULL) && (GMW_CONF_T_PREPROCESS == 0)) ||
      ((pre_gmw_proc == NULL) && (GMW_CONF_T_PREPROCESS != 0))) {
-    LOG_ERROR_CONST("A pre-processing task is set, but "
+    LOG_ERROR("A pre-processing task is set, but "
                     "GMW_CONF_T_PREPROCESS is zero or vice-versa.");
   }
 
@@ -912,9 +912,9 @@ gmw_init(void* pre_gmw_proc,
   gmw_control_init(&control);
 
   if (GMW_IS_HOST) {
-    LOG_INFO_CONST("Starting GMW as host node");
+    LOG_INFO("Starting GMW as host node");
   } else {
-    LOG_INFO_CONST("Starting GMW as source node");
+    LOG_INFO("Starting GMW as source node");
   }
   LOG_INFO("  t_ctrl=%ums, t_data=%ums, t_cont=%ums, data=%ub, slots=%u, tx=%u, hop=%u, scale=%u",
            (uint16_t)(GMW_CONF_T_CONTROL / 1000),

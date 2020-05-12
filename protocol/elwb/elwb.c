@@ -206,7 +206,7 @@ void elwb_run(void)
   if (ELWB_IS_HOST()) {
     schedule_len = elwb_sched_init(&schedule);
     if (!schedule_len) {
-      LOG_ERROR_CONST("schedule has length 0");
+      LOG_ERROR("schedule has length 0");
     }
   } else {
     sync_state      = BOOTSTRAP;
@@ -258,7 +258,7 @@ void elwb_run(void)
           schedule.n_slots = 0;   /* reset */
           stats.bootstrap_cnt++;
           elwb_time_t bootstrap_started = ELWB_TIMER_NOW();
-          LOG_INFO_CONST("bootstrap");
+          LOG_INFO("bootstrap");
           /* synchronize first! wait for the first schedule... */
           do {
             ELWB_RCV_SCHED();
@@ -269,7 +269,7 @@ void elwb_run(void)
           }
           /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
           stats.sleep_cnt++;
-          LOG_WARNING_CONST("timeout");
+          LOG_WARNING("timeout");
           /* poll the post process */
           if (post_task) {
             ELWB_TASK_NOTIFY(post_task);
@@ -289,7 +289,7 @@ void elwb_run(void)
                            *((uint8_t*)&schedule + payload_len - 2);
         if (crc16((uint8_t*)&schedule, payload_len - 2, 0) != pkt_crc) {
           /* not supposed to happen => go back to bootstrap */
-          LOG_ERROR_CONST("invalid CRC for eLWB schedule");
+          LOG_ERROR("invalid CRC for eLWB schedule");
           sync_state = BOOTSTRAP;
           continue;
         }
@@ -327,7 +327,7 @@ void elwb_run(void)
           continue;
         }
         stats.unsynced_cnt++;
-        LOG_WARNING_CONST("schedule missed");
+        LOG_WARNING("schedule missed");
         /* we can only estimate t_ref and t_ref */
         if (!ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
           /* missed schedule was during a contention/data round -> reset t_ref */
@@ -349,7 +349,7 @@ void elwb_run(void)
 
       /* schedule sanity check (#slots mustn't exceed the compile-time fixed max. # slots!) */
       if (ELWB_SCHED_N_SLOTS(&schedule) > ELWB_SCHED_MAX_SLOTS) {
-        LOG_ERROR_CONST("n_slots exceeds limit!");
+        LOG_ERROR("n_slots exceeds limit!");
         ELWB_SCHED_CLR_SLOTS(&schedule);
         schedule.n_slots += ELWB_SCHED_MAX_SLOTS;
       }
@@ -398,7 +398,7 @@ void elwb_run(void)
                 payload_len = ELWB_PAYLOAD_LEN(payload);
                 /* sanitiy check for packet size */
                 if (payload_len > ELWB_CONF_MAX_PKT_LEN) {
-                  LOG_ERROR_CONST("invalid payload length detected");
+                  LOG_ERROR("invalid payload length detected");
                   payload_len = 0;
                 }
               }
@@ -421,7 +421,7 @@ void elwb_run(void)
             }
 
           } else {
-            LOG_VERBOSE_CONST("no message to send (data slot ignored)");
+            LOG_VERBOSE("no message to send (data slot ignored)");
           }
 
         } else {
@@ -450,7 +450,7 @@ void elwb_run(void)
         #endif /* ELWB_CONF_DATA_ACK */
                 } else {
                   stats.pkt_dropped++;
-                  LOG_WARNING_CONST("RX queue full, message dropped");
+                  LOG_WARNING("RX queue full, message dropped");
                 }
               }
               stats.pkt_cnt++;
@@ -494,7 +494,7 @@ void elwb_run(void)
           uint32_t first_slot = my_slots >> 8;
           uint32_t num_slots  = my_slots & 0xff;
           if (ELWB_GLOSSY_RX_CNT()) {
-            LOG_VERBOSE_CONST("D-ACK received");
+            LOG_VERBOSE("D-ACK received");
             uint8_t* data_acks = (uint8_t*)payload;
             uint32_t i;
             for (i = 0; i < num_slots; i++) {
@@ -534,7 +534,7 @@ void elwb_run(void)
         /* node not yet registered? -> include node ID in the request */
         if (!node_registered) {
           payload[0] = NODE_ID;
-          LOG_INFO_CONST("transmitting node ID");
+          LOG_INFO("transmitting node ID");
         }
   #if ELWB_CONF_CONT_USE_HFTIMER
         /* contention slot requires precise timing: better to use HF timer for this wake-up! */
@@ -567,7 +567,7 @@ void elwb_run(void)
           if (ELWB_GLOSSY_SIGNAL_DETECTED()) {
             /* set the period to 0 to notify the scheduler that at least one nodes has data to send */
             schedule.period = 0;
-            LOG_VERBOSE_CONST("contention detected");
+            LOG_VERBOSE("contention detected");
             /* compute 2nd schedule */
             elwb_sched_compute(&schedule, 0);  /* do not allocate slots for host */
             payload[0] = schedule.period;
@@ -594,7 +594,7 @@ void elwb_run(void)
             schedule.n_slots = 0;
           } /* else: all good, no need to change anything */
         } else {
-          LOG_WARNING_CONST("2nd schedule missed");
+          LOG_WARNING("2nd schedule missed");
         }
       }
     }
@@ -669,12 +669,12 @@ end_of_round:
       start_of_next_round -= ELWB_CONF_T_PREPROCESS;    /* wake up earlier such that the pre task can run */
     }
     if (ELWB_TIMER_NOW() > start_of_next_round) {
-      LOG_ERROR_CONST("wakeup time is in the past");
+      LOG_ERROR("wakeup time is in the past");
     }
     ELWB_WAIT_UNTIL(start_of_next_round);
   }
 
-  LOG_INFO_CONST("stopped");
+  LOG_INFO("stopped");
 }
 
 
@@ -685,7 +685,7 @@ void elwb_start(void* elwb_task,
                 void* out_queue)
 {
   if (!in_queue || !out_queue || !elwb_task) {
-    LOG_ERROR_CONST("invalid parameters");
+    LOG_ERROR("invalid parameters");
     return;
   }
 
@@ -699,9 +699,9 @@ void elwb_start(void* elwb_task,
   memset(&stats, 0, sizeof(elwb_stats_t));
 
   if (ELWB_IS_HOST()) {
-    LOG_INFO_CONST("host node");
+    LOG_INFO("host node");
   } else {
-    LOG_INFO_CONST("source node");
+    LOG_INFO("source node");
   }
 
   LOG_INFO("pkt_len: %u, slots: %u, n_tx: %u, t_sched: %lu, t_data: %lu, t_cont: %lu",

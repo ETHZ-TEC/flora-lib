@@ -476,7 +476,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
         curr_node = curr_node->next;
       }
     }
-    LOG_INFO_CONST(print_buffer);
+    LOG_INFO(print_buffer);
     
     sched_state = ELWB_SCHED_STATE_IDLE;
     /* schedule for next round will be set below */
@@ -549,7 +549,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   if (((uint32_t)ELWB_CONF_SCHED_PERIOD_MIN * 1000) <=
      (SCHEDUNITS_TO_MS(ELWB_T_ROUND_MAX) + 
       ((uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_PREPROCESS)))) {
-    LOG_ERROR_CONST("invalid parameters");
+    LOG_ERROR("invalid parameters");
     return 0;
   }
   /* initialize node list */

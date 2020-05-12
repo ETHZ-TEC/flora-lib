@@ -40,11 +40,11 @@ bool bolt_init(void)
 
   bolt_state = BOLT_STATE_IDLE;
   if (!bolt_status()) {
-    LOG_ERROR_CONST("not accessible, init failed");
+    LOG_ERROR("not accessible, init failed");
     bolt_state = BOLT_STATE_INVALID;
     return false;
   }
-  LOG_VERBOSE_CONST("initialized");
+  LOG_VERBOSE("initialized");
 
   return true;
 }
@@ -60,16 +60,16 @@ void bolt_release(void)
 bool bolt_acquire(bolt_op_mode_t mode)
 {
   if (BOLT_ACK_STATUS || BOLT_REQ_STATUS) {
-    LOG_ERROR_CONST("request failed (REQ or ACK still high)");
+    LOG_ERROR("request failed (REQ or ACK still high)");
     return false;
   }
   if (BOLT_STATE_IDLE != bolt_state) {
-    LOG_WARNING_CONST("not in idle state, operation skipped");
+    LOG_WARNING("not in idle state, operation skipped");
     return false;
   }
   if (BOLT_OP_READ == mode) {
     if (!BOLT_DATA_AVAILABLE) {
-      LOG_WARNING_CONST("no data available");
+      LOG_WARNING("no data available");
       return false;
     }
     PIN_CLR(BOLT_MODE); /* 0 = READ */
@@ -117,7 +117,7 @@ uint32_t bolt_read(uint8_t* out_data)
   }
   if (BOLT_ACK_STATUS) {
     /* ACK is still high -> packet is too long */
-    LOG_WARNING_CONST("received packet is too long");
+    LOG_WARNING("received packet is too long");
     rcvd_bytes = 0;   /* error condition */
   }
 
@@ -149,7 +149,7 @@ bool bolt_status(void)
   }
   /* check if data in output queue */
   if (BOLT_DATA_IN_OUTPUT_QUEUE) {
-    LOG_WARNING_CONST("can't verify status, output queue is probably full");
+    LOG_WARNING("can't verify status, output queue is probably full");
     return true;
   }
   return false;

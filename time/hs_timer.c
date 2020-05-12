@@ -270,7 +270,7 @@ void hs_timer_schedule(uint64_t timestamp, void (*callback)()) {
     // FLOCKLAB_PIN_SET(FLOCKLAB_LED1);
     // FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
     callback();
-    LOG_WARNING_CONST("Schedule too late!");
+    LOG_WARNING("Schedule too late!");
   }
   else {
     hs_timer_scheduled_timestamp = timestamp;

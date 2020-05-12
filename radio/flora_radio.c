@@ -403,7 +403,7 @@ void radio_OnRadioRxDone(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t 
       }
     }
     else {
-      LOG_ERROR_CONST("CRC Error on message reception");
+      LOG_ERROR("CRC Error on message reception");
     }
   }
 #endif
@@ -424,7 +424,7 @@ void radio_OnRadioRxError(void) {
 
 #ifdef FLORA_DEBUG
   if (!radio_disable_log) {
-    LOG_WARNING_CONST("CRC Error Timeout");
+    LOG_WARNING("CRC Error Timeout");
   }
 #endif
 }
@@ -439,7 +439,7 @@ void radio_OnRadioRxTimeout(void) {
 
 #ifdef FLORA_DEBUG
   if (!radio_disable_log) {
-    LOG_WARNING_CONST("Rx Timeout");
+    LOG_WARNING("Rx Timeout");
   }
 #endif
 }

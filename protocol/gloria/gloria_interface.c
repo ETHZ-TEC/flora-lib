@@ -55,22 +55,22 @@ void gloria_start(uint16_t initiator_id,
                   uint8_t sync_slot)
 {
   if (!payload) {
-    LOG_WARNING_CONST("invalid parameters");
+    LOG_WARNING("invalid parameters");
     return;
   }
 
   /* radio must be woken from sleep mode! */
   if (radio_sleeping) {
-    LOG_WARNING_CONST("radio is in sleep mode");
+    LOG_WARNING("radio is in sleep mode");
     return;
   }
 
   /* argument checks */
   if (payload_len > GLORIA_INTERFACE_MAX_PAYLOAD_LEN) {
     if (initiator_id == NODE_ID) {
-      LOG_WARNING_CONST("payload_len passed to gloria_start as initiator exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before sending!");
+      LOG_WARNING("payload_len passed to gloria_start as initiator exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before sending!");
     } else {
-      LOG_WARNING_CONST("payload_len passed to gloria_start as receiver exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before returning!");
+      LOG_WARNING("payload_len passed to gloria_start as receiver exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before returning!");
     }
     arg_payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
   }
@@ -145,10 +145,10 @@ uint8_t gloria_stop(void)
   if (flood_running) {
     if (arg_initiator_id == NODE_ID) {
       // If this node is initiator, we can detect if flood did not terminate and warn the user
-      LOG_WARNING_CONST("Stopping glossy while flood sending is still ongoing!");
+      LOG_WARNING("Stopping glossy while flood sending is still ongoing!");
     }
     else {
-      //LOG_VERBOSE_CONST("Stopping glossy before finishing to participate in the flood!");
+      //LOG_VERBOSE("Stopping glossy before finishing to participate in the flood!");
     }
 
     // put radio in standby mode
@@ -277,7 +277,7 @@ uint32_t gloria_get_time_on_air(uint8_t payload_len) {
     uint32_t nBits = nPreambleBits + 3*8 + 1*8 + 0*8 + phyPl*8 + 2*8;
     toa = nBits * 1000000UL / bitrate;
   } else {
-    LOG_WARNING_CONST("Unknown modulation!");
+    LOG_WARNING("Unknown modulation!");
   }
   return toa;
 }
@@ -307,7 +307,7 @@ static void copy_payload(void) {
     memcpy(arg_payload_ptr, flood.message->payload, lastrun_payload_len);
   }
   else {
-    LOG_WARNING_CONST("Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
+    LOG_WARNING("Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
     memcpy(arg_payload_ptr, flood.message->payload, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
     lastrun_payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
   }
@@ -319,7 +319,7 @@ static void copy_payload(void) {
 static void update_t_ref(void) {
   lastrun_t_ref_updated = false;
   if (flood.reconstructed_marker == 0) {
-    LOG_WARNING_CONST("Tried to update t_ref with flood.reconstructed_marker==0!");
+    LOG_WARNING("Tried to update t_ref with flood.reconstructed_marker==0!");
     return;
   }
 

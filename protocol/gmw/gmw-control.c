@@ -83,11 +83,11 @@ gmw_control_init(gmw_control_t *control)
 #endif /* GMW_CONF_CONTROL_USER_BYTES */
 
   if(sizeof(gmw_slot_config_t) != GMW_CONTROL_SLOT_CONFIG_TYPE_SIZE) {
-    LOG_ERROR_CONST("sizeof(gmw_slot_config_t) != GMW_CONTROL_SLOT_CONFIG_TYPE_SIZE");
+    LOG_ERROR("sizeof(gmw_slot_config_t) != GMW_CONTROL_SLOT_CONFIG_TYPE_SIZE");
   }
 
   if(sizeof(gmw_control_t) > GMW_MAX_PKT_LEN) {
-    LOG_WARNING_CONST("WARNING: A full control structure does not fit in a packet! "
+    LOG_WARNING("WARNING: A full control structure does not fit in a packet! "
                       "Reduce control size or use static schedule/config.");
   }
 
@@ -113,7 +113,7 @@ gmw_control_compile_to_buffer(const gmw_control_t* control,
           * GMW_CONF_MAX_SLOTS          // size of slot_config
           + GMW_CONTROL_SLOT_CONFIG_TIMELIST_SIZE)  // size of slot_time_list
         * GMW_CONF_USE_CONTROL_SLOT_CONFIG)) > len) {
-    LOG_WARNING_CONST("Packet buffer too small to send the required "
+    LOG_WARNING("Packet buffer too small to send the required "
                       "control information.");
     return 0;
   }
@@ -122,7 +122,7 @@ gmw_control_compile_to_buffer(const gmw_control_t* control,
   if(!GMW_CONF_USE_STATIC_SCHED) {
 
     if(GMW_CONF_MAX_SLOTS < n_slots) {
-      LOG_ERROR_CONST("n_slots is too large (>= GMW_CONF_MAX_SLOTS)");
+      LOG_ERROR("n_slots is too large (>= GMW_CONF_MAX_SLOTS)");
     }
     memcpy(buffer, &control->schedule, GMW_SCHED_SECTION_HEADER_LEN);
     buffer += GMW_SCHED_SECTION_HEADER_LEN;
@@ -166,7 +166,7 @@ gmw_control_compile_to_buffer(const gmw_control_t* control,
 #endif /*GMW_CONF_USE_MAGIC_NUMBER*/
 
   if(!((uint32_t)buffer - start_address)) {
-    LOG_WARNING_CONST("Control packet contains no payload! Glossy behavior "
+    LOG_WARNING("Control packet contains no payload! Glossy behavior "
                       "undefined.");
     return 1;
 

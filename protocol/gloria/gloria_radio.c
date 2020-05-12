@@ -54,7 +54,7 @@ void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
         break;
       case 0:
         // skip slot
-        LOG_WARNING_CONST("Tx too late!");
+        LOG_WARNING("Tx too late!");
         callback();
         break;
       default:
@@ -89,7 +89,7 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
         break;
       case 0:
         // skip slot
-        LOG_WARNING_CONST("Tx ack too late!");
+        LOG_WARNING("Tx ack too late!");
         callback();
         break;
       default:
@@ -134,7 +134,7 @@ void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
           }
           else {
             // skip slot
-            LOG_WARNING_CONST("Rx too late!");
+            LOG_WARNING("Rx too late!");
             rx_callback(NULL, 0);
           }
           break;
