@@ -21,13 +21,7 @@ void system_boot() {
 
 void system_init()
 {
-#ifndef DEVKIT
-  HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_B, GPIO_PIN_12); // RADIO_NSS
-  HAL_PWREx_EnableGPIOPullDown(PWR_GPIO_B, GPIO_PIN_1); // BOLT_REQ
-  HAL_PWREx_EnableGPIOPullDown(PWR_GPIO_B, GPIO_PIN_2); // BOLT_MODE
-  HAL_PWREx_EnableGPIOPullDown(PWR_GPIO_A, GPIO_PIN_5); // BOLT_SCK
-  HAL_PWREx_EnableGPIOPullDown(PWR_GPIO_A, GPIO_PIN_7); // BOLT_MOSI
-#else
+#ifdef DEVKIT
   HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A, GPIO_PIN_8); // RADIO_NSS
 #endif
   HAL_PWREx_EnablePullUpPullDownConfig();

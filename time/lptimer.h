@@ -9,7 +9,15 @@
 #define TIME_LPTIMER_H_
 
 
-#define LPTIMER_SECOND      32768       /* ticks per second */
+#define LPTIMER_SECOND      32768LU       /* ticks per second */
+
+#ifndef LPTIMER_RESET_WDG_ON_OVF
+#define LPTIMER_RESET_WDG_ON_OVF  1     /* reset watchdog inside the timer overflow interrupt? (only works if watchdog configured and enabled) */
+#endif /* LPTIMER_RESET_WDG_ON_OVF */
+
+#ifndef LPTIMER_CHECK_EXP_TIME
+#define LPTIMER_CHECK_EXP_TIME    1     /* check expiration time inside lptimer_set() and issue a warning if it is in the past or far in the future */
+#endif /* LPTIMER_CHECK_EXP_TIME */
 
 /* returns relative time (elapsed time since MCU start) in milliseconds */
 #define LPTIMER_NOW_MS()    (uint32_t)(lptimer_now() * 1000 / LPTIMER_SECOND)

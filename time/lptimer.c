@@ -36,6 +36,12 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
   } else {
     __HAL_LPTIM_COMPARE_SET(hrtim, (uint16_t)t_exp);
     __HAL_LPTIM_ENABLE_IT(hrtim, LPTIM_IT_CMPM);
+#if LPTIMER_CHECK_EXP_TIME
+    uint64_t curr_timestamp = lptimer_now();
+    if (t_exp <= curr_timestamp || t_exp > (curr_timestamp + LPTIMER_SECOND * 86400)) {
+      LOG_WARNING("wakeup time is in the past or far in the future");
+    }
+#endif /* LPTIMER_CHECK_EXP_TIME */
   }
 }
 
@@ -67,6 +73,13 @@ void lptimer_clear(void)
 void lptimer_update(void)
 {
   lptimer_ext++;
+
+#if LPTIMER_RESET_WDG_ON_OVF
+ #ifdef HAL_IWDG_MODULE_ENABLED
+  /* kick the watchdog */
+  HAL_IWDG_Refresh(&hiwdg);
+ #endif /* HAL_IWDG_MODULE_ENABLED */
+#endif /* LPTIMER_RESET_WDG_ON_OVF */
 }
 
 uint64_t lptimer_now(void)
