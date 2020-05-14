@@ -219,7 +219,6 @@ void log_println(log_level_t level, const char* module, const char* msg)
 void log_printfln(log_level_t level, const char* module, const char* msg, ...)
 {
   va_list lst;
-  /* since a common buffer is used, it must be protected with a semaphore */
   va_start(lst, msg);
   vsnprintf(log_print_buffer, sizeof(log_print_buffer), msg, lst);
   va_end(lst);

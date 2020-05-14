@@ -38,8 +38,10 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
     __HAL_LPTIM_ENABLE_IT(&hlptim1, LPTIM_IT_CMPM);
 #if LPTIMER_CHECK_EXP_TIME
     uint64_t curr_timestamp = lptimer_now();
-    if (t_exp <= curr_timestamp || t_exp > (curr_timestamp + LPTIMER_SECOND * 86400)) {
-      LOG_WARNING("wakeup time is in the past or far in the future");
+    if (t_exp <= curr_timestamp) {
+      LOG_WARNING("wakeup time is in the past");
+    } else if (t_exp > (curr_timestamp + LPTIMER_SECOND * 86400)) {
+      LOG_WARNING("wakeup time is far in the future");
     }
 #endif /* LPTIMER_CHECK_EXP_TIME */
   }
@@ -151,8 +153,10 @@ bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
     lp_cnt2 = __HAL_TIM_GET_COUNTER(&hlptim1);
   } while (lp_cnt != lp_cnt2);
   /* now wait for the timestamp to change */
-  lp_cnt++;
-  while (__HAL_TIM_GET_COUNTER(&htim2) != lp_cnt);
+  lp_cnt2++;
+  while (lp_cnt != lp_cnt2) {
+    lp_cnt = __HAL_TIM_GET_COUNTER(&hlptim1);
+  }
   /* read the hs timer value */
   hs_cnt2 = __HAL_TIM_GET_COUNTER(&htim2);
   /* handle the unlikely case of a rollover */
@@ -163,7 +167,7 @@ bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
     lp_ext++;
   }
   /* compose the final timestamps */
-  *lp_timestamp = ((uint64_t)lp_ext << 16) | lp_cnt;
+  *lp_timestamp = ((uint64_t)lp_ext << 16) | lp_cnt2;
   *hs_timestamp = ((uint64_t)hs_ext << 32) | hs_cnt2;
 
   /* re-enable interrupts if necessary */
