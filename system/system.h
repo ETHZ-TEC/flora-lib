@@ -26,5 +26,6 @@ void system_sleep(bool deep);
 
 void system_reset();
 void system_reset_into_bootloader();
+const char* system_get_reset_cause(uint32_t* out_reset_flag);
 
 #endif /* SYSTEM_SYSTEM_H_ */

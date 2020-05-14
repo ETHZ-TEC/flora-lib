@@ -137,3 +137,42 @@ void system_reset_into_bootloader()
   system_backup_get()->bootmode = SYSTEM_BOOT_BOOTLOADER;
   HAL_NVIC_SystemReset();
 }
+
+const char* system_get_reset_cause(uint32_t* out_reset_flag)
+{
+  static uint_fast8_t reset_flag = 0;
+
+  if (!reset_flag) {
+    reset_flag = RCC->CSR >> 24;
+    RCC->CSR |= (1 << 23);          // clear flags
+  }
+  if (out_reset_flag) {
+    *out_reset_flag = reset_flag;
+  }
+  if (reset_flag & 0x80) {
+    return "LPM";   // illegal low-power mode entry
+  }
+  if (reset_flag & 0x40) {
+    return "WWDG";  // window watchdog
+  }
+  if (reset_flag & 0x20) {
+    return "IWDG";  // independent watchdog
+  }
+  if (reset_flag & 0x10) {
+    return "SW";    // software triggered
+  }
+  if (reset_flag & 0x08) {
+    return "BOR";   // brownout
+  }
+  if (reset_flag & 0x04) {
+    return "nRST";  // reset pin
+  }
+  if (reset_flag & 0x02) {
+    return "OBL";   // option byte loader
+  }
+  if (reset_flag & 0x01) {
+    return "FWR";   // firewall reset
+  }
+  return "?";
+}
+
