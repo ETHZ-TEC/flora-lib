@@ -212,7 +212,7 @@ static void gloria_radio_setup_callback() {
       // preamble detected events are used for the gloria_interface function 'gloria_get_rx_started_cnt'
       radio_set_irq_mode(IRQ_MODE_RX_CRC_PREAMBLE);
     } else {
-      // may false positive preamble detected events for FSK => we don't use and therefore disable them
+      // many false positive preamble detected events for FSK => we don't use it and therefore disable them
       radio_set_irq_mode(IRQ_MODE_RX_CRC);
     }
     radio_set_config_rx(current_flood->modulation, RADIO_DEFAULT_BAND, -1, -1, -1, 0, false, 0, true, false);
