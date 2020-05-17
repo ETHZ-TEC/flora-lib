@@ -65,6 +65,10 @@
 #error "GLORIA_INTERFACE_MAX_PAYLOAD_LEN exceeds allowed range!"
 #endif
 
+/* MISC ***********************************************************************/
+
+typedef void (* gloria_cb_func_t)(void);
+
 
 /* FUNCTIONS ******************************************************************/
 
@@ -212,6 +216,15 @@ uint32_t gloria_get_flood_time();
  * \param            enable: Set to True to enable flood printing
  */
 void gloria_enable_flood_printing(bool enable);
+
+/**
+ * \brief            Register callback function which is called when
+ *                   participation in the flood terminated.
+ *                   NOTE: Callback function is called only if participation in
+ *                   flood stops before gloria_stop() is called!
+ * \param            cb: callback function
+ */
+void gloria_register_flood_callback(gloria_cb_func_t cb);
 
 
 /*******************************************************************************

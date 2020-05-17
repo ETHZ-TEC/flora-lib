@@ -34,6 +34,7 @@ static int8_t   internal_power = GLORIA_INTERFACE_POWER;         // internal sta
 static uint8_t  internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the GMW layer)
 static uint8_t  internal_band = GLORIA_INTERFACE_RF_BAND;        // internal state for the frequency band (can be adapted from the GMW layer)
 static bool     internal_enable_flood_printing = false;          // enable printing of finished (i.e. completely received/transmitted) floods
+static gloria_cb_func_t flood_cb = 0;                            // user-defined callback; only called if flood participation terminates before gloria_stop() is called
 
 /* variables to store gloria_start arguments */
 static uint16_t arg_initiator_id = 0;               // ID of the inititator
@@ -286,12 +287,22 @@ void gloria_enable_flood_printing(bool enable) {
   internal_enable_flood_printing = enable;
 }
 
+void gloria_register_flood_callback(gloria_cb_func_t cb) {
+  flood_cb = cb;
+}
+
+
 
 /* PRIVATE FUNCTIONS **********************************************************/
 
 static void gloria_flood_callback(void) {
   // unsetting flood_running indicates to gloria_stop that the flood completed
   flood_running = false;
+
+  // call callback function registered via the gloria_interface
+  if (flood_cb) {
+    flood_cb();
+  }
 }
 
 
