@@ -8,6 +8,8 @@
 #include "flora_lib.h"
 
 
+#if CONFIG_ENABLE
+
 extern bool cli_interactive_mode;
 
 
@@ -228,3 +230,5 @@ void config_set_entry(char* entry, uint32_t value) {
 
   config_print(entry);
 }
+
+#endif /* CONFIG_ENABLE */

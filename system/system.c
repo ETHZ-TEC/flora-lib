@@ -30,7 +30,9 @@ void system_init()
   rtc_init();
 #endif /* HAL_RTC_MODULE_ENABLED */
   hs_timer_init();
+#if CONFIG_ENABLE
   config_init();
+#endif /* CONFIG_ENABLE */
   radio_init();
   uart_init();
 #if CLI_ENABLE
