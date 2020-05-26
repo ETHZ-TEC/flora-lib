@@ -12,12 +12,12 @@
 #ifdef HAL_RTC_MODULE_ENABLED
 
 void rtc_init();
-/**
- * @brief           Returns the current rtc timestamp
- *
- * @param hs_timer  Should HS timer offset be added or not
- * @return uint64_t Current rtc timestamp in HS Timer Frequency
- */
+
+bool rtc_set_date(uint32_t year, uint32_t month, uint32_t day);
+bool rtc_set_time(uint32_t hour, uint32_t minute, uint32_t second);
+bool rtc_set_unix_timestamp(uint32_t timestamp);
+
+uint32_t rtc_get_unix_timestamp(void);
 uint64_t rtc_get_timestamp(bool hs_timer);
 void rtc_delay(uint32_t delay);
 bool rtc_format_time(char* buffer, uint8_t buffer_size);
