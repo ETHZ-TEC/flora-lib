@@ -242,12 +242,12 @@ void elwb_run(void)
       if (ELWB_SCHED_IS_FIRST(&schedule)) {
         /* sync point */
         network_time = schedule.time;
-        last_synced  = ELWB_GLOSSY_GET_T_REF();  // was t_start before
-        if (t_start) {
-          stats.ref_ofs = (stats.ref_ofs + (last_synced - t_start)) / 2;
-          elwb_sched_set_time_offset(stats.ref_ofs);
-        }
+        last_synced  = t_start;
+        /* calculate the reference offset for the source nodes (time between t_start and the tx marker) */
+        stats.ref_ofs = (stats.ref_ofs + (ELWB_GLOSSY_GET_T_REF() - t_start)) / 2;
+        elwb_sched_set_time_offset(stats.ref_ofs);
       }
+      //LOG_VERBOSE("now - t_start (t_ref): %llu", lptimer_now() - t_start);
 
     } else {
 
@@ -280,7 +280,6 @@ void elwb_run(void)
         ELWB_RCV_SCHED();
       }
 
-      elwb_time_t t_ref = 0;
       if (ELWB_GLOSSY_IS_T_REF_UPDATED()) {      /* schedule received? */
     #if ELWB_CONF_SCHED_CRC
         /* check the CRC */
@@ -296,17 +295,16 @@ void elwb_run(void)
     #endif /* ELWB_CONF_SCHED_CRC */
         /* update the sync state machine */
         sync_state = next_state[EVT_SCHED_RCVD][sync_state];
-        /* subtract const offset to align src and host */
-        t_ref = ELWB_GLOSSY_GET_T_REF();
     #if ELWB_CONF_CONT_USE_HFTIMER
         /* also store the HF timestamp in case LF is used for slot wakeups */
         t_ref_hf = ELWB_GLOSSY_GET_T_REF_HF();
     #endif /* ELWB_CONF_CONT_USE_HFTIMER */
         if (ELWB_SCHED_IS_FIRST(&schedule)) {
+          t_start = ELWB_GLOSSY_GET_T_REF();
           /* do some basic drift estimation:
            * measured elapsed time minus effective elapsed time (given by host) */
           int32_t elapsed_network_us = (schedule.time - network_time);   // NOTE: max. difference is ~2100s
-          int32_t elapsed_local_us   = (t_ref - last_synced) * 1000000 / ELWB_TIMER_SECOND;
+          int32_t elapsed_local_us   = (t_start - last_synced) * 1000000 / ELWB_TIMER_SECOND;
           int32_t delta_us           = (elapsed_local_us - elapsed_network_us);
           /* now scale the difference from ticks to ppm (note: a negative drift means the local clock runs slower than the network clock) */
           int32_t drift_ppm = (delta_us * 1000) / (elapsed_network_us / 1000);
@@ -317,7 +315,10 @@ void elwb_run(void)
           /* only update the timestamp during the idle period */
           period_idle  = schedule.period;
           network_time = schedule.time;
-          last_synced  = t_ref;
+          last_synced  = t_start;
+        } else {
+          /* just use the previous wakeup time as start time */
+          t_start = ELWB_TIMER_LAST_EXP();
         }
       } else {
         /* update the sync state machine */
@@ -328,24 +329,24 @@ void elwb_run(void)
         }
         stats.unsynced_cnt++;
         LOG_WARNING("schedule missed");
-        /* we can only estimate t_ref and t_ref */
+        /* we can only estimate t_ref */
         if (!ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
           /* missed schedule was during a contention/data round -> reset t_ref */
-          t_ref = last_synced;
+          t_start = last_synced;
           /* mark as 'idle state' such that other processes can run */
           ELWB_SCHED_SET_STATE_IDLE(&schedule);
         } else {
-          /* missed schedule is at beginning of a round: add last period */
-          t_ref += schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE + drift_comp;
+          /* missed schedule is at beginning of a round */
+          t_start = ELWB_TIMER_LAST_EXP();
         }
         schedule.period = period_idle;  /* reset period to idle period */
       }
-      t_start = t_ref;    /* use t_ref as t_start on the source node */
 
       /* permission to participate in this round? */
       if (sync_state != SYNCED) {
         goto end_of_round;
       }
+      //LOG_VERBOSE("now - t_start (t_ref): %llu", lptimer_now() - t_start);
 
       /* schedule sanity check (#slots mustn't exceed the compile-time fixed max. # slots!) */
       if (ELWB_SCHED_N_SLOTS(&schedule) > ELWB_SCHED_MAX_SLOTS) {
@@ -671,6 +672,7 @@ end_of_round:
     if (ELWB_TIMER_NOW() > start_of_next_round) {
       LOG_ERROR("wakeup time is in the past");
     }
+    //LOG_VERBOSE("wakeup in %d ticks", (int32_t)(start_of_next_round - lptimer_now()));
     ELWB_WAIT_UNTIL(start_of_next_round);
   }
 

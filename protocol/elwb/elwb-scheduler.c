@@ -502,8 +502,8 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     ELWB_SCHED_SET_STATE_IDLE(sched);  /* will be used by source nodes */
   }
   
-  /* increment the timestamp */
-  sched->time = elwb_time;
+  /* calculate the new time for the source nodes */
+  sched->time = elwb_time + elwb_time_ofs;
   
   uint32_t compressed_size;
 #if ELWB_CONF_SCHED_COMPRESS
@@ -609,7 +609,7 @@ elwb_time_t elwb_sched_get_time(void)
 
 void elwb_sched_set_time(elwb_time_t new_time)
 {
-  elwb_time = new_time + elwb_time_ofs;
+  elwb_time = new_time;
 }
 
 
