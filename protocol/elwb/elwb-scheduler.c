@@ -556,7 +556,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   memset(node_list, 0, sizeof(elwb_node_list_t) * ELWB_CONF_MAX_NODES);
   head           = 0;
   n_nodes        = 0;
-  elwb_time      = 0;
+  elwb_time      = elwb_time + elwb_time_ofs;
   period         = ELWB_CONF_SCHED_PERIOD_IDLE * ELWB_PERIOD_SCALE;
   sched_state    = ELWB_SCHED_STATE_IDLE;
   sched->n_slots = 0;
