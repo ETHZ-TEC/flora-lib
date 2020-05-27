@@ -26,7 +26,7 @@ typedef enum {
 
 /* private helper macros */
 #define BOLT_ACK_STATUS                 PIN_GET(BOLT_ACK)
-#define BOLT_REQ_STATUS                 PIN_GET(BOLT_REQ)
+#define BOLT_REQ_STATUS                 PIN_STATE(BOLT_REQ)
 #define BOLT_WAIT_TILL_COMPLETED        while (BOLT_STATE_IDLE != bolt_state)
 
 
