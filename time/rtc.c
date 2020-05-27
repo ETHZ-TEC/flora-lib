@@ -59,9 +59,10 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
 {
   struct tm ts;
 
-  gmtime_r((time_t*)&timestamp, &ts);
+  time_t t = timestamp;         /* must first be converted to time_t */
+  gmtime_r((time_t*)&t, &ts);
 
-  rtc_date.Year    = ts.tm_year % 100;
+  rtc_date.Year    = ts.tm_year % 100;    /* ts.tm_year contains year since 1900 */
   rtc_date.Month   = ts.tm_mon + 1;
   rtc_date.Date    = ts.tm_mday;
   rtc_date.WeekDay = ts.tm_wday;
@@ -77,7 +78,10 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
       HAL_RTC_SetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) != HAL_OK) {
     return false;
   }
-  LOG_VERBOSE("time set");
+  LOG_VERBOSE("time set (%d-%02d-%02d %02d:%02d:%02d)", (rtc_date.Year + 2000),
+                                                        rtc_date.Month, rtc_date.Date,
+                                                        rtc_time.Hours, rtc_time.Minutes,
+                                                        rtc_time.Seconds);
   return true;
 }
 
