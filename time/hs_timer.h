@@ -25,6 +25,10 @@
 #define HS_TIMER_COMPENSATE_DRIFT   1
 #endif /* HS_TIMER_COMPENSATE_DRIFT */
 
+#ifndef HS_TIMER_INIT_FROM_RTC
+#define HS_TIMER_INIT_FROM_RTC  1
+#endif /* HS_TIMER_INIT_FROM_RTC */
+
 
 void hs_timer_init();
 

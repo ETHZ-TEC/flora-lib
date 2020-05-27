@@ -67,9 +67,14 @@ static void (*data_gen_timer_callback)() = NULL;
 
 void hs_timer_init()
 {
+#if HS_TIMER_INIT_FROM_RTC
   hs_timer_recovered_by_rtc = true;
   uint64_t timestamp = rtc_get_timestamp(false);
   hs_timer_set_counter(timestamp);
+#else
+  __HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_UPDATE);
+  hs_timer_counter_extension = 0;
+#endif /* HS_TIMER_INIT_FROM_RTC */
 
   hs_timer_initialized = true;
 }
@@ -378,7 +383,8 @@ void hs_timer_handle_overflow(TIM_HandleTypeDef *htim)
 #else /* DOZER_ENABLE */
 
   if (hs_timer_initialized) {
-     hs_timer_counter_extension++;
+    __HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_UPDATE);
+    hs_timer_counter_extension++;
   }
 
 #endif /* DOZER_ENABLE */
