@@ -44,11 +44,11 @@ uint32_t SX126xGetBoardTcxoWakeupTime( void )
 
 void SX126xReset( void )
 {
-    rtc_delay(10);
+    delay_us(100);
     HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_RESET);
-    rtc_delay(20);
+    delay_us(200);
     HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_SET); // internal pull-up
-    rtc_delay(10);
+    delay_us(100);
     RADIO_TX_STOP_IND();
 }
 
