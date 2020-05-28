@@ -72,7 +72,6 @@ void hs_timer_init()
   uint64_t timestamp = rtc_get_timestamp(false);
   hs_timer_set_counter(timestamp);
 #else
-  __HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_UPDATE);
   hs_timer_counter_extension = 0;
 #endif /* HS_TIMER_INIT_FROM_RTC */
 
@@ -383,7 +382,6 @@ void hs_timer_handle_overflow(TIM_HandleTypeDef *htim)
 #else /* DOZER_ENABLE */
 
   if (hs_timer_initialized) {
-    __HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_UPDATE);
     hs_timer_counter_extension++;
   }
 
