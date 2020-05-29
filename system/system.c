@@ -34,11 +34,11 @@ void system_init()
   config_init();
 #endif /* CONFIG_ENABLE */
   radio_init();
+  gloria_init();
   uart_init();
 #if CLI_ENABLE
   cli_init();
 #endif /* CLI_ENABLE */
-  protocol_init();
 #if BOLT_ENABLE
   bolt_init();
 #endif /* BOLT_ENABLE */

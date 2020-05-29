@@ -7,6 +7,7 @@
 
 #include "flora_lib.h"
 
+#if GLORIA_ENABLE
 
 extern uint64_t radio_last_sync_timestamp;
 extern bool hs_timer_recovered_by_rtc;
@@ -178,3 +179,4 @@ uint64_t get_message_timestamp(gloria_flood_t* flood) {
   return message_timestamp;
 }
 
+#endif /* GLORIA_ENABLE */

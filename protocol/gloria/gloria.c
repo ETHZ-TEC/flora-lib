@@ -7,6 +7,7 @@
 
 #include "flora_lib.h"
 
+#if GLORIA_ENABLE
 
 extern volatile uint64_t gloria_last_sync;
 
@@ -20,6 +21,11 @@ static void gloria_tx_callback();
 
 static void gloria_process_slot();
 static void gloria_finish_slot();
+
+
+void gloria_init() {
+  gloria_load_id_and_role();
+}
 
 /*
  * initialize the necessary flood and message header parameters
@@ -214,3 +220,5 @@ void gloria_finish_slot() {
   current_flood->slot_index++;
   gloria_process_slot();
 }
+
+#endif /* GLORIA_ENABLE */

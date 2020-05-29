@@ -7,6 +7,7 @@
 
 #include "flora_lib.h"
 
+#if GLORIA_ENABLE
 
 #ifndef GLORIA_START_IND
   #define GLORIA_START_IND()
@@ -367,3 +368,5 @@ static void update_t_ref(void) {
 /*******************************************************************************
  * END: GLORIA INTERFACE
  ******************************************************************************/
+
+#endif /* GLORIA_ENABLE */

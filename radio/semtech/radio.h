@@ -1,4 +1,4 @@
-#include "radio/flora_radio.h"/*!
+/*!
  * \file      radio.h
  *
  * \brief     Radio driver API definition
@@ -406,5 +406,12 @@ struct Radio_s
  *         board implementation
  */
 extern const struct Radio_s Radio;
+
+
+/* include all radio files by semtech */
+#include "radio/semtech/boards/utilities.h"
+#include "radio/semtech/sx126x/sx126x.h"
+#include "radio/semtech/boards/sx126x-board.h"
+
 
 #endif // __RADIO_H__

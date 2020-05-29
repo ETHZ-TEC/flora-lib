@@ -9,6 +9,11 @@
 #define PROTOCOL_GLORIA_GLORIA_H_
 
 
+#ifndef GLORIA_ENABLE
+#define GLORIA_ENABLE       1
+#endif /* GLORIA_ENABLE */
+
+
 /* include all gloria related files */
 #include "protocol/gloria/gloria.h"
 #include "protocol/gloria/gloria_constants.h"
@@ -19,6 +24,7 @@
 #include "protocol/gloria/gloria_interface.h"
 
 
+void gloria_init();
 void gloria_run_flood(gloria_flood_t* flood, void (*callback)());
 void gloria_update();
 

@@ -7,6 +7,7 @@
 
 #include "flora_lib.h"
 
+#if GLORIA_ENABLE
 
 extern radio_sleeping_t radio_sleeping;
 
@@ -308,3 +309,5 @@ static void gloria_radio_continue_rx() {
     rx_callback(NULL, 0);
   }
 }
+
+#endif /* GLORIA_ENABLE */

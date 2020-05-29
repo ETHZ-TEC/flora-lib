@@ -36,7 +36,6 @@ static uint8_t preamble_detected_counter = 0;
 static uint8_t sync_detected_counter = 0;
 
 // debug variables
-char char_buff[100];
 uint8_t c_mod;
 uint8_t c_pwr;
 
