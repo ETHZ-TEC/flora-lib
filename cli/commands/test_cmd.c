@@ -113,9 +113,9 @@ void test_register_commands() {
 }
 
 static void handle_dbg_sync() {
-  HAL_GPIO_WritePin(RADIO_NSS_GPIO_Port, RADIO_NSS_Pin, GPIO_PIN_RESET);
-  rtc_delay(1);
-  HAL_GPIO_WritePin(RADIO_NSS_GPIO_Port, RADIO_NSS_Pin, GPIO_PIN_SET);
+  RADIO_CLR_NSS_PIN();
+  delay_us(200);
+  RADIO_SET_NSS_PIN();
 }
 
 volatile int64_t dbg_sync_offset = -1;

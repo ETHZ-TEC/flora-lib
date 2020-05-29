@@ -45,16 +45,17 @@ uint32_t SX126xGetBoardTcxoWakeupTime( void )
 void SX126xReset( void )
 {
     delay_us(100);
-    HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_RESET);
+    RADIO_CLR_NRESET_PIN();
     delay_us(200);
-    HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_SET); // internal pull-up
+    RADIO_SET_NRESET_PIN();
     delay_us(100);
     RADIO_TX_STOP_IND();
+    RADIO_RX_STOP_IND();
 }
 
 void SX126xWaitOnBusy( void )
 {
-    while( HAL_GPIO_ReadPin(RADIO_BUSY_GPIO_Port, RADIO_BUSY_Pin) == GPIO_PIN_SET );
+    while( RADIO_READ_BUSY_PIN( ) );
 }
 
 void SX126xWakeup( void )
@@ -68,12 +69,12 @@ void SX126xWakeup( void )
 
     do
     {
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, &zero, 1, 100);
-    NSS_HIGH();
+    RADIO_SET_NSS_PIN();
     }
-    while (HAL_GPIO_ReadPin(RADIO_BUSY_GPIO_Port, RADIO_BUSY_Pin) == GPIO_PIN_SET);
+    while ( RADIO_READ_BUSY_PIN ( ) );
 
     CRITICAL_SECTION_END( );
 }
@@ -82,10 +83,10 @@ void SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size
 {
     SX126xCheckDeviceReady( );
 
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
-    NSS_HIGH();
+    RADIO_SET_NSS_PIN();
 
     if( command != RADIO_SET_SLEEP )
     {
@@ -97,17 +98,17 @@ void SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer,
 {
     SX126xCheckDeviceReady( );
 
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
-    // no NSS_HIGH(); as it will be timed precisely
+    // no RADIO_SET_NSS_PIN(); as it will be timed precisely
 }
 
 void SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size )
 {
     SX126xCheckDeviceReady( );
 
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
     for( uint16_t i = 0; i < size; i++ )
@@ -115,7 +116,7 @@ void SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size 
       HAL_SPI_TransmitReceive(&RADIO_SPI, (uint8_t*) (buffer + i), &tmp, 1, 100);
         buffer[i] = tmp;
     }
-    NSS_HIGH();
+    RADIO_SET_NSS_PIN();
 
     SX126xWaitOnBusy( );
 }
@@ -126,12 +127,12 @@ void SX126xWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
 
     SX126xCheckDeviceReady( );
 
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address) + 1, 1, 100); // MSB first!
     HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address), 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
-    NSS_HIGH();
+    RADIO_SET_NSS_PIN();
 
     SX126xWaitOnBusy( );
 }
@@ -147,13 +148,13 @@ void SX126xReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
 
     SX126xCheckDeviceReady( );
 
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address) + 1, 1, 100); // MSB first!
     HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address), 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
     HAL_SPI_Receive(&RADIO_SPI, buffer, size, 1000);
-    NSS_HIGH();
+    RADIO_SET_NSS_PIN();
 
     SX126xWaitOnBusy( );
 }
@@ -171,11 +172,11 @@ void SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 
     SX126xCheckDeviceReady( );
 
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &offset, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
-    NSS_HIGH();
+    RADIO_SET_NSS_PIN();
 
     SX126xWaitOnBusy( );
 }
@@ -186,12 +187,12 @@ void SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 
     SX126xCheckDeviceReady( );
 
-    NSS_LOW();
+    RADIO_CLR_NSS_PIN();
     HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &offset, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
     HAL_SPI_Receive(&RADIO_SPI, buffer, 255, 1000);
-    NSS_HIGH();
+    RADIO_SET_NSS_PIN();
 
     SX126xWaitOnBusy( );
 }

@@ -10,9 +10,14 @@
 
 // Platform specific commands
 
-void radio_set_nss_pin();
-bool radio_read_busy_pin();
-bool radio_read_dio1_pin();
+#define RADIO_SET_NRESET_PIN()    HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_SET)       // release reset
+#define RADIO_CLR_NRESET_PIN()    HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_RESET)     // activate reset
+
+#define RADIO_SET_NSS_PIN()       HAL_GPIO_WritePin(RADIO_NSS_GPIO_Port, RADIO_NSS_Pin, GPIO_PIN_SET)
+#define RADIO_CLR_NSS_PIN()       HAL_GPIO_WritePin(RADIO_NSS_GPIO_Port, RADIO_NSS_Pin, GPIO_PIN_RESET)
+
+#define RADIO_READ_BUSY_PIN()     (HAL_GPIO_ReadPin(RADIO_BUSY_GPIO_Port, RADIO_BUSY_Pin) == GPIO_PIN_SET)
+#define RADIO_READ_DIO1_PIN()     (HAL_GPIO_ReadPin(RADIO_DIO1_GPIO_Port, RADIO_DIO1_Pin) == GPIO_PIN_SET)
 
 
 #ifndef RADIO_TX_START_IND

@@ -116,7 +116,7 @@ RadioOperatingModes_t SX126xGetOperatingMode( void )
 
 void SX126xCheckDeviceReady( void )
 {
-    if( ( SX126xGetOperatingMode( ) == MODE_SLEEP ) || ( SX126xGetOperatingMode( ) == MODE_RX_DC && radio_read_busy_pin( ) ) )
+    if( ( SX126xGetOperatingMode( ) == MODE_SLEEP ) || ( SX126xGetOperatingMode( ) == MODE_RX_DC && RADIO_READ_BUSY_PIN( ) ) )
     {
         SX126xWakeup( );
         // Switch is turned off when device is in sleep mode and turned on is all other modes

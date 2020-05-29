@@ -671,7 +671,7 @@ void radio_set_cad() {
 
 
 static void radio_execute() {
-  radio_set_nss_pin();
+  RADIO_SET_NSS_PIN();
   radio_stop_schedule();
   radio_command_scheduled = false;
 

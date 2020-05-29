@@ -82,7 +82,7 @@ void radio_init()
   radio_RadioEvents.RxSync = radio_OnRadioRxSync;
   radio_RadioEvents.RxPreamble = radio_OnRadioRxPreamble;
 
-  bool irq_set = radio_read_dio1_pin();
+  bool irq_set = RADIO_READ_DIO1_PIN();
 
   if (!irq_set) {
     radio_reset();
@@ -253,7 +253,7 @@ void radio_sleep(bool warm) {
 
     radio_sleeping = warm + 1;
   }
-  RADIO_TX_STOP_IND();
+  //RADIO_TX_STOP_IND();  -> not necessary, done in SX126xSetSleep()
 }
 
 void radio_reset() {
@@ -294,7 +294,7 @@ void radio_irq_capture_callback(){
 
 
 void radio_schedule_callback(){
-  radio_set_nss_pin(); // Execute radio command
+  RADIO_SET_NSS_PIN(); // Execute radio command
   radio_command_scheduled = false;
 }
 
