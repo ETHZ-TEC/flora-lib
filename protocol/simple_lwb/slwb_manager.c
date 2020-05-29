@@ -30,8 +30,8 @@ uint8_t missed_schedules = 0;
  * participate in slwb round
  */
 void slwb_start_round(slwb_round_t* round) {
-  sprintf(char_buff, "sr: %llu, %llu", hs_timer_get_current_timestamp(), round->round_start);
-  print(2, char_buff);
+  sprintf(slwb_print_buffer, "sr: %llu, %llu", hs_timer_get_current_timestamp(), round->round_start);
+  print(2, slwb_print_buffer);
   current_round = round;
   current_schedule = round->round_schedule;
   data_slot_idx = 0;
@@ -132,8 +132,8 @@ void slwb_schedule_slot() {
       else {
         drift_comp = SLWB_UNSYNCED_DRIFT_PPM * (slwb_flood.marker - slwb_get_latest_sync()) / 1e6;
       }
-      sprintf(char_buff, "dc: %lu", drift_comp);
-      print(2, char_buff);
+      sprintf(slwb_print_buffer, "dc: %lu", drift_comp);
+      print(2, slwb_print_buffer);
       slwb_flood.rx_timeout = slwb_slot_times[current_round->modulation].schedule_slot_time - SLWB_SLOT_OVERHEAD;
       slwb_flood.guard_time = drift_comp;
     }
@@ -185,8 +185,8 @@ void slwb_lr_schedule_slot() {
       else {
         drift_comp = SLWB_UNSYNCED_DRIFT_PPM * (slwb_flood.marker - slwb_get_latest_sync()) / 1e6;
       }
-      sprintf(char_buff, "dc: %lu", drift_comp);
-      print(2, char_buff);
+      sprintf(slwb_print_buffer, "dc: %lu", drift_comp);
+      print(2, slwb_print_buffer);
       slwb_flood.rx_timeout = slwb_slot_times[current_round->modulation].schedule_slot_time - SLWB_SLOT_OVERHEAD;
       slwb_flood.guard_time = drift_comp;
     }
@@ -308,8 +308,8 @@ void slwb_lr_data_slot() {
     if (current_schedule->slots[data_slot_idx] == slwb_get_id()) {
       slwb_data_message_t* msg = slwb_data_generator_get_data();
       if (msg) {
-        sprintf(char_buff, "lr_send: %d, %d", msg->node_id, msg->packet_id);
-        print(10, char_buff);
+        sprintf(slwb_print_buffer, "lr_send: %d, %d", msg->node_id, msg->packet_id);
+        print(10, slwb_print_buffer);
 
         message.header.dst = base_id;
         message.header.sync = 0;
@@ -370,8 +370,8 @@ void slwb_data_slot() {
     if (current_schedule->slots[data_slot_idx] == slwb_get_id()) {
       slwb_data_message_t* msg = slwb_data_generator_get_data();
       if (msg) {
-        sprintf(char_buff, "data_send: %d, %d", msg->node_id, msg->packet_id);
-        print(10, char_buff);
+        sprintf(slwb_print_buffer, "data_send: %d, %d", msg->node_id, msg->packet_id);
+        print(10, slwb_print_buffer);
 
         message.header.dst = base_id;
         message.header.sync = 0;
@@ -438,8 +438,8 @@ void slwb_data_slot() {
  */
 void slwb_schedule_slot_callback() {
   print(1, "ssc");
-  sprintf(char_buff, "base: %d, rec: %d", slwb_is_base(), slwb_flood.msg_received);
-  print(1, char_buff);
+  sprintf(slwb_print_buffer, "base: %d, rec: %d", slwb_is_base(), slwb_flood.msg_received);
+  print(1, slwb_print_buffer);
   if (!slwb_is_base()) {
     if (slwb_flood.msg_received) {
 
@@ -558,8 +558,8 @@ void slwb_lr_schedule_slot_callback() {
       else if (outstanding_ack) {
         // stream request sent but no ack received
         current_stream->backoff = rand() % SLWB_LR_BACKOFF + 1;
-        sprintf(char_buff, "bo: %d", current_stream->backoff);
-        print(1, char_buff);
+        sprintf(slwb_print_buffer, "bo: %d", current_stream->backoff);
+        print(1, slwb_print_buffer);
       }
       outstanding_ack = false;
 
@@ -639,8 +639,8 @@ void slwb_contention_slot_callback() {
     else if (outstanding_ack) {
       // stream request sent but no ack received
       current_stream->backoff = rand() % SLWB_BACKOFF + 1;
-      sprintf(char_buff, "bo: %d", current_stream->backoff);
-      print(1, char_buff);
+      sprintf(slwb_print_buffer, "bo: %d", current_stream->backoff);
+      print(1, slwb_print_buffer);
     }
     outstanding_ack = false;
   }

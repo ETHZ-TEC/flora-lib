@@ -229,13 +229,13 @@ void dozer_rx_done(dozer_message_t* message, uint16_t size) {
 
             actual_msgs++;
 
-      sprintf(char_buff, "data_msg rec; seqNr: %d", message->payload.data_msg.seqNr);
-      dozer_print(6, char_buff);
+      sprintf(dozer_print_buffer, "data_msg rec; seqNr: %d", message->payload.data_msg.seqNr);
+      dozer_print(6, dozer_print_buffer);
 
       // try to append received message to queue
             if (cq_append(0, msg_header->type, size-DATA_MSG_HEADER_SIZE, (data_msg_t*) &(message->payload.data_msg)) == SUCCESS) {
-              sprintf(char_buff, "dm appended: %X", msg_header->ack);
-              dozer_print(5, char_buff);
+              sprintf(dozer_print_buffer, "dm appended: %X", msg_header->ack);
+              dozer_print(5, dozer_print_buffer);
 
               if (--num_msgs > 0 && (msg_header->ack & 0x2) != 0x2) { // if second bit (stop bit) is set, child has no more messages
                     last_seq_nr = message->payload.data_msg.seqNr;
@@ -435,8 +435,8 @@ uint8_t send_connection_request(dozer_send_message_t * msg) {
     if (current_state == STATE_CONNECTION_REQUEST_TRANSITION) {
         if (msg != NULL) {
             current_state = STATE_CONNECTION_REQUEST_SENT;
-            sprintf(char_buff, "cs con req sent: dest: %d", msg->header.dest);
-            dozer_print(6, char_buff);
+            sprintf(dozer_print_buffer, "cs con req sent: dest: %d", msg->header.dest);
+            dozer_print(6, dozer_print_buffer);
 
             msg->header.ack &= 0xFE;
             if (dozer_send(msg, CON_REQ_SIZE, 0) == SUCCESS) {
@@ -460,8 +460,8 @@ uint8_t send_handshake(dozer_send_message_t* msg) {
 
         if (msg != NULL) {
             current_state = STATE_HANDSHAKE_SENT;
-            sprintf(char_buff, "cs hs sent: dest: %d", msg->header.dest);
-            dozer_print(6, char_buff);
+            sprintf(dozer_print_buffer, "cs hs sent: dest: %d", msg->header.dest);
+            dozer_print(6, dozer_print_buffer);
             msg->header.ack &= 0xFE;
             if (dozer_send(msg, HANDSHAKE_SIZE, 0) == SUCCESS) {
                 return SUCCESS;
@@ -610,8 +610,8 @@ void wait_timer_fired() {
 
         case STATE_SEND_BUFFER_OVERHEARING:
       if (dozer_send(data_msg_buf, buffer_length, 0) == SUCCESS) {
-        sprintf(char_buff, "buf sent, seqNr: %d", data_msg_buf->payload.data_msg.seqNr);
-        dozer_print(7, char_buff);
+        sprintf(dozer_print_buffer, "buf sent, seqNr: %d", data_msg_buf->payload.data_msg.seqNr);
+        dozer_print(7, dozer_print_buffer);
         current_state = STATE_SEND_BUFFER;
         dozer_print(6, "cs send buffer");
       }
@@ -673,8 +673,8 @@ void receive_messages_to_buffer(uint8_t num, uint16_t id, uint16_t * l_seq_nr) {
             last_seq_nr = *last_seq_nr_ptr;
         }
 
-        sprintf(char_buff, "rec num: %d", num_msgs);
-        dozer_print(1, char_buff);
+        sprintf(dozer_print_buffer, "rec num: %d", num_msgs);
+        dozer_print(1, dozer_print_buffer);
         // if no slots in queue -> 0xFFFF indicates full queue
         set_ack_byte(num_msgs - 1);
 
@@ -688,8 +688,8 @@ void receive_messages_to_buffer(uint8_t num, uint16_t id, uint16_t * l_seq_nr) {
  * copy received message and metadata to buffer
  */
 void assign_payload(dozer_message_t* msg, dozer_send_message_t* send_msg, uint16_t size) {
-  sprintf(char_buff, "assign pl size: %d", size);
-  dozer_print(0, char_buff);
+  sprintf(dozer_print_buffer, "assign pl size: %d", size);
+  dozer_print(0, dozer_print_buffer);
 
   memmove(msg, send_msg, size);
 }
@@ -740,8 +740,8 @@ uint8_t send_buffered_messages(uint8_t num, uint16_t id) {
       current_state = STATE_SEND_BUFFER;
       dozer_print(6 , "cs send buffer");
       if (dozer_send(data_msg_buf, buffer_length, 0) == SUCCESS) {
-        sprintf(char_buff, "buf sent, seqNr: %d, num: %d", data_msg_buf->payload.data_msg.seqNr, (int) num);
-        dozer_print(7, char_buff);
+        sprintf(dozer_print_buffer, "buf sent, seqNr: %d, num: %d", data_msg_buf->payload.data_msg.seqNr, (int) num);
+        dozer_print(7, dozer_print_buffer);
         return SUCCESS;
       }
     }
@@ -802,8 +802,8 @@ void handle_ack(uint8_t res, uint8_t ack_byte) {
               rtc_delay(1); // TODO: check if needed
 
               if (dozer_send(data_msg_buf, buffer_length, 0) == SUCCESS) {
-                sprintf(char_buff, "buf sent, seqNr: %d", data_msg_buf->payload.data_msg.seqNr);
-                dozer_print(7, char_buff);
+                sprintf(dozer_print_buffer, "buf sent, seqNr: %d", data_msg_buf->payload.data_msg.seqNr);
+                dozer_print(7, dozer_print_buffer);
                 return;
               }
             }
@@ -839,8 +839,8 @@ void handle_ack(uint8_t res, uint8_t ack_byte) {
  * print radio statistics
  */
 void print_radio_stats() {
-  sprintf(char_buff, "radio on: %d; radio off: %d", (int)radio_on, (int)radio_off);
-  dozer_print(5, char_buff);
+  sprintf(dozer_print_buffer, "radio on: %d; radio off: %d", (int)radio_on, (int)radio_off);
+  dozer_print(5, dozer_print_buffer);
 }
 
 

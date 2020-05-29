@@ -9,7 +9,7 @@
 #define PROTOCOL_PROTOCOL_H_
 
 
-#ifndef HOST_ID
+#ifndef IS_HOST
 #define IS_HOST         (HOST_ID == NODE_ID)
 #endif /* HOST_ID */
 
@@ -25,11 +25,5 @@ typedef struct {
   protocol_role_t role;
 } protocol_config_t;
 
-
-void protocol_init();
-void protocol_update();
-void protocol_run();
-
-extern protocol_config_t protocol_config;
 
 #endif /* PROTOCOL_PROTOCOL_H_ */

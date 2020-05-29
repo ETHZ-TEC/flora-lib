@@ -100,8 +100,8 @@ void tq_print_queue() {
   timer_queue_element_t* c_elem = first_element;
 
   while(c_elem) {
-    sprintf(char_buff, "Timer: %d, Timestamp: %d", c_elem->timer_name, (int) c_elem->timestamp);
-    cli_println(char_buff);
+    sprintf(dozer_print_buffer, "Timer: %d, Timestamp: %d", c_elem->timer_name, (int) c_elem->timestamp);
+    cli_println(dozer_print_buffer);
     rtc_delay(100);
 
     c_elem = (timer_queue_element_t*) c_elem->next;
@@ -152,8 +152,8 @@ void tq_run_timer(bool set_callback) {
     }
     else {
 //      print_ts();
-      sprintf(char_buff, "tq timestamp already passed! %d, %llu, %llu", (int) current_timer->timer_name, hs_timer_get_current_timestamp(), current_timer->timestamp);
-      cli_println(char_buff);
+      sprintf(dozer_print_buffer, "tq timestamp already passed! %d, %llu, %llu", (int) current_timer->timer_name, hs_timer_get_current_timestamp(), current_timer->timestamp);
+      cli_println(dozer_print_buffer);
 
       // execute callback of previous timer
       if(tq_callback) {
@@ -193,8 +193,8 @@ void tq_timer_fired() {
   tq_callback = current_timer->callback;
 
   if(in_rec_fct()) {
-    sprintf(char_buff, "timer infered in rec fct: %d", current_timer->timer_name);
-    dozer_print(5, char_buff);
+    sprintf(dozer_print_buffer, "timer infered in rec fct: %d", current_timer->timer_name);
+    dozer_print(5, dozer_print_buffer);
   }
 }
 

@@ -108,8 +108,8 @@ void slwb_scheduler_calculate_round_schedule(slwb_round_t* round) {
   elem = ll_get_head(slwb_streams);
   while (elem) {
     stream = (slwb_stream_t*) elem->data;
-    sprintf(char_buff, "%d ss: %d, %d, %d, %d", idx, stream->stream_req.node_id, stream->stream_req.stream_id, stream->stream_req.period, stream->backoff);
-    print(2, char_buff);
+    sprintf(slwb_print_buffer, "%d ss: %d, %d, %d, %d", idx, stream->stream_req.node_id, stream->stream_req.stream_id, stream->stream_req.period, stream->backoff);
+    print(2, slwb_print_buffer);
     // if stream not acked add ack to schedule
     if (!stream->acked && ack_idx < SLWB_MAX_STREAM_ACKS) {
       schedule->gen_schedule.n_acks++;
@@ -214,8 +214,8 @@ void slwb_scheduler_add_stream_req(slwb_stream_request_t* sr, uint8_t sender, bo
     n_unacked_lr_streams++;
 
     slwb_print_stream(2, &(stream->stream_req));
-    sprintf(char_buff, "acked: %d", stream->acked);
-    print(1, char_buff);
+    sprintf(slwb_print_buffer, "acked: %d", stream->acked);
+    print(1, slwb_print_buffer);
   }
 }
 
@@ -251,8 +251,8 @@ uint8_t slwb_scheduler_number_data_slots(slwb_round_t* round, bool long_range) {
   }
 
   uint8_t slots = (uint8_t) (remaining_time / time_per_data);
-  sprintf(char_buff, "slots: %d", slots);
-  print(2, char_buff);
+  sprintf(slwb_print_buffer, "slots: %d", slots);
+  print(2, slwb_print_buffer);
 
   return slots;
 }
@@ -284,8 +284,8 @@ void slwb_scheduler_update_streams() {
         stream = (slwb_stream_t*) elem->next_element->data;
         slwb_print_stream(2, &stream->stream_req);
         if (!stream->stream_req.period && stream->acked) {
-          sprintf(char_buff, "rm sr: %d, %d", stream->stream_req.node_id, stream->stream_req.stream_id);
-          print(2, char_buff);
+          sprintf(slwb_print_buffer, "rm sr: %d, %d", stream->stream_req.node_id, stream->stream_req.stream_id);
+          print(2, slwb_print_buffer);
 
           list_element_t* tmp = elem->next_element;
           elem->next_element = tmp->next_element;
@@ -309,8 +309,8 @@ void slwb_scheduler_update_streams() {
       if (elem) {
         stream = (slwb_stream_t*) elem->data;
         if (!stream->stream_req.period && stream->acked) {
-          sprintf(char_buff, "rm sr: %d, %d", stream->stream_req.node_id, stream->stream_req.stream_id);
-          print(2, char_buff);
+          sprintf(slwb_print_buffer, "rm sr: %d, %d", stream->stream_req.node_id, stream->stream_req.stream_id);
+          print(2, slwb_print_buffer);
           list->head = elem->next_element;
           free(elem);
           list->list_size--;

@@ -19,12 +19,16 @@ uint8_t data_period;
 uint8_t data_counter = 0;
 
 void slwb_init() {
-  protocol_init();
+
+#if CONFIG_ENABLE
+  slwb_protocol_config.uid  = config_get()->uid;
+  slwb_protocol_config.role = config_get()->role;
+#endif /* CONFIG_ENABLE */
 
   slwb_round.round_schedule = &round_schedule;
   slwb_round_idx = 0;
 
-  slwb_set_lr_node(protocol_config.role == SLWB_LR);
+  slwb_set_lr_node(slwb_protocol_config.role == SLWB_LR);
 
   slwb_network_init();
 
@@ -34,8 +38,8 @@ void slwb_init() {
   else {
     data_period = (rand() % (5*slwb_round_period) + slwb_round_period);
   }
-  sprintf(char_buff, "data_period: %d", data_period);
-  print(2, char_buff);
+  sprintf(slwb_print_buffer, "data_period: %d", data_period);
+  print(2, slwb_print_buffer);
 
   slwb_data_generator_init(data_period);
 
@@ -47,8 +51,8 @@ void slwb_init() {
 void slwb_start(uint8_t lr_modulation, uint8_t modulation, uint8_t lr_power, uint8_t power, uint16_t round_period) {
   slwb_round_period = round_period;
   slwb_init();
-  sprintf(char_buff, "Node: %d, base: %d, lr: %d", slwb_get_id(), slwb_is_base(), slwb_is_lr_node());
-  print(1, char_buff);
+  sprintf(slwb_print_buffer, "Node: %d, base: %d, lr: %d", slwb_get_id(), slwb_is_base(), slwb_is_lr_node());
+  print(1, slwb_print_buffer);
 
   // initialize the round struct
   slwb_round.round_start = ((hs_timer_get_current_timestamp() + 1*HS_TIMER_FREQUENCY) / GLORIA_SCHEDULE_GRANULARITY) * GLORIA_SCHEDULE_GRANULARITY;

@@ -96,8 +96,8 @@ uint8_t dozer_receive(uint32_t rx_timeout, int64_t rx_delay) {
     print_ts(1);
 
     if (Radio.GetStatus()) { // check if radio idle
-        sprintf(char_buff, "receive failed, radio status: %X", Radio.GetStatus());
-        dozer_print(3 , char_buff);
+        sprintf(dozer_print_buffer, "receive failed, radio status: %X", Radio.GetStatus());
+        dozer_print(3 , dozer_print_buffer);
         return ERROR; // return ERROR if radio not in IDLE state
     }
 
@@ -149,8 +149,8 @@ uint8_t dozer_send(dozer_send_message_t* msg, uint8_t size, uint32_t timeout) {
     print_ts(1);
 
     if (Radio.GetStatus()) { // check if radio idle
-        sprintf(char_buff, "send failed, radio status: %X", Radio.GetStatus());
-        dozer_print(0, char_buff);
+        sprintf(dozer_print_buffer, "send failed, radio status: %X", Radio.GetStatus());
+        dozer_print(0, dozer_print_buffer);
         return ERROR; // return ERROR if radio not in IDLE state
     }
 
@@ -220,8 +220,8 @@ void dozer_rx_callback(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr
     tim5_rx_timeout_watchdog_stop();
 #endif
 
-    sprintf(char_buff, "rx cb, rssi: %d", rssi);
-    dozer_print(5, char_buff);
+    sprintf(dozer_print_buffer, "rx cb, rssi: %d", rssi);
+    dozer_print(5, dozer_print_buffer);
   print_ts(1);
 
   radio_set_standby(); // set radio in standby mode
@@ -236,13 +236,13 @@ void dozer_rx_callback(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr
     dozer_send_message_t* tdsm = (dozer_send_message_t*) payload;
     message->header = tdsm->header;
 
-    sprintf(char_buff, "rx cb, ack: %d", msg_header->ack);
-    dozer_print(0, char_buff);
+    sprintf(dozer_print_buffer, "rx cb, ack: %d", msg_header->ack);
+    dozer_print(0, dozer_print_buffer);
 
     // check if the message was intended for this node
     if (msg_header->dest != BROADCAST_ADDR && msg_header->dest != node_config.id) {
-        sprintf(char_buff, "rx wrong addr: %d", msg_header->dest);
-        dozer_print(4, char_buff);
+        sprintf(dozer_print_buffer, "rx wrong addr: %d", msg_header->dest);
+        dozer_print(4, dozer_print_buffer);
 
         uint32_t listened_time = (hs_timer_get_current_timestamp() - rx_start_ts) / HS_TIMER_FREQUENCY_MS; // convert to ms as receive timeout is currently in ms
         // continue listening if rx timeout not yet reached
@@ -258,8 +258,8 @@ void dozer_rx_callback(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr
     }
 
     if (msg_header->ack) { // sender requested an acknowledgment
-      sprintf(char_buff, "data rec ts: %llu", rx_done_ts);
-      dozer_print(0, char_buff);
+      sprintf(dozer_print_buffer, "data rec ts: %llu", rx_done_ts);
+      dozer_print(0, dozer_print_buffer);
         send_ack();
     }
     else if (await_ack) { // waiting for acknowledgment
@@ -267,8 +267,8 @@ void dozer_rx_callback(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr
 
         dozer_send_message_t* dsm = (dozer_send_message_t*) payload;
         ack_byte = dsm->payload.ack_msg.ack_byte;
-        sprintf(char_buff, "ack rec: %d", ack_byte);
-        dozer_print(5, char_buff);
+        sprintf(dozer_print_buffer, "ack rec: %d", ack_byte);
+        dozer_print(5, dozer_print_buffer);
         print_ts(5);
         handle_ack(SUCCESS, ack_byte);
       }
@@ -322,8 +322,8 @@ void dozer_timeout_callback(bool crc_error) {
  * send acknowledgment
  */
 uint8_t send_ack() {
-  sprintf(char_buff, "send ack: %d", ack_byte);
-  dozer_print(5, char_buff);
+  sprintf(dozer_print_buffer, "send ack: %d", ack_byte);
+  dozer_print(5, dozer_print_buffer);
     dozer_send_message_t msg;
     ack_msg_t ack;
 
@@ -346,8 +346,8 @@ uint8_t send_ack() {
  */
 void set_ack_byte(uint8_t ab) {
   ack_byte = ab;
-  sprintf(char_buff, "ackb set: %d", ab);
-  dozer_print(3, char_buff);
+  sprintf(dozer_print_buffer, "ackb set: %d", ab);
+  dozer_print(3, dozer_print_buffer);
 }
 
 /*
@@ -393,8 +393,8 @@ void get_rssi(uint32_t max_sense_time) {
 
 
 
-  sprintf(char_buff, "rssi det: %d", rssi);
-  dozer_print(5, char_buff);
+  sprintf(dozer_print_buffer, "rssi det: %d", rssi);
+  dozer_print(5, dozer_print_buffer);
   radio_set_standby();
 
     // if rssi detection is 0, a message has been received and the rx callback called the rssi_done function
@@ -419,8 +419,8 @@ bool in_rec_fct() {
 void rx_to_fail() {
   to_fails++;
   // print number of timeout fails and successful radio timeouts
-  sprintf(char_buff, "rx timeout failed. fails: %d; count: %d", to_fails, to_count);
-  dozer_print(10, char_buff);
+  sprintf(dozer_print_buffer, "rx timeout failed. fails: %d; count: %d", to_fails, to_count);
+  dozer_print(10, dozer_print_buffer);
   dozer_timeout_callback(false);
 }
 

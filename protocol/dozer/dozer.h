@@ -103,7 +103,7 @@ void dozer_run(bool start);
 
 
 /********************************* Variables *********************************/
-char char_buff[100]; // used for serial prints
+extern char dozer_print_buffer[100]; // used for serial prints
 
 extern node_config_t node_config;   // node information
 extern radio_config_dozer_t radio_config; // radio configurations

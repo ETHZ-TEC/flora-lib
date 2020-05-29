@@ -58,8 +58,8 @@ uint8_t cq_append(uint8_t forceAdd, uint8_t dataType, uint8_t payloadLength, dat
     dozer_print(1, "queue full");
     if (print_queue) {
       for (int i = 0; i < QUEUE_SIZE; ++i) {
-        sprintf(char_buff, "orig: %d, seqNr: %d", queue.buffer[i].originatorID, queue.buffer[i].seqNr);
-        dozer_print(1, char_buff);
+        sprintf(dozer_print_buffer, "orig: %d, seqNr: %d", queue.buffer[i].originatorID, queue.buffer[i].seqNr);
+        dozer_print(1, dozer_print_buffer);
       }
       print_queue = false;
     }

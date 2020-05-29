@@ -96,8 +96,8 @@ void dozer_init(){
   node_config.id = *STM32_UID >> 16;
   node_config.role = node_config.id == SINK_ID;
 
-  sprintf(char_buff, "Node ID: %d, Sink: %d", node_config.id, node_config.role);
-  dozer_print(10, char_buff);
+  sprintf(dozer_print_buffer, "Node ID: %d, Sink: %d", node_config.id, node_config.role);
+  dozer_print(10, dozer_print_buffer);
 
   // watchdog counters
   beacon_timer_cnt = 0;
@@ -375,8 +375,8 @@ void received_bm(dozer_message_t* msg) {
         // the parent does not seem to respond any more -> back to not connected
         rate_parent(c_parent); // update the parents rating
         connected = 0;
-        sprintf(char_buff, "disconnected: %d", 2);
-        dozer_print(6, char_buff);
+        sprintf(dozer_print_buffer, "disconnected: %d", 2);
+        dozer_print(6, dozer_print_buffer);
       }
       else {
         // try again to receive the parent beacon after one interval
@@ -443,8 +443,8 @@ void received_bm(dozer_message_t* msg) {
         // prevent count to infinity
         if (c_parent->distance_to_sink >= MAX_HOPS){
           connected = 0;
-          sprintf(char_buff, "disconnected: %d", 3);
-          dozer_print(6, char_buff);
+          sprintf(dozer_print_buffer, "disconnected: %d", 3);
+          dozer_print(6, dozer_print_buffer);
 
           c_parent->failed_connection_attempts = MAX_TRANSMISSION_FAILURES+1;
           rate_parent(c_parent);
@@ -811,8 +811,8 @@ void update_drift_estimation(parent_t* prt, dozer_message_t* msg) {
 
   // calculate the estimation error
   current_est_error = (int64_t) ((int64_t)beacon_reception_time - (int64_t)estimated_reception_time);
-  sprintf(char_buff, "c est err: %llu", current_est_error);
-  dozer_print(1, char_buff);
+  sprintf(dozer_print_buffer, "c est err: %llu", current_est_error);
+  dozer_print(1, dozer_print_buffer);
 
   // handle potential timer overflows between the reception time and the predicted reception time
   if (current_est_error > 0xFFFFFL) { // the beacon came too early and the overflow happened between beacon_reception_time and estimated_reception_time
@@ -993,8 +993,8 @@ void received_crm(dozer_message_t* msg) {
     hs_msg = (handshake_msg_t*) &(connection_msg->payload.handshake_msg);
     hs_msg->slot = empty_index;
 
-    sprintf(char_buff, "send slot: %d", hs_msg->slot);
-    dozer_print(0, char_buff);
+    sprintf(dozer_print_buffer, "send slot: %d", hs_msg->slot);
+    dozer_print(0, dozer_print_buffer);
 
     if (send_handshake(connection_msg) == SUCCESS) {
       // reserve the slot for the child if the message was sent
@@ -1051,8 +1051,8 @@ void received_handshake(dozer_message_t* msg) {
     set_timer_for_beacon(c_parent);
 
     connected = 1; // finally found a parent and got an upload slot
-    sprintf(char_buff, "connected: prt: %d; slot: %d", header->source, hs_msg->slot);
-  dozer_print(6, char_buff);
+    sprintf(dozer_print_buffer, "connected: prt: %d; slot: %d", header->source, hs_msg->slot);
+  dozer_print(6, dozer_print_buffer);
 
     connecting = 0; // no longer trying to connect to a potential parent
     num_reconnect++;
@@ -1191,8 +1191,8 @@ void receive_messages_to_buffer_done(uint8_t n_msgs, uint16_t l_seq_nr) {
       delta_time = (~slot[start_slot-1].last_rendezvous_time) + current_time + 1;
     }
     if (delta_time > (uint64_t) SENSOR_SAMPLING_INTERVAL_IN_JIFFIES * (uint64_t) MAX_SENSOR_MISSES){ // Too much time passed since the last update
-      sprintf(char_buff, "dropped child: %d; delta: %llu", slot[start_slot-1].id, delta_time);
-      dozer_print(6, char_buff);
+      sprintf(dozer_print_buffer, "dropped child: %d; delta: %llu", slot[start_slot-1].id, delta_time);
+      dozer_print(6, dozer_print_buffer);
       slot[start_slot-1].id = EMPTY; // drop this child
       child_count--;
     }
@@ -1215,8 +1215,8 @@ void send_buffered_messages_done(uint8_t num, bool acked) {
     if (++c_parent->failed_connection_attempts > MAX_TRANSMISSION_FAILURES) {
       // the parent does not seem to respond any more -> back to not connected
       connected = 0;
-      sprintf(char_buff, "disconnected: %d", 1);
-      dozer_print(6, char_buff);
+      sprintf(dozer_print_buffer, "disconnected: %d", 1);
+      dozer_print(6, dozer_print_buffer);
 
       rate_parent(c_parent);
 
@@ -1326,13 +1326,13 @@ void rand_data_gen() {
       uint8_t* dtype = NULL;
       uint8_t* plength = NULL;
       dozer_print(p, "**********");
-      sprintf(char_buff, "ubuf: %d", u_buf);
-      dozer_print(p, char_buff);
+      sprintf(dozer_print_buffer, "ubuf: %d", u_buf);
+      dozer_print(p, dozer_print_buffer);
       for (int i = 0; i < u_buf; ++i) {
         if (cq_getFirst(buf, dtype, plength)) {
           // print message origin and sequence number
-          sprintf(char_buff, "origin: %d, seqNr: %d", buf->originatorID, buf->seqNr);
-          dozer_print(p, char_buff);
+          sprintf(dozer_print_buffer, "origin: %d, seqNr: %d", buf->originatorID, buf->seqNr);
+          dozer_print(p, dozer_print_buffer);
           // delete message to prevent a full queue
           cq_dropFirst();
         }
@@ -1357,13 +1357,13 @@ void rand_data_gen() {
         }
 
         if (cq_append(0, DATA_MSG, sizeof(tdmsg), &tdmsg)) {
-  //        sprintf(char_buff, "seqNr: %d", seqNr-1);
-  //        dozer_print(5, char_buff);
+  //        sprintf(dozer_print_buffer, "seqNr: %d", seqNr-1);
+  //        dozer_print(5, dozer_print_buffer);
         }
       }
 
-      sprintf(char_buff, "msgs generated until seqNr: %d", seqNr-1);
-      dozer_print(6, char_buff);
+      sprintf(dozer_print_buffer, "msgs generated until seqNr: %d", seqNr-1);
+      dozer_print(6, dozer_print_buffer);
     }
 
     // print radio statistics

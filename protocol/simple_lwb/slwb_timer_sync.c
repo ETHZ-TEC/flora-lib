@@ -83,8 +83,8 @@ void slwb_adapt_timer() {
     offset = (double_t) timer_markers[latest_markers].global_marker - timer_markers[latest_markers].local_marker;
     print(2, "markers:");
     for (int i = 0; i < n_markers; ++i) {
-      sprintf(char_buff, "%llu, %llu", timer_markers[i].local_marker, timer_markers[i].global_marker);
-      print(2, char_buff);
+      sprintf(slwb_print_buffer, "%llu, %llu", timer_markers[i].local_marker, timer_markers[i].global_marker);
+      print(2, slwb_print_buffer);
     }
   }
 
@@ -92,8 +92,8 @@ void slwb_adapt_timer() {
   hs_timer_set_offset(offset);
   slwb_latest_sync = hs_timer_get_current_timestamp();
 
-  sprintf(char_buff, "drift: %f, offset: %f", drift, offset);
-  print(2, char_buff);
+  sprintf(slwb_print_buffer, "drift: %f, offset: %f", drift, offset);
+  print(2, slwb_print_buffer);
 }
 
 /*

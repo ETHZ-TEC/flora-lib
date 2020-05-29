@@ -14,6 +14,9 @@ extern current_state_t current_state;
 extern bool send_activation;
 
 
+char dozer_print_buffer[100];
+
+
 void radio_dep_init() {
 //  Set callback functions
   radio_set_rx_callback(&dozer_rx_callback);

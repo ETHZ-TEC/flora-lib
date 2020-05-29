@@ -73,8 +73,8 @@ void slwb_data_generator_stream_acked(uint8_t node_id, uint8_t stream_id) {
     // check if the correct stream is found
     if (stream->stream_req.node_id == node_id && stream->stream_req.stream_id == stream_id) {
       stream->acked = true;
-      sprintf(char_buff, "stream_acked: %d, %d", node_id, stream_id);
-      print(2, char_buff);
+      sprintf(slwb_print_buffer, "stream_acked: %d, %d", node_id, stream_id);
+      print(2, slwb_print_buffer);
       return;
     }
     elem = elem->next_element;
@@ -186,8 +186,8 @@ void slwb_data_generator_generate_data() {
     }
     data_msg->node_id = slwb_get_id();
     data_msg->packet_id = packet_id;
-    sprintf(char_buff, "data_gen: %d, %d", slwb_get_id(), packet_id);
-    print(10, char_buff);
+    sprintf(slwb_print_buffer, "data_gen: %d, %d", slwb_get_id(), packet_id);
+    print(10, slwb_print_buffer);
     packet_id++;
 
     // discard oldest data if list size is too large
@@ -241,8 +241,8 @@ void slwb_data_generator_add_data(slwb_data_message_t* msg) {
 
   memcpy(data_msg, msg, sizeof(slwb_data_message_t));
 
-  sprintf(char_buff, "data_add: %d, %d", msg->node_id, msg->packet_id);
-  print(1, char_buff);
+  sprintf(slwb_print_buffer, "data_add: %d, %d", msg->node_id, msg->packet_id);
+  print(1, slwb_print_buffer);
 }
 
 /*

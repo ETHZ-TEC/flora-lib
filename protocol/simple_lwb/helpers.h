@@ -9,7 +9,8 @@
 #define PROTOCOL_SIMPLE_LWB_HELPERS_H_
 
 
-extern char char_buff[100];
+extern char slwb_print_buffer[100];
+extern protocol_config_t slwb_protocol_config;
 
 // define the print priority for the print function
 #if FLOCKLAB

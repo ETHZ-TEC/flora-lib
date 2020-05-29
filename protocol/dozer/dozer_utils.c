@@ -75,10 +75,10 @@ void print_msg(dozer_message_t* msg, uint8_t prio) {
 
   dozer_print(prio, "*****");
 
-  sprintf(char_buff, "Source:\t%d", header.source);
-  dozer_print(prio, char_buff);
-  sprintf(char_buff, "Dest:\t%d", header.dest);
-  dozer_print(prio, char_buff);
+  sprintf(dozer_print_buffer, "Source:\t%d", header.source);
+  dozer_print(prio, dozer_print_buffer);
+  sprintf(dozer_print_buffer, "Dest:\t%d", header.dest);
+  dozer_print(prio, dozer_print_buffer);
 
   switch (header.type) {
     case BEACON_MSG:
@@ -87,14 +87,14 @@ void print_msg(dozer_message_t* msg, uint8_t prio) {
 
       beacon_msg_t bm = msg->payload.beacon_msg;
 
-      sprintf(char_buff, "seed:\t\t%lu", bm.seed);
-      dozer_print(prio, char_buff);
-      sprintf(char_buff, "hop_count:\t%d", bm.hop_count);
-      dozer_print(prio, char_buff);
-      sprintf(char_buff, "load:\t\t%d", bm.load);
-      dozer_print(prio, char_buff);
-      sprintf(char_buff, "lsd:\t\t%d", bm.lsd);
-      dozer_print(prio, char_buff);
+      sprintf(dozer_print_buffer, "seed:\t\t%lu", bm.seed);
+      dozer_print(prio, dozer_print_buffer);
+      sprintf(dozer_print_buffer, "hop_count:\t%d", bm.hop_count);
+      dozer_print(prio, dozer_print_buffer);
+      sprintf(dozer_print_buffer, "load:\t\t%d", bm.load);
+      dozer_print(prio, dozer_print_buffer);
+      sprintf(dozer_print_buffer, "lsd:\t\t%d", bm.lsd);
+      dozer_print(prio, dozer_print_buffer);
 
       break;
 
@@ -103,8 +103,8 @@ void print_msg(dozer_message_t* msg, uint8_t prio) {
       dozer_print(prio, "Handshake:");
 
       handshake_msg_t hs = msg->payload.handshake_msg;
-      sprintf(char_buff, "slot:\t\t%d", hs.slot);
-      dozer_print(prio, char_buff);
+      sprintf(dozer_print_buffer, "slot:\t\t%d", hs.slot);
+      dozer_print(prio, dozer_print_buffer);
 
       break;
 
@@ -113,16 +113,16 @@ void print_msg(dozer_message_t* msg, uint8_t prio) {
       dozer_print(prio, "Data:");
 
       data_msg_t dm = msg->payload.data_msg;
-      sprintf(char_buff, "seq nr:\t\t%d", dm.seqNr);
-      dozer_print(prio, char_buff);
-      sprintf(char_buff, "orig:\t\t%d", dm.originatorID);
-      dozer_print(prio, char_buff);
+      sprintf(dozer_print_buffer, "seq nr:\t\t%d", dm.seqNr);
+      dozer_print(prio, dozer_print_buffer);
+      sprintf(dozer_print_buffer, "orig:\t\t%d", dm.originatorID);
+      dozer_print(prio, dozer_print_buffer);
 
       break;
 
     default:
-      sprintf(char_buff, "Message type does not match! %d", header.type);
-      dozer_print(prio, char_buff);
+      sprintf(dozer_print_buffer, "Message type does not match! %d", header.type);
+      dozer_print(prio, dozer_print_buffer);
       break;
 
   }
@@ -135,8 +135,8 @@ void print_msg(dozer_message_t* msg, uint8_t prio) {
 void print_ts(uint8_t prio) {
   uint64_t timestamp = hs_timer_get_current_timestamp();
 
-  sprintf(char_buff, "Time:\t%llu", timestamp);
-  dozer_print(prio, char_buff);
+  sprintf(dozer_print_buffer, "Time:\t%llu", timestamp);
+  dozer_print(prio, dozer_print_buffer);
 }
 
 #endif /* DOZER_ENABLE */

@@ -76,21 +76,21 @@ void slwb_network_print(uint8_t prio, slwb_network_t* network) {
 
   for (int i = 0; i < network->n_clusters; ++i) {
        cluster = &(network->clusters[i]);
-       sprintf(char_buff, "cluster %d:\n", i);
-       print(prio, char_buff);
+       sprintf(slwb_print_buffer, "cluster %d:\n", i);
+       print(prio, slwb_print_buffer);
 
-       sprintf(char_buff, "\tcluster nodes %d:\n", cluster->cluster_nodes->n_nodes);
-       print(prio, char_buff);
+       sprintf(slwb_print_buffer, "\tcluster nodes %d:\n", cluster->cluster_nodes->n_nodes);
+       print(prio, slwb_print_buffer);
        for (int j = 0; j < cluster->cluster_nodes->n_nodes; ++j) {
-               sprintf(char_buff, "\t\t%d\n", cluster->cluster_nodes->nodes[j]);
-               print(prio, char_buff);
+               sprintf(slwb_print_buffer, "\t\t%d\n", cluster->cluster_nodes->nodes[j]);
+               print(prio, slwb_print_buffer);
        }
 
-       sprintf(char_buff, "\tlora nodes %d:\n", cluster->lora_nodes->n_nodes);
-       print(prio, char_buff);
+       sprintf(slwb_print_buffer, "\tlora nodes %d:\n", cluster->lora_nodes->n_nodes);
+       print(prio, slwb_print_buffer);
        for (int k = 0; k < cluster->lora_nodes->n_nodes; ++k) {
-               sprintf(char_buff, "\t\t%d\n", cluster->lora_nodes->nodes[k]);
-               print(prio, char_buff);
+               sprintf(slwb_print_buffer, "\t\t%d\n", cluster->lora_nodes->nodes[k]);
+               print(prio, slwb_print_buffer);
        }
   }
 }
