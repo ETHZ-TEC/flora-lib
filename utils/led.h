@@ -5,8 +5,8 @@
  *      Author: marku
  */
 
-#ifndef LED_LED_H_
-#define LED_LED_H_
+#ifndef UTILS_LED_H_
+#define UTILS_LED_H_
 
 
 #define LED_PULSE_PERIOD_DEFAULT 2000
@@ -31,4 +31,4 @@ void led_toggle(led_s led);
 
 void led_set_event_blink(uint32_t length, uint32_t period);
 
-#endif /* LED_LED_H_ */
+#endif /* UTILS_LED_H_ */
