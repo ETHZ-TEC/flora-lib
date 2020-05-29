@@ -63,6 +63,7 @@
 #include "utils/misc.h"
 #include "utils/log.h"
 #include "utils/nvcfg.h"
+#include "utils/dcstat.h"
 #include "led/led.h"
 #include "config/config.h"
 #include "cli/cli.h"

@@ -22,6 +22,10 @@
 
 #define ADDR_OFS(addr, ofs)  ((void*)((uint32_t)addr + ofs))
 
+/* can be used to execute a piece of code atomically (without interruption) */
+#define ENTER_CRITICAL_SECTION()    uint32_t mask; mask = __get_PRIMASK(); __disable_irq()
+#define LEAVE_CRITICAL_SECTION()    __set_PRIMASK(mask);
+
 
 void delay(volatile uint32_t loop_passes);
 void delay_us(volatile uint32_t us);
