@@ -21,11 +21,7 @@ void system_boot() {
 
 void system_init()
 {
-#ifdef DEVKIT
-  HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A, GPIO_PIN_8); // RADIO_NSS
-#endif
-  HAL_PWREx_EnablePullUpPullDownConfig();
-
+  /* init timers */
 #ifdef HAL_RTC_MODULE_ENABLED
   rtc_init();
 #endif /* HAL_RTC_MODULE_ENABLED */
@@ -33,24 +29,37 @@ void system_init()
 #if CONFIG_ENABLE
   config_init();
 #endif /* CONFIG_ENABLE */
-  radio_init();
-  gloria_init();
-  uart_init();
-#if CLI_ENABLE
-  cli_init();
-#endif /* CLI_ENABLE */
-#if BOLT_ENABLE
-  bolt_init();
-#endif /* BOLT_ENABLE */
 
+  /* init pins */
   leds_init();
   gpio_init();
 #if FLOCKLAB
   flocklab_init();
 #endif /* FLOCKLAB */
+#ifdef DEVKIT
+  HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A, GPIO_PIN_8); // RADIO_NSS
+#endif
+  HAL_PWREx_EnablePullUpPullDownConfig();
 
+  /* init peripherals / drivers */
+  uart_init();
+#if BOLT_ENABLE
+  bolt_init();
+#endif /* BOLT_ENABLE */
+
+  /* init radio and protocols */
+  radio_init();
+#if GLORIA_ENABLE
+  gloria_init();
+#endif /* GLORIA_ENABLE */
+#if CLI_ENABLE
+  cli_init();
+#endif /* CLI_ENABLE */
+
+  /* set seed for random generator */
   srand((unsigned int) hs_timer_get_current_timestamp());
 
+  /* configure interrupts */
 #ifndef DEVKIT
   HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN1_HIGH);
   HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2_HIGH);
