@@ -70,7 +70,7 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 #define ELWB_RCV_SCHED() \
 {\
   ELWB_GLOSSY_START(0, (uint8_t *)&schedule, payload_len, ELWB_CONF_N_TX, 1);\
-  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED - ELWB_CONF_T_GUARD_ROUND);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_SEND_PACKET() \
@@ -82,7 +82,7 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 #define ELWB_RCV_PACKET() \
 {\
   ELWB_GLOSSY_START(0, (uint8_t*)payload, payload_len, ELWB_CONF_N_TX, 0);\
-  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot - ELWB_CONF_T_GUARD_SLOT);\
   ELWB_GLOSSY_STOP();\
 }
 
@@ -257,6 +257,7 @@ void elwb_run(void)
       /* --- RECEIVE SCHEDULE --- */
       payload_len = 0;
       if (sync_state == BOOTSTRAP) {
+        ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_T_GUARD_ROUND);    /* this is required, otherwise we get "wakeup time in the past" warnings */
         while (elwb_running) {
           schedule.n_slots = 0;   /* reset */
           stats.bootstrap_cnt++;
@@ -322,6 +323,15 @@ void elwb_run(void)
         } else {
           /* just use the previous wakeup time as start time */
           t_start = ELWB_TIMER_LAST_EXP();
+        }
+        /* update stats */
+        int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
+        if (rssi_curr != 0) {
+          if (stats.rssi_avg != 0) {
+            stats.rssi_avg = (stats.rssi_avg + rssi_curr) / 2;  /* update the average RSSI value */
+          } else {
+            stats.rssi_avg = rssi_curr;
+          }
         }
       } else {
         /* update the sync state machine */
@@ -578,6 +588,14 @@ void elwb_run(void)
           } else {
             /* else: no update to schedule needed; set period to 0 to indicate 'no change in period' */
             payload[0] = 0;
+          }
+          int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
+          if (rssi_curr != 0) {
+            if (stats.rssi_avg != 0) {
+              stats.rssi_avg = (stats.rssi_avg + rssi_curr) / 2;  /* update the average RSSI value */
+            } else {
+              stats.rssi_avg = rssi_curr;
+            }
           }
         }
       }
