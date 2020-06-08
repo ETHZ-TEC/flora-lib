@@ -334,8 +334,8 @@ void hs_timer_schedule_stop() {
 
 void hs_timer_timeout_stop() {
   timeout_offset = 0;
-  __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC3);
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
+  __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC3);
 }
 
 #if !BOLT_ENABLE

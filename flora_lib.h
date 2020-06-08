@@ -39,7 +39,7 @@
 #include "time/rtc.h"
 #include "time/lptimer.h"
 #include "time/hs_timer.h"
-#include "radio/flora_radio.h"
+#include "radio/radio.h"
 #include "bolt/bolt.h"
 
 /* protocols, networking */
