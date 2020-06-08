@@ -139,6 +139,12 @@ void gloria_start(uint16_t initiator_id,
   radio_reset_preamble_counter();
   radio_reset_sync_counter();
 
+#if GLORIA_INTERFACE_DISABLE_INTERRUPTS
+  // TODO disable other potentially interfering interrupts!
+  CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk);  /* suspend FreeRTOS SysTick */
+  HAL_SuspendTick();                                  /* stop HAL tick */
+#endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
+
   gloria_run_flood(&flood, &gloria_flood_callback);
 }
 
@@ -206,6 +212,12 @@ uint8_t gloria_stop(void)
   arg_payload_ptr = NULL;
   arg_payload_len = 0;
   arg_sync_slot = false;
+
+#if GLORIA_INTERFACE_DISABLE_INTERRUPTS
+  /* re-enable other interrupts */
+  SET_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk);    /* resume FreeRTOS SysTick */
+  HAL_ResumeTick();                                   /* resume HAL tick */
+#endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
   GLORIA_STOP_IND();
 

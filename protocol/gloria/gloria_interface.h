@@ -58,6 +58,14 @@
 #define GLORIA_INTERFACE_MAX_SLOTS          127
 #endif /* GLORIA_INTERFACE_MAX_SLOTS */
 
+/**
+ * Whether to disable potentially interfering interrupts before starting a
+ * Gloria flood. The disabled interrupts will be re-enabled in gloria_stop().
+ */
+#ifndef GLORIA_INTERFACE_DISABLE_INTERRUPTS
+#define GLORIA_INTERFACE_DISABLE_INTERRUPTS 1
+#endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
+
 
 /* CONFIG CHECKS **************************************************************/
 
