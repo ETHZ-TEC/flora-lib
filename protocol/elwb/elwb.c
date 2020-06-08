@@ -70,7 +70,7 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 #define ELWB_RCV_SCHED() \
 {\
   ELWB_GLOSSY_START(0, (uint8_t *)&schedule, payload_len, ELWB_CONF_N_TX, 1);\
-  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED - ELWB_CONF_T_GUARD_ROUND);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_SEND_PACKET() \
@@ -82,7 +82,7 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 #define ELWB_RCV_PACKET() \
 {\
   ELWB_GLOSSY_START(0, (uint8_t*)payload, payload_len, ELWB_CONF_N_TX, 0);\
-  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot - ELWB_CONF_T_GUARD_SLOT);\
+  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
   ELWB_GLOSSY_STOP();\
 }
 
@@ -368,7 +368,7 @@ void elwb_run(void)
         schedule.n_slots += ELWB_SCHED_MAX_SLOTS;
       }
     }
-    t_slot_ofs = (ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP);
+    t_slot_ofs = t_start + (ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP);
 
     /* --- DATA SLOTS --- */
 
@@ -426,7 +426,7 @@ void elwb_run(void)
               my_slots++;
     #endif /* ELWB_CONF_DATA_ACK */
               /* wait until the data slot starts */
-              ELWB_WAIT_UNTIL(t_start + t_slot_ofs);
+              ELWB_WAIT_UNTIL(t_slot_ofs);
               ELWB_SEND_PACKET();
               if (ELWB_SCHED_HAS_DATA_SLOTS(&schedule)) {
                 stats.pkt_sent++;   /* only count data packets */
@@ -445,7 +445,7 @@ void elwb_run(void)
             /* the payload length is known in the request round */
             payload_len = ELWB_REQ_PKT_LEN;
           }
-          ELWB_WAIT_UNTIL(t_start + t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
+          ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
           ELWB_RCV_PACKET();
           payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
           if (ELWB_GLOSSY_RX_CNT()) {                   /* data received? */
@@ -491,7 +491,7 @@ void elwb_run(void)
         payload_len = (ELWB_SCHED_N_SLOTS(&schedule) + 7) / 8;
         if (payload_len) {
           memcpy((uint8_t*)payload, data_ack, payload_len);
-          ELWB_WAIT_UNTIL(t_start + t_slot_ofs);
+          ELWB_WAIT_UNTIL(t_slot_ofs);
           ELWB_SEND_PACKET();
           LOG_INFO("D-ACK sent (%u bytes)", payload_len);
         }
@@ -500,7 +500,7 @@ void elwb_run(void)
 
       } else {
         payload_len = 0;
-        ELWB_WAIT_UNTIL(t_start + t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
+        ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();                 /* receive data ack */
         payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
         /* only look into the D-ACK packet if we actually sent some data in the previous round */
@@ -552,13 +552,13 @@ void elwb_run(void)
         }
   #if ELWB_CONF_CONT_USE_HFTIMER
         /* contention slot requires precise timing: better to use HF timer for this wake-up! */
-        ELWB_HFTIMER_SCHEDULE(t_ref_hf + t_slot_ofs * RTIMER_HF_LF_RATIO, elwb_notify);
+        ELWB_HFTIMER_SCHEDULE(t_ref_hf + (t_slot_ofs - t_start) * RTIMER_HF_LF_RATIO, elwb_notify);
         ELWB_SUSPENDED();
         ELWB_TASK_YIELD();
         ELWB_RESUMED();
   #else /* ELWB_CONF_CONT_USE_HFTIMER */
         /* wait until the contention slot starts */
-        ELWB_WAIT_UNTIL(t_start + t_slot_ofs);
+        ELWB_WAIT_UNTIL(t_slot_ofs);
   #endif /* ELWB_CONF_CONT_USE_HFTIMER */
         ELWB_SEND_PACKET();
         /* set random backoff time between 0 and 3 */
@@ -567,7 +567,7 @@ void elwb_run(void)
       } else {
 
         /* just receive / relay packets */
-        ELWB_WAIT_UNTIL(t_start + t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
+        ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
         if (rand_backoff) {
           rand_backoff--;
@@ -601,14 +601,14 @@ void elwb_run(void)
       }
       t_slot_ofs += ELWB_CONF_T_CONT + ELWB_CONF_T_GAP;
 
-      /* --- RECEIVE 2ND SCHEDULE (only in case of a contention slot) --- */
+      /* --- 2ND SCHEDULE (only in case of a contention slot) --- */
 
       payload_len = ELWB_2ND_SCHED_LEN;
       if (ELWB_IS_HOST()) {
-        ELWB_WAIT_UNTIL(t_start + t_slot_ofs);
+        ELWB_WAIT_UNTIL(t_slot_ofs);
         ELWB_SEND_PACKET();    /* send as normal packet without sync */
       } else {
-        ELWB_WAIT_UNTIL(t_start + t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
+        ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
         if (ELWB_GLOSSY_RX_CNT()) {         /* packet received? */
           if (payload[0] != 0) {            /* zero means no change */
@@ -689,9 +689,6 @@ end_of_round:
     }
     if (call_preprocess) {
       start_of_next_round -= ELWB_CONF_T_PREPROCESS;    /* wake up earlier such that the pre task can run */
-    }
-    if (ELWB_TIMER_NOW() > start_of_next_round) {
-      LOG_ERROR("wakeup time is in the past");
     }
     //LOG_VERBOSE("wakeup in %d ticks", (int32_t)(start_of_next_round - lptimer_now()));
     ELWB_WAIT_UNTIL(start_of_next_round);
