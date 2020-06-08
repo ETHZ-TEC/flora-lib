@@ -44,7 +44,6 @@
 
 /* protocols, networking */
 #include "flocklab/flocklab.h"
-#include "protocol/protocol.h"
 #include "protocol/gloria/gloria.h"
 #if DOZER_ENABLE
 #include "protocol/dozer/dozer.h"
@@ -65,7 +64,6 @@
 #include "utils/nvcfg.h"
 #include "utils/dcstat.h"
 #include "utils/led.h"
-#include "config/config.h"
 #include "cli/cli.h"
 
 

@@ -123,6 +123,9 @@ void     elwb_sched_set_time_offset(uint32_t ofs);
 void elwb_notify(void)
 {
   if (task_handle) {
+    if (xTaskGetCurrentTaskHandle() == task_handle) {
+      LOG_WARNING("elwb_notify(): task is already running");
+    }
     ELWB_ON_WAKEUP();
     ELWB_TASK_NOTIFY_FROM_ISR(task_handle);
   }

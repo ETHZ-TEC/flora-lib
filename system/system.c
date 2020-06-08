@@ -26,9 +26,6 @@ void system_init()
   rtc_init();
 #endif /* HAL_RTC_MODULE_ENABLED */
   hs_timer_init();
-#if CONFIG_ENABLE
-  config_init();
-#endif /* CONFIG_ENABLE */
 
   /* init pins */
   leds_init();
@@ -49,9 +46,6 @@ void system_init()
 
   /* init radio and protocols */
   radio_init();
-#if GLORIA_ENABLE
-  gloria_init();
-#endif /* GLORIA_ENABLE */
 #if CLI_ENABLE
   cli_init();
 #endif /* CLI_ENABLE */

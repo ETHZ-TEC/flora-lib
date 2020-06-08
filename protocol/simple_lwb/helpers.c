@@ -9,7 +9,6 @@
 
 #if SLWB_ENABLE
 
-protocol_config_t slwb_protocol_config;
 bool lr_base = false;
 bool lr_node = false;
 
@@ -149,11 +148,11 @@ void slwb_print_data_msg(slwb_data_message_t* msg) {
  */
 
 inline uint16_t slwb_get_id() {
-  return slwb_protocol_config.uid;
+  return slwb_config.uid;
 }
 
 inline bool slwb_is_base() {
-  return slwb_protocol_config.role == BASE;
+  return slwb_config.role == BASE;
 }
 
 void slwb_set_lr_base(bool lrb) {

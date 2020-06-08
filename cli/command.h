@@ -15,7 +15,6 @@
 #include "cli/commands/slwb_cmd.h"
 #include "cli/commands/system_cmd.h"
 #include "cli/commands/radio_cmd.h"
-#include "cli/commands/config_cmd.h"
 #include "cli/commands/led_cmd.h"
 #include "cli/commands/cli_cmd.h"
 #include "cli/commands/test_cmd.h"

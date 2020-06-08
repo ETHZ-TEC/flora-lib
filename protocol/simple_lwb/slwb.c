@@ -9,6 +9,7 @@
 
 #if SLWB_ENABLE
 
+slwb_config_t slwb_config;
 slwb_round_t slwb_round = {0};
 slwb_round_schedule_t round_schedule = {0};
 
@@ -18,17 +19,15 @@ uint16_t slwb_round_idx;
 uint8_t data_period;
 uint8_t data_counter = 0;
 
-void slwb_init() {
-
-#if CONFIG_ENABLE
-  slwb_protocol_config.uid  = config_get()->uid;
-  slwb_protocol_config.role = config_get()->role;
-#endif /* CONFIG_ENABLE */
+void slwb_init(uint16_t uid, slwb_role_t role) {
 
   slwb_round.round_schedule = &round_schedule;
   slwb_round_idx = 0;
 
-  slwb_set_lr_node(slwb_protocol_config.role == SLWB_LR);
+  slwb_config.role = role;
+  slwb_config.uid = uid;
+
+  slwb_set_lr_node(slwb_config.role == SLWB_LR);
 
   slwb_network_init();
 
@@ -48,9 +47,9 @@ void slwb_init() {
   }
 }
 
-void slwb_start(uint8_t lr_modulation, uint8_t modulation, uint8_t lr_power, uint8_t power, uint16_t round_period) {
+void slwb_start(uint8_t lr_modulation, uint8_t modulation, uint8_t lr_power, uint8_t power, uint16_t round_period, uint16_t node_id, slwb_role_t role) {
   slwb_round_period = round_period;
-  slwb_init();
+  slwb_init(node_id, role);
   sprintf(slwb_print_buffer, "Node: %d, base: %d, lr: %d", slwb_get_id(), slwb_is_base(), slwb_is_lr_node());
   print(1, slwb_print_buffer);
 

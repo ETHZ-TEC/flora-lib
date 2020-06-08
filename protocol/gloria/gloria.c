@@ -23,10 +23,6 @@ static void gloria_process_slot();
 static void gloria_finish_slot();
 
 
-void gloria_init() {
-  gloria_load_id_and_role();
-}
-
 /*
  * initialize the necessary flood and message header parameters
  * start the flood
@@ -89,7 +85,7 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)()) {
   }
 
   // initialize message header
-  current_flood->message->header.src = (current_flood->initial? gloria_get_id() : 0);
+  current_flood->message->header.src = (current_flood->initial ? current_flood->node_id : 0);
   current_flood->message->header.slot_index = 0;
 
   // initialize error flags
@@ -145,7 +141,7 @@ static void gloria_rx_callback(uint8_t* payload, uint8_t size) {
 
       // prevent ack destination from retransmitting the ack message (ack_mode 2)
       // prevent nodes that have not yet sent the message from retransmitting acks (ack mode 1)
-      if (!current_flood->msg_received || ((current_flood->ack_mode == 2) && ack_message->dst == gloria_get_id()) ||
+      if (!current_flood->msg_received || ((current_flood->ack_mode == 2) && ack_message->dst == current_flood->node_id) ||
           ((current_flood->ack_mode == 1) && current_flood->slot_index - current_flood->first_rx_index == 1)) {
         // increase slot index to be consistent with other flood ends
         current_flood->slot_index++;
@@ -194,7 +190,7 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size) {
       current_flood->guard_time = 0;
 
       // check if node is also the destination
-      if (message->header.dst == gloria_get_id()) {
+      if (message->header.dst == current_flood->node_id) {
         if (current_flood->ack_mode) {
           // prepare ack if flood should be acked
           current_flood->acked = true;

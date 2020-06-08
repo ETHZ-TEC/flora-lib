@@ -110,6 +110,7 @@ void gloria_start(uint16_t initiator_id,
   flood.sync_timer = 0;
   flood.lp_listening = false;
   flood.radio_no_sleep = true;
+  flood.node_id = NODE_ID;
 
   message.header.type = 0;
   message.header.sync = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
@@ -158,6 +159,7 @@ uint8_t gloria_stop(void)
 
     // Stop gloria timers
     hs_timer_schedule_stop();
+    hs_timer_timeout_stop();
     // FIXME: clear corresponding interrupt flags (if any)
     // FIXME: reset/cleanup state of current flood -> not necessary? All state is contained in flood variable which is passed by reference to gloria_run_flood()
 
@@ -358,6 +360,9 @@ static void update_t_ref(void) {
 
   // determine time difference between reconstructed_marker and sync point
   uint64_t lp_time_diff = (hs_sync_point - flood.reconstructed_marker) / HS_TIMER_FREQUENCY_US * LPTIMER_SECOND / 1000000;
+
+  uint64_t now = hs_timer_get_current_timestamp();
+  LOG_INFO("reconstructed: %llu", (now - flood.reconstructed_marker));
 
   // determine the the reconstructed_marker time in lptimer ticks
   /* update t_ref related internal state */

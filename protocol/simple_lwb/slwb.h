@@ -30,7 +30,7 @@ extern uint16_t slwb_round_period;
 extern uint16_t slwb_round_idx;
 
 
-void slwb_start(uint8_t lr_modulation, uint8_t modulation, uint8_t lr_power, uint8_t power, uint16_t round_period);
+void slwb_start(uint8_t lr_modulation, uint8_t modulation, uint8_t lr_power, uint8_t power, uint16_t round_period, uint16_t node_id, slwb_role_t role);
 void slwb_round_finished();
 
 #endif /* PROTOCOL_SIMPLE_LWB_SLWB_H_ */

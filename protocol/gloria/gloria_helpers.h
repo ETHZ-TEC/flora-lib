@@ -15,6 +15,5 @@ bool gloria_is_not_finished(gloria_flood_t* flood);
 bool gloria_valid_to_send(gloria_flood_t* flood);
 bool gloria_is_ack_slot(gloria_flood_t* flood);
 uint16_t gloria_get_id();
-protocol_role_t gloria_get_role();
 
 #endif /* PROTOCOL_GLORIA_GLORIA_HELPERS_H_ */

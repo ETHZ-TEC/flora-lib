@@ -80,6 +80,8 @@ typedef struct {
 
   bool radio_no_sleep;      // true: don't put radio into sleep mode even if tx marker is far in the future
 
+  uint16_t node_id;
+
 } gloria_flood_t;
 
 #endif /* PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_ */

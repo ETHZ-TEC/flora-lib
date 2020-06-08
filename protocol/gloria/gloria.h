@@ -24,7 +24,6 @@
 #include "protocol/gloria/gloria_interface.h"
 
 
-void gloria_init();
 void gloria_run_flood(gloria_flood_t* flood, void (*callback)());
 void gloria_update();
 

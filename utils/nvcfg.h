@@ -40,10 +40,6 @@
 #error "invalid NVCFG_BLOCK_SIZE (must be a multiple of 2 and smaller than NVCFG_MEM_SIZE)"
 #endif
 
-#if NVCFG_ENABLE && CONFIG_ENABLE
-#error "cannot use NVCFG and CONFIG at the same time"
-#endif
-
 #if NVCFG_BLOCK_SIZE_WITH_CRC & 0x7
 #error "invalid value for NVCFG_BLOCK_SIZE_WITH_CRC"
 #endif

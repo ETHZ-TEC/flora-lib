@@ -24,6 +24,17 @@ typedef enum {
   LONG_RANGE
 } round_type_t;
 
+typedef enum {
+  RELAY = 0,
+  BASE = 1,
+  SLWB_LR,
+} slwb_role_t;
+
+typedef struct {
+  uint16_t uid;
+  slwb_role_t role;
+} slwb_config_t;
+
 typedef struct __attribute__((packed, aligned(1))) {
   uint8_t round_period;              // round period to calculate next round start
   bool contention_slot: 1;            // current round has a contention slot

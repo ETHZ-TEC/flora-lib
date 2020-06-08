@@ -16,15 +16,6 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #endif /* MAX */
 
-protocol_config_t gloria_protocol_config;
-
-
-void gloria_load_id_and_role() {
-#if CONFIG_ENABLE
-  gloria_protocol_config.uid  = config_get()->uid;
-  gloria_protocol_config.role = config_get()->role;
-#endif /* CONFIG_ENABLE */
-}
 
 
 /*
@@ -106,14 +97,5 @@ inline bool gloria_is_ack_slot(gloria_flood_t* flood) {
   return (flood->ack_mode && flood->slot_index % 2);
 }
 
-
-inline uint16_t gloria_get_id() {
-  return gloria_protocol_config.uid;
-}
-
-
-inline protocol_role_t gloria_get_role() {
-  return gloria_protocol_config.role;
-}
 
 #endif /* GLORIA_ENABLE */

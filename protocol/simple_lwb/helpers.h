@@ -10,7 +10,7 @@
 
 
 extern char slwb_print_buffer[100];
-extern protocol_config_t slwb_protocol_config;
+extern slwb_config_t slwb_config;
 
 // define the print priority for the print function
 #if FLOCKLAB
