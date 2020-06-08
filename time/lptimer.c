@@ -26,16 +26,16 @@ static uint64_t                   lptimer_exp = 0;           /* next expiration 
 
 void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 {
+  /* first, disable interrupt and clear the interrupt pending flag */
+  __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
+  __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_IT_CMPM);
   lptimer_cb = cb;
   lptimer_exp = t_exp;
   if (t_exp == 0 || !cb) {
     /* stop the timer */
     __HAL_LPTIM_COMPARE_SET(&hlptim1, 0);
-    __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
-    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_IT_CMPM);
   } else {
     __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)t_exp);
-    __HAL_LPTIM_ENABLE_IT(&hlptim1, LPTIM_IT_CMPM);
 #if LPTIMER_CHECK_EXP_TIME
     uint64_t curr_timestamp = lptimer_now();
     if (t_exp <= curr_timestamp) {
@@ -44,6 +44,7 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
       LOG_WARNING("wakeup time is far in the future");
     }
 #endif /* LPTIMER_CHECK_EXP_TIME */
+    __HAL_LPTIM_ENABLE_IT(&hlptim1, LPTIM_IT_CMPM);
   }
 }
 
@@ -52,7 +53,7 @@ uint64_t lptimer_get(void)
   return lptimer_exp;
 }
 
-/* this function must be called when an lptimer has expired */
+/* this function must be called when an lptimer has expired (CCR match) */
 void lptimer_expired(void)
 {
   uint32_t t_now = lptimer_now();
@@ -62,6 +63,13 @@ void lptimer_expired(void)
       lptimer_cb();                            /* execute callback function */
     }
   }
+
+#if LPTIMER_RESET_WDG_ON_EXP
+ #ifdef HAL_IWDG_MODULE_ENABLED
+  /* kick the watchdog */
+  HAL_IWDG_Refresh(&hiwdg);
+ #endif /* HAL_IWDG_MODULE_ENABLED */
+#endif /* LPTIMER_RESET_WDG_ON_EXP */
 }
 
 void lptimer_clear(void)

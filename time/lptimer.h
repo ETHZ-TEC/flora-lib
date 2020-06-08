@@ -12,8 +12,12 @@
 #define LPTIMER_SECOND      32768UL       /* ticks per second */
 
 #ifndef LPTIMER_RESET_WDG_ON_OVF
-#define LPTIMER_RESET_WDG_ON_OVF  1     /* reset watchdog inside the timer overflow interrupt? (only works if watchdog configured and enabled) */
+#define LPTIMER_RESET_WDG_ON_OVF  0     /* reset watchdog inside the timer overflow interrupt? (only works if watchdog configured and enabled) */
 #endif /* LPTIMER_RESET_WDG_ON_OVF */
+
+#ifndef LPTIMER_RESET_WDG_ON_EXP
+#define LPTIMER_RESET_WDG_ON_EXP  0
+#endif /* LPTIMER_RESET_WDG_ON_EXP */
 
 #ifndef LPTIMER_CHECK_EXP_TIME
 #define LPTIMER_CHECK_EXP_TIME    1     /* check expiration time inside lptimer_set() and issue a warning if it is in the past or far in the future */
