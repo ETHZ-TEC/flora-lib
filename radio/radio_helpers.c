@@ -690,3 +690,25 @@ static void radio_execute() {
 void set_radio_log(bool enable) {
   radio_disable_log = !enable;
 }
+
+
+uint32_t radio_get_snr() {
+  PacketStatus_t pktStatus;
+  SX126xGetPacketStatus(&pktStatus);
+  if (pktStatus.packetType == PACKET_TYPE_LORA) {
+    return pktStatus.Params.LoRa.SnrPkt;
+  }
+  return 0;     // TODO implement for FSK
+}
+
+
+int32_t radio_get_rssi() {
+  //return SX126xGetRssiInst();
+  PacketStatus_t pktStatus;
+  SX126xGetPacketStatus(&pktStatus);
+  if (pktStatus.packetType == PACKET_TYPE_GFSK) {
+    return pktStatus.Params.Gfsk.RssiSync;  // or: .RssiAvg
+  }
+  return pktStatus.Params.LoRa.RssiPkt;
+}
+

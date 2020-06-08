@@ -59,7 +59,7 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
 {
   struct tm ts;
 
-  time_t t = timestamp;         /* must first be converted to time_t */
+  time_t t = timestamp + 1;               /* must first be converted to time_t! add 1 second to avoid getting behind */
   gmtime_r((time_t*)&t, &ts);
 
   rtc_date.Year    = ts.tm_year % 100;    /* ts.tm_year contains year since 1900 */

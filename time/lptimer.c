@@ -40,6 +40,7 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
     uint64_t curr_timestamp = lptimer_now();
     if (t_exp <= curr_timestamp) {
       LOG_WARNING("wakeup time is in the past");
+      t_exp += LPTIMER_SECOND * 2;    /* expiration will be 2 seconds later */
     } else if (t_exp > (curr_timestamp + LPTIMER_SECOND * 86400)) {
       LOG_WARNING("wakeup time is far in the future");
     }

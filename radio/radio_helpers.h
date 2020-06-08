@@ -50,5 +50,8 @@ void radio_set_cad_params(bool rx, bool use_timeout);
 void radio_set_cad();
 void set_radio_log(bool enable);
 
+uint32_t radio_get_snr();
+int32_t radio_get_rssi();
+
 
 #endif /* RADIO_HELPERS_H_ */
