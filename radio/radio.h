@@ -39,13 +39,11 @@ typedef struct lora_message_s {
 
 
 /* include all required radio drivers */
-#include "radio/semtech/radio.h"
+#include "radio/semtech/sx126x-radio.h"
 #include "radio/radio_constants.h"
 #include "radio/radio_helpers.h"
 #include "radio/radio_platform.h"
 
-
-void set_radio_conf(uint8_t mod, int8_t pwr);
 
 void radio_init();
 void radio_update();

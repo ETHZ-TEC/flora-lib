@@ -156,8 +156,6 @@ void radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t po
       0, // no FHSS
       0 // no timeout
   );
-
-  set_radio_conf(modulation_index, power);
 }
 
 void radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, uint16_t timeout, bool implicit, uint8_t implicit_length, bool crc, bool stop_rx_on_preamble) {

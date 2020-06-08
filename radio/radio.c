@@ -35,10 +35,6 @@ static radio_message_t* last_message_list = NULL;
 static uint8_t preamble_detected_counter = 0;
 static uint8_t sync_detected_counter = 0;
 
-// debug variables
-uint8_t c_mod;
-uint8_t c_pwr;
-
 
 void radio_irq_capture_callback();
 void radio_schedule_callback();
@@ -59,14 +55,6 @@ void radio_OnRadioTxTimeout(void);
 void radio_OnRadioRxSync(void);
 void radio_OnRadioRxPreamble(void);
 
-/*
- * debug function
- * save current modulation and power settings for debug prints
- */
-void set_radio_conf(uint8_t mod, int8_t pwr) {
-  c_mod = mod;
-  c_pwr = pwr;
-}
 
 void radio_init()
 {
@@ -252,7 +240,6 @@ void radio_sleep(bool warm) {
 
     radio_sleeping = warm + 1;
   }
-  //RADIO_TX_STOP_IND();  -> not necessary, done in SX126xSetSleep()
 }
 
 void radio_reset() {
@@ -260,13 +247,11 @@ void radio_reset() {
 }
 
 void radio_wakeup() {
-  //FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
   SX126xWakeup();
   if (radio_sleeping == COLD) {
     SX126xSetDio2AsRfSwitchCtrl(true);
     SX126xSetRegulatorMode( USE_DCDC );
   }
-  //FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
   radio_sleeping = FALSE;
 }
 
