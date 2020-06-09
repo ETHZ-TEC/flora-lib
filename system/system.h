@@ -18,14 +18,14 @@
 #include "system_backup_registers.h"
 
 
-void system_boot();
-void system_init();
-void system_run();
-void system_update();
+void system_boot(void);
+void system_init(void);
+void system_run(void);
+void system_update(void);
 void system_sleep(bool deep);
 
-void system_reset();
-void system_reset_into_bootloader();
+void system_reset(void);
+void system_reset_into_bootloader(void);
 const char* system_get_reset_cause(uint32_t* out_reset_flag);
 
 #endif /* SYSTEM_SYSTEM_H_ */

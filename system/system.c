@@ -15,11 +15,14 @@ extern uint64_t hs_timer_scheduled_timestamp;
 static volatile bool system_going_to_sleep = false;
 static volatile bool system_initialized = false;
 
-void system_boot() {
+
+void system_boot(void)
+{
   system_bootmode_check();
 }
 
-void system_init()
+
+void system_init(void)
 {
   /* init timers */
 #ifdef HAL_RTC_MODULE_ENABLED
@@ -70,7 +73,8 @@ void system_init()
 }
 
 
-void system_run() {
+void system_run(void)
+{
   if (system_initialized)
   {
     while (true) {
@@ -81,10 +85,11 @@ void system_run() {
 }
 
 
-void system_update(){
+void system_update(void)
+{
   if (system_initialized)
   {
-    radio_update();
+    radio_update_cli();
     leds_update();
     cli_update();
     gloria_update();
@@ -125,19 +130,19 @@ void system_sleep(bool deep)
   }
 }
 
-void system_wakeup()
+void system_wakeup(void)
 {
   leds_wakeup();
 }
 
 
-void system_reset()
+void system_reset(void)
 {
   radio_reset();
   HAL_NVIC_SystemReset();
 }
 
-void system_reset_into_bootloader()
+void system_reset_into_bootloader(void)
 {
   system_backup_get()->bootmode = SYSTEM_BOOT_BOOTLOADER;
   HAL_NVIC_SystemReset();

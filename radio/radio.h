@@ -1,5 +1,7 @@
 /*
- * lora.h
+ * radio.h
+ *
+ * Core flora radio functions.
  *
  *  Created on: 01.05.2018
  *      Author: marku
@@ -46,7 +48,6 @@ typedef struct lora_message_s {
 
 
 void radio_init(void);
-void radio_update(void);
 void radio_sleep(bool warm);
 void radio_reset(void);
 bool radio_wakeup(void);      /* returns true if the radio was in sleep mode and has been woken successfully, false otherwise */
@@ -65,6 +66,16 @@ void radio_set_rx_callback(void (*callback)(uint8_t* payload, uint16_t size,  in
 void radio_set_cad_callback(void (*callback)(bool));
 void radio_set_timeout_callback(void (*callback)(bool crc_error));
 void radio_set_tx_callback(void (*callback)());
+
+void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule);
+void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t time);
+void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time);
+void radio_receive_and_execute(bool boost, uint32_t schedule_timer);
+void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout);
+void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule);
+void radio_sync_receive();
+void radio_execute_manually(int64_t timer);
+
 
 void      radio_reset_preamble_counter(void);
 uint8_t   radio_get_preamble_counter(void);

@@ -1,5 +1,5 @@
 /*
- * lora_helpers.c
+ * radio_helpers.c
  *
  *  Created on: Apr 10, 2018
  *      Author: marku
@@ -8,15 +8,11 @@
 #include "flora_lib.h"
 
 
-extern volatile bool radio_receive_continuous;
-extern volatile bool radio_command_scheduled;
-
-extern bool cli_interactive_mode;
-
-extern SX126x_t SX126x;
-
-extern dcstat_t radio_dc_rx;
-extern dcstat_t radio_dc_tx;
+extern volatile bool radio_process_irq_in_loop_once;
+extern volatile bool radio_irq_direct;
+extern bool          cli_interactive_mode;
+extern volatile bool cli_initialized;
+extern SX126x_t      SX126x;
 
 
 // See datasheet, https://www.semtech.com/uploads/documents/an1200.22.pdf, or http://www.sghoslya.com/p/lora_6.html for formula
@@ -31,8 +27,29 @@ volatile static uint8_t current_modulation = 0;
 volatile static uint8_t current_band = 0;
 volatile static int32_t override_preamble_length = -1;
 
+static radio_message_t* last_message_list = NULL;
 
-static void radio_execute();
+
+void radio_update_cli()
+{
+  if ((!radio_irq_direct || radio_process_irq_in_loop_once) && cli_initialized) {
+    Radio.IrqProcess();
+    radio_process_irq_in_loop_once = false;
+  }
+
+  radio_message_t* tmp = last_message_list;
+
+  while (tmp != NULL) {
+    radio_message_t* tmp_next;
+    radio_print_message(tmp);
+    tmp_next = tmp->next;
+    free(tmp->payload);
+    free(tmp);
+    tmp = tmp_next;
+  }
+
+  last_message_list = NULL;
+}
 
 
 void radio_set_lora_syncword(radio_lora_syncword_t syncword)
@@ -55,7 +72,7 @@ uint16_t radio_get_syncword()
 void radio_get_payload(uint8_t* buffer, uint8_t* offset, uint8_t* size)
 {
   SX126xGetRxBufferStatus( size, offset);
-    SX126xReadBuffer( *offset, buffer, *size);
+  SX126xReadBuffer( *offset, buffer, *size);
 }
 
 
@@ -63,9 +80,9 @@ uint8_t radio_get_payload_size()
 {
   uint8_t offset = 0;
   uint8_t size = 0;
-    SX126xGetRxBufferStatus( &size, &offset);
+  SX126xGetRxBufferStatus( &size, &offset);
 
-    return size;
+  return size;
 }
 
 
@@ -296,81 +313,6 @@ void radio_set_config_rxtx(uint8_t modulation,
 }
 
 
-void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
-{
-  if (schedule) {
-    radio_command_scheduled = true;
-    radio_set_payload(buffer, 0, size);
-    SX126xSetTxWithoutExecute(0);
-  }
-  else {
-    Radio.Send(buffer, size);
-    hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
-    dcstat_start(&radio_dc_tx);
-  }
-}
-
-
-void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t time)
-{
-  radio_command_scheduled = true;
-  radio_set_payload(buffer, 0, size);
-  SX126xSetTxWithoutExecute(0);
-
-  hs_timer_schedule(time, &radio_execute);
-}
-
-
-void radio_execute_manually(int64_t timer)
-{
-  if (radio_command_scheduled) {
-    if (timer == -1) {
-      hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
-      radio_execute();
-    }
-    else {
-      hs_timer_schedule(timer, &radio_execute);
-    }
-  }
-
-  return;
-}
-
-
-void radio_set_tx(uint64_t timestamp)
-{
-  radio_command_scheduled = true;
-  SX126xSetTxWithoutExecute(0);
-  hs_timer_schedule(timestamp, &radio_execute);
-}
-
-
-void radio_set_rx(uint64_t timestamp, uint32_t timeout)
-{
-  radio_command_scheduled = true;
-  SX126xSetRxBoostedWithoutExecute(timeout);
-  hs_timer_schedule(timestamp, &radio_execute);
-  radio_start_mcu_timeout(timestamp);
-}
-
-
-void radio_set_continuous_preamble(void)
-{
-  SX126xWriteCommand(RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 );
-}
-
-
-void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time)
-{
-  radio_command_scheduled = true;
-  radio_set_packet_params_and_size(size);
-  SX126xSetPayload(overwrite_buffer, overwrite_size);
-  SX126xSetTxWithoutExecute(0);
-
-  hs_timer_schedule(time, &radio_execute);
-}
-
-
 uint32_t radio_calculate_timeout(bool preamble)
 {
   if (preamble) {
@@ -384,96 +326,6 @@ uint32_t radio_calculate_timeout(bool preamble)
   else {
     return radio_calculate_message_toa(current_modulation, 0, override_preamble_length) * 2.0 + (85.2 + 100.0) * HS_TIMER_FREQUENCY_US;
   }
-}
-
-
-void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
-{
-  radio_receive_continuous = false;
-  radio_set_mcu_timeout(radio_calculate_timeout(false));
-  radio_command_scheduled = true;
-
-  uint32_t hardware_timeout = radio_calculate_timeout(true);
-
-  if (boost) {
-    SX126xSetRxBoostedWithoutExecute(hardware_timeout);
-  }
-  else {
-    SX126xSetRxWithoutExecute(hardware_timeout);
-  }
-
-  radio_execute_manually(schedule_timer);
-}
-
-
-void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout)
-{
-  // default value for "rx_timeout": 0
-  radio_receive_continuous = !schedule;
-
-  if (schedule) {
-    if (timeout) {
-      radio_set_mcu_timeout(timeout  + (uint32_t) (85.2 * HS_TIMER_FREQUENCY_US));
-    }
-    else {
-      radio_set_mcu_timeout(radio_calculate_timeout(false));
-    }
-
-    if (boost) {
-      if(rx_timeout) {
-        SX126xSetRxBoostedWithoutExecute(rx_timeout);
-      }
-      else {
-        SX126xSetRxBoostedWithoutExecute(radio_calculate_timeout(true));
-      }
-
-    }
-    else {
-      if(rx_timeout) {
-        SX126xSetRxWithoutExecute(rx_timeout);
-      }
-      else {
-        SX126xSetRxWithoutExecute(radio_calculate_timeout(true));
-      }
-    }
-
-    radio_command_scheduled = true;
-  }
-  else {
-    if (boost) {
-      SX126xSetRxBoosted(timeout);
-    }
-    else {
-      SX126xSetRx(timeout);
-    }
-    dcstat_start(&radio_dc_rx);
-  }
-}
-
-
-void radio_sync_receive(void)
-{
-  radio_receive_continuous = false;
-  SX126xSetRxBoosted(0);
-}
-
-
-void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
-{
-  radio_receive_continuous = false;
-
-  rx = (uint64_t) rx; // in 15.625 us steps
-  sleep = (uint64_t) sleep; // in 15.625 us steps (see Figure 13-2: "RX Duty Cycle Energy Profile" in SX1262 datasheet)
-
-  if (schedule) {
-    SX126xSetRxDutyCycleWithoutExecute(rx, sleep);
-    radio_command_scheduled = true;
-  }
-
-  else {
-    Radio.SetRxDutyCycle(rx, sleep);
-  }
-
 }
 
 
@@ -732,27 +584,6 @@ void radio_set_cad_params(bool rx, bool use_timeout)
 void radio_set_cad(void)
 {
   SX126xSetCad();
-}
-
-
-static void radio_execute(void)
-{
-  RADIO_SET_NSS_PIN();
-  radio_stop_schedule();
-  radio_command_scheduled = false;
-
-  switch (Radio.GetStatus()) {
-    case RF_RX_RUNNING:
-      RADIO_RX_START_IND();
-      dcstat_start(&radio_dc_rx);
-      break;
-    case RF_TX_RUNNING:
-      RADIO_TX_START_IND();
-      dcstat_start(&radio_dc_tx);
-      break;
-    default:
-      break;
-  }
 }
 
 
