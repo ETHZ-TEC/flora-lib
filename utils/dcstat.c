@@ -8,7 +8,7 @@
 #include "flora_lib.h"
 
 
-void dcstat_on(dcstat_t* dc)
+void dcstat_start(dcstat_t* dc)
 {
   if (dc) {
     /* only overwrite if not already started */
@@ -19,7 +19,7 @@ void dcstat_on(dcstat_t* dc)
 }
 
 
-void dcstat_off(dcstat_t* dc)
+void dcstat_stop(dcstat_t* dc)
 {
   if (dc) {
     /* start time valid? */
@@ -41,7 +41,7 @@ void dcstat_reset(dcstat_t* dc)
 }
 
 
-uint32_t dcstat_get_dc(dcstat_t* dc)
+uint32_t dcstat_get_dc(const dcstat_t* const dc)
 {
   if (dc) {
     uint64_t delta = lptimer_now() - dc->reset_time;

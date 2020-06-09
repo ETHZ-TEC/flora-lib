@@ -24,7 +24,7 @@ typedef struct
 void dcstat_start(dcstat_t* dc);        /* continue counting */
 void dcstat_stop(dcstat_t* dc);         /* stop counting */
 void dcstat_reset(dcstat_t* dc);        /* reset counter */
-uint32_t dcstat_get_dc(dcstat_t* dc);   /* get duty cycle in ppm */
+uint32_t dcstat_get_dc(const dcstat_t* const dc);   /* get duty cycle in ppm */
 
 
 #endif /* UTILS_DCSTAT_H_ */
