@@ -9,10 +9,8 @@
 
 
 extern void SystemClock_Config(void);
-extern bool lwb_cad_sleep_flag;
-extern uint64_t hs_timer_scheduled_timestamp;
 
-static volatile bool system_going_to_sleep = false;
+
 static volatile bool system_initialized = false;
 
 
