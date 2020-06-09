@@ -190,7 +190,7 @@ void dozer_tx_callback() {
   dozer_print(1, "tx cb");
   print_ts(1);
 
-  radio_set_standby();
+  radio_standby();
 
     if(ack_sending) { // check if an acknowledgment was sent
       dozer_print(5, "ack_sent");
@@ -224,7 +224,7 @@ void dozer_rx_callback(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr
     dozer_print(5, dozer_print_buffer);
   print_ts(1);
 
-  radio_set_standby(); // set radio in standby mode
+  radio_standby(); // set radio in standby mode
 
   // if a message was received during channel activity detection call rssi done
     if (rssi_detection) {
@@ -395,7 +395,7 @@ void get_rssi(uint32_t max_sense_time) {
 
   sprintf(dozer_print_buffer, "rssi det: %d", rssi);
   dozer_print(5, dozer_print_buffer);
-  radio_set_standby();
+  radio_standby();
 
     // if rssi detection is 0, a message has been received and the rx callback called the rssi_done function
     if (rssi_detection) {

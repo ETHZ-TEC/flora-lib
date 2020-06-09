@@ -235,6 +235,7 @@ void SX126xSetSleep( SleepParams_t sleepConfig )
     OperatingMode = MODE_SLEEP;
 
     RADIO_TX_STOP_IND();
+    RADIO_RX_STOP_IND();
     //FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
 }
 

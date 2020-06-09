@@ -45,17 +45,17 @@ typedef struct lora_message_s {
 #include "radio/radio_platform.h"
 
 
-void radio_init();
-void radio_update();
+void radio_init(void);
+void radio_update(void);
 void radio_sleep(bool warm);
-void radio_reset();
-void radio_wakeup();
+void radio_reset(void);
+void radio_wakeup(void);
+void radio_standby(void);
 
-void radio_stop_schedule();
-
+void radio_stop_schedule(void);
 void radio_set_mcu_timeout(uint64_t offset);
 void radio_start_mcu_timeout(uint64_t compare_timeout);
-void radio_stop_mcu_timeout();
+void radio_stop_mcu_timeout(void);
 
 void radio_set_irq_callback(void (*callback)());
 void radio_set_irq_mode(lora_irq_mode_t mode);
@@ -66,9 +66,12 @@ void radio_set_cad_callback(void (*callback)(bool));
 void radio_set_timeout_callback(void (*callback)(bool crc_error));
 void radio_set_tx_callback(void (*callback)());
 
-void radio_reset_preamble_counter(void);
-uint8_t radio_get_preamble_counter(void);
-void radio_reset_sync_counter(void);
-uint8_t radio_get_sync_counter(void);
+void      radio_reset_preamble_counter(void);
+uint8_t   radio_get_preamble_counter(void);
+void      radio_reset_sync_counter(void);
+uint8_t   radio_get_sync_counter(void);
+uint32_t  radio_get_rx_dc(void);
+uint32_t  radio_get_tx_dc(void);
+
 
 #endif /* RADIO_FLORA_RADIO_H_ */

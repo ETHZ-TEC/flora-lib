@@ -10,28 +10,30 @@
 
 extern volatile bool radio_receive_continuous;
 extern volatile bool radio_command_scheduled;
-extern bool radio_disable_log;
-extern radio_sleeping_t radio_sleeping;
 
 extern bool cli_interactive_mode;
 
 extern SX126x_t SX126x;
 
+extern dcstat_t radio_dc_rx;
+extern dcstat_t radio_dc_tx;
+
 
 // See datasheet, https://www.semtech.com/uploads/documents/an1200.22.pdf, or http://www.sghoslya.com/p/lora_6.html for formula
 
-//                            SF12    SF11    SF10    SF9   SF8    SF7   SF6    SF5
-static const double radio_lora_symb_times[3][8] = {{ 32.768, 16.384, 8.192, 4.096, 2.048, 1.024, 0.512, 0.256 },  // 125 kHz
-                                                { 16.384, 8.192,  4.096, 2.048, 1.024, 0.512, 0.256, 0.128 },  // 250 kHz
-                          { 8.192,  4.096,  2.048, 1.024, 0.512, 0.256, 0.128, 0.064 }}; // 500 kHz
+//                                                    SF12    SF11    SF10    SF9   SF8    SF7    SF6    SF5
+static const double radio_lora_symb_times[3][8] = { { 32.768, 16.384, 8.192, 4.096, 2.048, 1.024, 0.512, 0.256 },   // 125 kHz
+                                                    { 16.384, 8.192,  4.096, 2.048, 1.024, 0.512, 0.256, 0.128 },   // 250 kHz
+                                                    { 8.192,  4.096,  2.048, 1.024, 0.512, 0.256, 0.128, 0.064 } }; // 500 kHz
 
 volatile static uint8_t lora_last_payload_size = 0;
 volatile static uint8_t current_modulation = 0;
 volatile static uint8_t current_band = 0;
-
 volatile static int32_t override_preamble_length = -1;
 
+
 static void radio_execute();
+
 
 void radio_set_lora_syncword(radio_lora_syncword_t syncword)
 {
@@ -39,6 +41,7 @@ void radio_set_lora_syncword(radio_lora_syncword_t syncword)
   SX126xWriteRegister( REG_LR_SYNCWORD, (syncword >> 8) & 0xFF);
   SX126xWriteRegister( REG_LR_SYNCWORD + 1, syncword & 0xFF);
 }
+
 
 uint16_t radio_get_syncword()
 {
@@ -48,11 +51,13 @@ uint16_t radio_get_syncword()
   return syncword;
 }
 
+
 void radio_get_payload(uint8_t* buffer, uint8_t* offset, uint8_t* size)
 {
   SX126xGetRxBufferStatus( size, offset);
     SX126xReadBuffer( *offset, buffer, *size);
 }
+
 
 uint8_t radio_get_payload_size()
 {
@@ -63,12 +68,16 @@ uint8_t radio_get_payload_size()
     return size;
 }
 
-void radio_set_payload(uint8_t* buffer, uint8_t offset, uint8_t size) {
+
+void radio_set_payload(uint8_t* buffer, uint8_t offset, uint8_t size)
+{
   radio_set_packet_params_and_size(size);
   SX126xSetPayload(buffer, size);
 }
 
-void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint8_t size) {
+
+void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint8_t size)
+{
   if (size > 0) {
     uint8_t margin = 16;
     uint32_t preamble_toa = radio_get_preamble_toa(SX126x.PacketParams.Params.LoRa.PreambleLength);
@@ -112,8 +121,15 @@ void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint8_t s
 }
 
 
-
-void radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t power, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, bool implicit, bool crc) {
+void radio_set_config_tx(uint8_t modulation_index,
+                         uint8_t band_index,
+                         int8_t power,
+                         int32_t bandwidth,
+                         int32_t bitrate,
+                         int32_t preamble_length,
+                         bool implicit,
+                         bool crc)
+{
   current_modulation = modulation_index;
   current_band = band_index;
 
@@ -158,7 +174,18 @@ void radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t po
   );
 }
 
-void radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, uint16_t timeout, bool implicit, uint8_t implicit_length, bool crc, bool stop_rx_on_preamble) {
+
+void radio_set_config_rx(uint8_t modulation_index,
+                         uint8_t band_index,
+                         int32_t bandwidth,
+                         int32_t bitrate,
+                         int32_t preamble_length,
+                         uint16_t timeout,
+                         bool implicit,
+                         uint8_t implicit_length,
+                         bool crc,
+                         bool stop_rx_on_preamble)
+{
   // deafult value of "stop_rx_on_preamble": true
 
   current_modulation = modulation_index;
@@ -206,7 +233,19 @@ void radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int32_t b
   SX126xSetStopRxTimerOnPreambleDetect(stop_rx_on_preamble);
 }
 
-void radio_set_config_rxtx(uint8_t modulation, uint32_t freq, int32_t datarate, int8_t power, int32_t bandwidth, int32_t preamble_length, uint8_t coderate, uint16_t timeout, bool implicit,  uint8_t implicit_length, bool crc) {
+
+void radio_set_config_rxtx(uint8_t modulation,
+                           uint32_t freq,
+                           int32_t datarate,
+                           int8_t power,
+                           int32_t bandwidth,
+                           int32_t preamble_length,
+                           uint8_t coderate,
+                           uint16_t timeout,
+                           bool implicit,
+                           uint8_t implicit_length,
+                           bool crc)
+{
   // determine fdev from bandwidth and datarate
   // NOTE: according to the datasheet afc_bandwidth (automated frequency control bandwidth) variable represents the frequency error (2x crystal frequency error)
   uint32_t fdev = 0;
@@ -256,6 +295,7 @@ void radio_set_config_rxtx(uint8_t modulation, uint32_t freq, int32_t datarate, 
   SX126xSetStopRxTimerOnPreambleDetect(true);
 }
 
+
 void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
 {
   if (schedule) {
@@ -266,8 +306,10 @@ void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
   else {
     Radio.Send(buffer, size);
     hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
+    dcstat_start(&radio_dc_tx);
   }
 }
+
 
 void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t time)
 {
@@ -278,7 +320,9 @@ void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t ti
   hs_timer_schedule(time, &radio_execute);
 }
 
-void radio_execute_manually(int64_t timer) {
+
+void radio_execute_manually(int64_t timer)
+{
   if (radio_command_scheduled) {
     if (timer == -1) {
       hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
@@ -292,12 +336,14 @@ void radio_execute_manually(int64_t timer) {
   return;
 }
 
+
 void radio_set_tx(uint64_t timestamp)
 {
   radio_command_scheduled = true;
   SX126xSetTxWithoutExecute(0);
   hs_timer_schedule(timestamp, &radio_execute);
 }
+
 
 void radio_set_rx(uint64_t timestamp, uint32_t timeout)
 {
@@ -307,7 +353,9 @@ void radio_set_rx(uint64_t timestamp, uint32_t timeout)
   radio_start_mcu_timeout(timestamp);
 }
 
-void radio_set_continuous_preamble() {
+
+void radio_set_continuous_preamble(void)
+{
   SX126xWriteCommand(RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 );
 }
 
@@ -323,7 +371,8 @@ void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overw
 }
 
 
-uint32_t radio_calculate_timeout(bool preamble) {
+uint32_t radio_calculate_timeout(bool preamble)
+{
   if (preamble) {
     if (override_preamble_length != -1) {
       return ((uint64_t) radio_get_preamble_toa(override_preamble_length))  * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
@@ -337,7 +386,9 @@ uint32_t radio_calculate_timeout(bool preamble) {
   }
 }
 
-void radio_receive_and_execute(bool boost, uint32_t schedule_timer) {
+
+void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
+{
   radio_receive_continuous = false;
   radio_set_mcu_timeout(radio_calculate_timeout(false));
   radio_command_scheduled = true;
@@ -354,7 +405,9 @@ void radio_receive_and_execute(bool boost, uint32_t schedule_timer) {
   radio_execute_manually(schedule_timer);
 }
 
-void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout) {
+
+void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout)
+{
   // default value for "rx_timeout": 0
   radio_receive_continuous = !schedule;
 
@@ -393,18 +446,20 @@ void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_time
     else {
       SX126xSetRx(timeout);
     }
+    dcstat_start(&radio_dc_rx);
   }
 }
 
 
-void radio_sync_receive() {
+void radio_sync_receive(void)
+{
   radio_receive_continuous = false;
   SX126xSetRxBoosted(0);
 }
 
 
-
-void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule) {
+void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
+{
   radio_receive_continuous = false;
 
   rx = (uint64_t) rx; // in 15.625 us steps
@@ -422,7 +477,8 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule) {
 }
 
 
-uint16_t radio_get_preamble_length_from_duration(uint16_t duration, uint8_t modulation) {
+uint16_t radio_get_preamble_length_from_duration(uint16_t duration, uint8_t modulation)
+{
   uint16_t preamble_length;
 
   if (duration && radio_modulations[modulation].modem == MODEM_LORA) {
@@ -435,7 +491,8 @@ uint16_t radio_get_preamble_length_from_duration(uint16_t duration, uint8_t modu
   return preamble_length;
 }
 
-uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation) {
+uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation)
+{
   if (modulation < 8) {
     return length * radio_lora_symb_times[radio_modulations[modulation].bandwidth][12 - radio_modulations[modulation].datarate] * HS_TIMER_FREQUENCY_MS;
   }
@@ -444,15 +501,21 @@ uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation) {
   }
 }
 
-uint32_t radio_get_header_toa() {
+
+uint32_t radio_get_header_toa(void)
+{
   return radio_calculate_message_toa(current_modulation, 0, -1);
 }
 
-uint32_t radio_get_preamble_toa(uint16_t length) {
+
+uint32_t radio_get_preamble_toa(uint16_t length)
+{
   return radio_get_preamble_toa_for_modulation(length, current_modulation);
 }
 
-uint32_t radio_get_preamble_toa_for_modulation(uint16_t length, uint8_t modulation) {
+
+uint32_t radio_get_preamble_toa_for_modulation(uint16_t length, uint8_t modulation)
+{
   if (!length) {
     length = radio_modulations[modulation].preambleLen;
   }
@@ -468,19 +531,17 @@ uint32_t radio_get_preamble_toa_for_modulation(uint16_t length, uint8_t modulati
   else {
     return rint((double) 8 * (length + 3.0) / (double) radio_modulations[modulation].datarate * HS_TIMER_FREQUENCY);
   }
-
 }
 
-void radio_set_standby() {
-  Radio.Standby();
-  radio_sleeping = FALSE;
-}
 
-inline uint32_t radio_lookup_toa(uint8_t modulation, uint8_t size) {
+inline uint32_t radio_lookup_toa(uint8_t modulation, uint8_t size)
+{
   return radio_toas[modulation][size];
 }
 
-uint32_t radio_calculate_message_toa(uint8_t modulation, uint8_t size, int32_t preamble) {
+
+uint32_t radio_calculate_message_toa(uint8_t modulation, uint8_t size, int32_t preamble)
+{
   uint32_t airTime = 0;
 
   if (preamble == -1) {
@@ -535,6 +596,7 @@ uint32_t radio_calculate_message_toa(uint8_t modulation, uint8_t size, int32_t p
   return airTime;
 }
 
+
 inline void radio_set_packet_params_and_size(uint8_t size)
 {
   lora_last_payload_size = size;
@@ -550,7 +612,8 @@ inline void radio_set_packet_params_and_size(uint8_t size)
 }
 
 
-void radio_print_message(radio_message_t* message) {
+void radio_print_message(radio_message_t* message)
+{
   bool failure = true;
 
   uint8_t* payload = message->payload;
@@ -651,7 +714,9 @@ end:
   return;
 }
 
-void radio_set_cad_params(bool rx, bool use_timeout) {
+
+void radio_set_cad_params(bool rx, bool use_timeout)
+{
   radio_cad_params_t params = radio_cad_params[current_modulation];
 
   if (use_timeout) {
@@ -663,12 +728,15 @@ void radio_set_cad_params(bool rx, bool use_timeout) {
   }
 }
 
-void radio_set_cad() {
+
+void radio_set_cad(void)
+{
   SX126xSetCad();
 }
 
 
-static void radio_execute() {
+static void radio_execute(void)
+{
   RADIO_SET_NSS_PIN();
   radio_stop_schedule();
   radio_command_scheduled = false;
@@ -676,23 +744,20 @@ static void radio_execute() {
   switch (Radio.GetStatus()) {
     case RF_RX_RUNNING:
       RADIO_RX_START_IND();
+      dcstat_start(&radio_dc_rx);
       break;
     case RF_TX_RUNNING:
       RADIO_TX_START_IND();
+      dcstat_start(&radio_dc_tx);
       break;
     default:
       break;
   }
-
-
-}
-
-void set_radio_log(bool enable) {
-  radio_disable_log = !enable;
 }
 
 
-uint32_t radio_get_snr() {
+uint32_t radio_get_snr(void)
+{
   PacketStatus_t pktStatus;
   SX126xGetPacketStatus(&pktStatus);
   if (pktStatus.packetType == PACKET_TYPE_LORA) {
@@ -702,7 +767,8 @@ uint32_t radio_get_snr() {
 }
 
 
-int32_t radio_get_rssi() {
+int32_t radio_get_rssi(void)
+{
   //return SX126xGetRssiInst();
   PacketStatus_t pktStatus;
   SX126xGetPacketStatus(&pktStatus);

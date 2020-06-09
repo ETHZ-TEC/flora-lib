@@ -10,30 +10,26 @@
 
 extern void (*RadioOnDioIrqCallback)(void);
 
-extern TIM_HandleTypeDef htim2;
+extern volatile bool    cli_initialized;
 
-extern volatile bool cli_initialized;
 
-RadioEvents_t radio_RadioEvents;
+RadioEvents_t           radio_RadioEvents;
 
-volatile bool radio_command_scheduled = false;
-volatile bool radio_receive_continuous = false;
-volatile bool radio_initialized = false;
-volatile bool radio_irq_direct = false;
-volatile bool radio_process_irq_in_loop_once = false;
-bool radio_disable_log = false;
-radio_sleeping_t radio_sleeping = FALSE;
+volatile bool           radio_command_scheduled = false;
+volatile bool           radio_receive_continuous = false;
+volatile bool           radio_initialized = false;
+volatile bool           radio_irq_direct = false;
+volatile bool           radio_process_irq_in_loop_once = false;
+bool                    radio_mcu_timeout_flag = false;
+radio_sleeping_t        radio_sleeping = FALSE;
+uint64_t                radio_last_sync_timestamp;
+dcstat_t                radio_dc_rx = { 0 };
+dcstat_t                radio_dc_tx = { 0 };
 
-bool radio_mcu_timeout_flag = false;
-
-uint64_t radio_last_sync_timestamp;
-
-static lora_irq_mode_t radio_mode;
-
+static lora_irq_mode_t  radio_mode;
 static radio_message_t* last_message_list = NULL;
-
-static uint8_t preamble_detected_counter = 0;
-static uint8_t sync_detected_counter = 0;
+static uint8_t          preamble_detected_counter = 0;
+static uint8_t          sync_detected_counter = 0;
 
 
 void radio_irq_capture_callback();
@@ -100,15 +96,22 @@ void radio_init()
   radio_set_config_rx(modulation, band, bandwidth, fsk_bitrate, preamble_length, 0, implicit, payload_length, crc, true);
   radio_set_config_tx(modulation, band, power, bandwidth, fsk_bitrate, preamble_length, implicit, crc);
 
+  // reset duty cycle counters
+  dcstat_reset(&radio_dc_rx);
+  dcstat_reset(&radio_dc_tx);
+
   radio_initialized = true;
 }
 
-void radio_set_irq_callback(void (*callback)()) {
+
+void radio_set_irq_callback(void (*callback)())
+{
   radio_irq_callback = callback;
 }
 
 
-void radio_set_irq_mode(lora_irq_mode_t mode) {
+void radio_set_irq_mode(lora_irq_mode_t mode)
+{
   radio_mode = mode;
 
   switch (mode)
@@ -185,23 +188,28 @@ void radio_set_irq_mode(lora_irq_mode_t mode) {
   }
 }
 
-void radio_set_irq_direct(bool direct) {
+void radio_set_irq_direct(bool direct)
+{
   radio_irq_direct = direct;
 }
 
-void radio_set_cad_callback(void (*callback)(bool)) {
+void radio_set_cad_callback(void (*callback)(bool))
+{
   radio_cad_callback = callback;
 }
 
-void radio_set_rx_callback(void (*callback)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error)) {
+void radio_set_rx_callback(void (*callback)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error))
+{
   radio_rx_callback = callback;
 }
 
-void radio_set_timeout_callback(void (*callback)(bool crc_error)) {
+void radio_set_timeout_callback(void (*callback)(bool crc_error))
+{
   radio_timeout_callback = callback;
 }
 
-void radio_set_tx_callback(void (*callback)()) {
+void radio_set_tx_callback(void (*callback)())
+{
   radio_tx_callback = callback;
 }
 
@@ -226,9 +234,9 @@ void radio_update()
   last_message_list = NULL;
 }
 
-void radio_sleep(bool warm) {
-  if(radio_initialized && !radio_sleeping)
-  {
+void radio_sleep(bool warm)
+{
+  if(radio_initialized && !radio_sleeping) {
     SleepParams_t params = { 0 };
     if (warm) {
       params.Fields.WarmStart = 1;
@@ -239,14 +247,21 @@ void radio_sleep(bool warm) {
     SX126xSetSleep( params );
 
     radio_sleeping = warm + 1;
+
+    dcstat_stop(&radio_dc_rx);
+    dcstat_stop(&radio_dc_tx);
   }
 }
 
-void radio_reset() {
+void radio_reset(void)
+{
   SX126xReset();
+  dcstat_stop(&radio_dc_rx);
+  dcstat_stop(&radio_dc_tx);
 }
 
-void radio_wakeup() {
+void radio_wakeup(void)
+{
   SX126xWakeup();
   if (radio_sleeping == COLD) {
     SX126xSetDio2AsRfSwitchCtrl(true);
@@ -255,7 +270,15 @@ void radio_wakeup() {
   radio_sleeping = FALSE;
 }
 
-void radio_irq_capture_callback(){
+/* puts the radio into idle mode */
+void radio_standby(void)
+{
+  Radio.Standby();
+  radio_sleeping = FALSE;
+}
+
+void radio_irq_capture_callback(void)
+{
   if (radio_mode != IRQ_MODE_SYNC_ONLY) {
     radio_stop_mcu_timeout();
   }
@@ -277,12 +300,14 @@ void radio_irq_capture_callback(){
 }
 
 
-void radio_schedule_callback(){
+void radio_schedule_callback(void)
+{
   RADIO_SET_NSS_PIN(); // Execute radio command
   radio_command_scheduled = false;
 }
 
-void radio_mcu_timeout_callback(){
+void radio_mcu_timeout_callback(void)
+{
   radio_mcu_timeout_flag = true;
 
   radio_set_rx_callback(NULL);
@@ -290,7 +315,7 @@ void radio_mcu_timeout_callback(){
   if (radio_timeout_callback) {
       void (*tmp)(bool) = radio_timeout_callback;
       radio_set_timeout_callback(NULL);
-      radio_set_standby();
+      radio_standby();
 
       if(tmp) {
         tmp(false);
@@ -298,16 +323,17 @@ void radio_mcu_timeout_callback(){
   }
 
 #ifdef FLORA_DEBUG
-  if (!radio_disable_log) {
-    CLI_LOG("MCU interrupt was triggered!", CLI_LOG_LEVEL_WARNING);
-  }
+  CLI_LOG("MCU interrupt was triggered!", CLI_LOG_LEVEL_WARNING);
 #endif
 }
 
-// SX1262 Callbacks
 
+/**
+ * SX1262 Callbacks
+ */
 
-void radio_cad_done_cb(_Bool detected) {
+void radio_cad_done_cb(bool detected)
+{
   if (radio_cad_callback) {
     radio_set_timeout_callback(NULL);
     void (*tmp)(bool) = radio_cad_callback;
@@ -326,18 +352,18 @@ void radio_cad_done_cb(_Bool detected) {
   }
 
 #ifdef FLORA_DEBUG
-  if (!radio_disable_log) {
-    if (detected) {
-      CLI_LOG("CAD detected signal!", CLI_LOG_LEVEL_INFO);
-    }
-    else {
-      CLI_LOG("CAD detected NO signal!", CLI_LOG_LEVEL_INFO);
-    }
+  if (detected) {
+    CLI_LOG("CAD detected signal!", CLI_LOG_LEVEL_INFO);
+  }
+  else {
+    CLI_LOG("CAD detected NO signal!", CLI_LOG_LEVEL_INFO);
   }
 #endif
 }
 
-void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) {
+
+void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error)
+{
   if (radio_rx_callback) {
     radio_set_timeout_callback(NULL);
 
@@ -347,53 +373,54 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
     if (tmp) {
       tmp(payload, size, rssi, snr, crc_error);
     }
+    dcstat_stop(&radio_dc_rx);
   }
   else if(radio_receive_continuous) {
     SX126xSetRxBoosted(0);
   }
 
 #ifdef FLORA_DEBUG
-  if (!radio_disable_log) {
-    if (!crc_error) {
-      radio_message_t* message = malloc(sizeof(radio_message_t));
+  if (!crc_error) {
+    radio_message_t* message = malloc(sizeof(radio_message_t));
 
-      if (message != NULL) {
-        uint8_t* message_payload = malloc(size);
-        if (message_payload != NULL) {
-          memcpy(message_payload, payload, size);
+    if (message != NULL) {
+      uint8_t* message_payload = malloc(size);
+      if (message_payload != NULL) {
+        memcpy(message_payload, payload, size);
 
-          message->payload = message_payload;
-          message->size = size;
-          message->rssi = rssi;
-          message->snr = snr;
-          message->next = NULL;
+        message->payload = message_payload;
+        message->size = size;
+        message->rssi = rssi;
+        message->snr = snr;
+        message->next = NULL;
 
-          if (last_message_list == NULL) {
-            last_message_list = message;
-          }
-          else {
-            radio_message_t* tmp = last_message_list;
-
-            while (tmp->next != NULL) {
-              tmp = tmp->next;
-            }
-
-            tmp->next = message;
-          }
+        if (last_message_list == NULL) {
+          last_message_list = message;
         }
         else {
-          free(message);
+          radio_message_t* tmp = last_message_list;
+
+          while (tmp->next != NULL) {
+            tmp = tmp->next;
+          }
+
+          tmp->next = message;
         }
       }
+      else {
+        free(message);
+      }
     }
-    else {
-      LOG_ERROR("CRC Error on message reception");
-    }
+  }
+  else {
+    LOG_ERROR("CRC Error on message reception");
   }
 #endif
 }
 
-void radio_rx_error_cb(void) {
+
+void radio_rx_error_cb(void)
+{
   if(!radio_rx_callback && radio_receive_continuous) {
     SX126xSetRxBoosted(0);
   }
@@ -404,44 +431,49 @@ void radio_rx_error_cb(void) {
     if(tmp) {
       tmp(true);
     }
+    dcstat_stop(&radio_dc_rx);
   }
 
 #ifdef FLORA_DEBUG
-  if (!radio_disable_log) {
-    LOG_WARNING("CRC Error Timeout");
-  }
+  LOG_WARNING("CRC Error Timeout");
 #endif
 }
 
-void radio_rx_timeout_cb(void) {
+void radio_rx_timeout_cb(void)
+{
   void (*tmp)(bool) = radio_timeout_callback;
   radio_set_timeout_callback(NULL);
 
   if(tmp) {
     tmp(false);
   }
+  dcstat_stop(&radio_dc_rx);
 
 #ifdef FLORA_DEBUG
-  if (!radio_disable_log) {
-    LOG_WARNING("Rx Timeout");
-  }
+  LOG_WARNING("Rx Timeout");
 #endif
 }
 
-void radio_rx_sync_cb(void) {
+
+void radio_rx_sync_cb(void)
+{
   radio_last_sync_timestamp = hs_timer_get_capture_timestamp();
   if (sync_detected_counter < 255) {
     sync_detected_counter++;
   }
 }
 
-void radio_rx_preamble_cb(void) {
+
+void radio_rx_preamble_cb(void)
+{
   if (preamble_detected_counter < 255) {
     preamble_detected_counter++;
   }
 }
 
-void radio_tx_done_cb(void) {
+
+void radio_tx_done_cb(void)
+{
   radio_set_timeout_callback(NULL);
 
   void (*tmp)() = radio_tx_callback;
@@ -450,22 +482,30 @@ void radio_tx_done_cb(void) {
   if (tmp) {
     tmp();
   }
+  dcstat_stop(&radio_dc_tx);
 }
 
-void radio_tx_timeout_cb(void) {
+
+void radio_tx_timeout_cb(void)
+{
   void (*tmp)(bool) = radio_timeout_callback;
   radio_set_timeout_callback(NULL);
 
   if (tmp) {
     tmp(false);
   }
+  dcstat_stop(&radio_dc_tx);
 }
 
-void radio_set_mcu_timeout(uint64_t offset) {
+
+void radio_set_mcu_timeout(uint64_t offset)
+{
   hs_timer_timeout(offset, &radio_mcu_timeout_callback);
 }
 
-void radio_start_mcu_timeout(uint64_t compare_timeout) {
+
+void radio_start_mcu_timeout(uint64_t compare_timeout)
+{
   if (radio_mode != IRQ_MODE_SYNC_ONLY) {
     hs_timer_timeout_start(compare_timeout);
   }
@@ -474,27 +514,47 @@ void radio_start_mcu_timeout(uint64_t compare_timeout) {
   }
 }
 
-void radio_stop_mcu_timeout() {
+
+void radio_stop_mcu_timeout(void)
+{
   hs_timer_timeout_stop();
 }
 
 
-void radio_stop_schedule() {
+void radio_stop_schedule(void)
+{
   hs_timer_schedule_stop();
 }
 
-void radio_reset_preamble_counter(void) {
+
+void radio_reset_preamble_counter(void)
+{
   preamble_detected_counter = 0;
 }
 
-uint8_t radio_get_preamble_counter(void) {
+
+uint8_t radio_get_preamble_counter(void)
+{
   return preamble_detected_counter;
 }
 
-void radio_reset_sync_counter(void) {
+void radio_reset_sync_counter(void)
+{
   sync_detected_counter = 0;
 }
 
-uint8_t radio_get_sync_counter(void) {
+
+uint8_t radio_get_sync_counter(void)
+{
   return sync_detected_counter;
+}
+
+
+uint32_t radio_get_rx_dc(void) {
+  return dcstat_get_dc(&radio_dc_rx);
+}
+
+
+uint32_t radio_get_tx_dc(void) {
+  return dcstat_get_dc(&radio_dc_tx);
 }

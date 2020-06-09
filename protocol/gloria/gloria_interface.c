@@ -161,7 +161,7 @@ uint8_t gloria_stop(void)
     }
 
     // put radio in standby mode
-    radio_set_standby();
+    radio_standby();
 
     // Stop gloria timers
     hs_timer_schedule_stop();
