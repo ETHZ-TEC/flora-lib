@@ -29,7 +29,7 @@
 
 /* --- includes all flora library files --- */
 
-/* DPP definitions and lib / BOLT driver */
+/* DPP definitions and lib */
 #include "dpp/definitions/messages/dpp_message.h"
 #include "dpp/libraries/dpp_lib.h"
 
@@ -40,6 +40,7 @@
 #include "time/lptimer.h"
 #include "time/hs_timer.h"
 #include "radio/radio.h"
+#include "bolt/bolt.h"
 
 /* protocols, networking */
 #include "flocklab/flocklab.h"
