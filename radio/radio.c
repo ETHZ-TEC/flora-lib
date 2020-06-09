@@ -46,28 +46,28 @@ void (*radio_cad_callback)(bool success) = NULL;
 void (*radio_timeout_callback)(bool crc_error) = NULL;
 void (*radio_tx_callback) () = NULL;
 
-void radio_OnRadioCadDone(_Bool detected);
-void radio_OnRadioRxDone(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr, bool crc_error);
-void radio_OnRadioRxError(void);
-void radio_OnRadioRxTimeout(void);
-void radio_OnRadioTxDone(void);
-void radio_OnRadioTxTimeout(void);
-void radio_OnRadioRxSync(void);
-void radio_OnRadioRxPreamble(void);
+void radio_cad_done_cb(_Bool detected);
+void radio_rx_done_cb(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr, bool crc_error);
+void radio_rx_error_cb(void);
+void radio_rx_timeout_cb(void);
+void radio_tx_done_cb(void);
+void radio_tx_timeout_cb(void);
+void radio_rx_sync_cb(void);
+void radio_rx_preamble_cb(void);
 
 
 void radio_init()
 {
   radio_initialized = false;
 
-  radio_RadioEvents.CadDone = radio_OnRadioCadDone;
-  radio_RadioEvents.RxDone = radio_OnRadioRxDone;
-  radio_RadioEvents.RxError = radio_OnRadioRxError;
-  radio_RadioEvents.RxTimeout = radio_OnRadioRxTimeout;
-  radio_RadioEvents.TxDone = radio_OnRadioTxDone;
-  radio_RadioEvents.TxTimeout = radio_OnRadioTxTimeout;
-  radio_RadioEvents.RxSync = radio_OnRadioRxSync;
-  radio_RadioEvents.RxPreamble = radio_OnRadioRxPreamble;
+  radio_RadioEvents.CadDone = radio_cad_done_cb;
+  radio_RadioEvents.RxDone = radio_rx_done_cb;
+  radio_RadioEvents.RxError = radio_rx_error_cb;
+  radio_RadioEvents.RxTimeout = radio_rx_timeout_cb;
+  radio_RadioEvents.TxDone = radio_tx_done_cb;
+  radio_RadioEvents.TxTimeout = radio_tx_timeout_cb;
+  radio_RadioEvents.RxSync = radio_rx_sync_cb;
+  radio_RadioEvents.RxPreamble = radio_rx_preamble_cb;
 
   bool irq_set = RADIO_READ_DIO1_PIN();
 
@@ -307,7 +307,7 @@ void radio_mcu_timeout_callback(){
 // SX1262 Callbacks
 
 
-void radio_OnRadioCadDone(_Bool detected) {
+void radio_cad_done_cb(_Bool detected) {
   if (radio_cad_callback) {
     radio_set_timeout_callback(NULL);
     void (*tmp)(bool) = radio_cad_callback;
@@ -337,7 +337,7 @@ void radio_OnRadioCadDone(_Bool detected) {
 #endif
 }
 
-void radio_OnRadioRxDone(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) {
+void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) {
   if (radio_rx_callback) {
     radio_set_timeout_callback(NULL);
 
@@ -393,7 +393,7 @@ void radio_OnRadioRxDone(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t 
 #endif
 }
 
-void radio_OnRadioRxError(void) {
+void radio_rx_error_cb(void) {
   if(!radio_rx_callback && radio_receive_continuous) {
     SX126xSetRxBoosted(0);
   }
@@ -413,7 +413,7 @@ void radio_OnRadioRxError(void) {
 #endif
 }
 
-void radio_OnRadioRxTimeout(void) {
+void radio_rx_timeout_cb(void) {
   void (*tmp)(bool) = radio_timeout_callback;
   radio_set_timeout_callback(NULL);
 
@@ -428,20 +428,20 @@ void radio_OnRadioRxTimeout(void) {
 #endif
 }
 
-void radio_OnRadioRxSync(void) {
+void radio_rx_sync_cb(void) {
   radio_last_sync_timestamp = hs_timer_get_capture_timestamp();
   if (sync_detected_counter < 255) {
     sync_detected_counter++;
   }
 }
 
-void radio_OnRadioRxPreamble(void) {
+void radio_rx_preamble_cb(void) {
   if (preamble_detected_counter < 255) {
     preamble_detected_counter++;
   }
 }
 
-void radio_OnRadioTxDone(void) {
+void radio_tx_done_cb(void) {
   radio_set_timeout_callback(NULL);
 
   void (*tmp)() = radio_tx_callback;
@@ -452,7 +452,7 @@ void radio_OnRadioTxDone(void) {
   }
 }
 
-void radio_OnRadioTxTimeout(void) {
+void radio_tx_timeout_cb(void) {
   void (*tmp)(bool) = radio_timeout_callback;
   radio_set_timeout_callback(NULL);
 
