@@ -270,6 +270,11 @@ void radio_standby(void)
 {
   Radio.Standby();
   radio_sleeping = false;
+
+  RADIO_RX_STOP_IND();
+  RADIO_TX_STOP_IND();
+  dcstat_stop(&radio_dc_rx);
+  dcstat_stop(&radio_dc_tx);
 }
 
 
