@@ -12,20 +12,20 @@ extern void (*RadioOnDioIrqCallback)(void);
 
 extern volatile bool    cli_initialized;
 
-
+/* global state (shared) */
 RadioEvents_t           radio_RadioEvents;
-
 volatile bool           radio_command_scheduled = false;
 volatile bool           radio_receive_continuous = false;
 volatile bool           radio_initialized = false;
 volatile bool           radio_irq_direct = false;
 volatile bool           radio_process_irq_in_loop_once = false;
 bool                    radio_mcu_timeout_flag = false;
-radio_sleeping_t        radio_sleeping = FALSE;
 uint64_t                radio_last_sync_timestamp;
 dcstat_t                radio_dc_rx = { 0 };
 dcstat_t                radio_dc_tx = { 0 };
 
+/* internal state */
+static radio_sleeping_t radio_sleeping = FALSE;
 static lora_irq_mode_t  radio_mode;
 static radio_message_t* last_message_list = NULL;
 static uint8_t          preamble_detected_counter = 0;
@@ -259,14 +259,18 @@ void radio_reset(void)
   dcstat_stop(&radio_dc_tx);
 }
 
-void radio_wakeup(void)
+bool radio_wakeup(void)
 {
-  SX126xWakeup();
-  if (radio_sleeping == COLD) {
-    SX126xSetDio2AsRfSwitchCtrl(true);
-    SX126xSetRegulatorMode( USE_DCDC );
+  if (radio_sleeping) {
+    SX126xWakeup();
+    if (radio_sleeping == COLD) {
+      SX126xSetDio2AsRfSwitchCtrl(true);
+      SX126xSetRegulatorMode( USE_DCDC );
+    }
+    radio_sleeping = FALSE;
+    return true;
   }
-  radio_sleeping = FALSE;
+  return false;
 }
 
 /* puts the radio into idle mode */

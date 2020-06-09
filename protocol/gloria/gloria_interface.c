@@ -19,8 +19,6 @@
  * BEGIN: GLORIA INTERFACE
  ******************************************************************************/
 
-extern radio_sleeping_t radio_sleeping;
-
 /* internal state */
 static gloria_flood_t   flood;                                   // flood struct which (serves as input, state, and output to/from gloria_run_flood)
 static gloria_message_t message;                                 // buffer for the message (static to avoid allocation on the stack)
@@ -62,9 +60,8 @@ void gloria_start(uint16_t initiator_id,
   }
 
   /* radio must be woken from sleep mode! */
-  if (radio_sleeping) {
-    LOG_WARNING("radio is in sleep mode");
-    return;
+  if (radio_wakeup()) {
+    LOG_WARNING("radio was in sleep mode");
   }
 
   /* argument checks */

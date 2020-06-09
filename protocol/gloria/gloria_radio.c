@@ -9,8 +9,6 @@
 
 #if GLORIA_ENABLE
 
-extern radio_sleeping_t radio_sleeping;
-
 static uint64_t rx_timeout_ts = 0;
 
 static gloria_radio_state_t state;
@@ -177,7 +175,7 @@ static uint64_t gloria_try_to_sleep(uint64_t future_timestamp) {
  */
 static void gloria_radio_setup_callback() {
 
-  if (!current_flood->radio_no_sleep && radio_sleeping) {
+  if (!current_flood->radio_no_sleep) {
     radio_wakeup();
   }
 

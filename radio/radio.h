@@ -49,7 +49,7 @@ void radio_init(void);
 void radio_update(void);
 void radio_sleep(bool warm);
 void radio_reset(void);
-void radio_wakeup(void);
+bool radio_wakeup(void);      /* returns true if the radio was in sleep mode and has been woken successfully, false otherwise */
 void radio_standby(void);
 
 void radio_stop_schedule(void);
