@@ -124,7 +124,11 @@ void elwb_notify(void)
 {
   if (task_handle) {
     if (xTaskGetCurrentTaskHandle() == task_handle) {
+      /* this is not supposed to happen -> print warning and make sure the post task gets to run */
       LOG_WARNING("elwb_notify(): task is already running");
+      if (post_task) {
+        ELWB_TASK_NOTIFY(post_task);
+      }
     }
     ELWB_ON_WAKEUP();
     ELWB_TASK_NOTIFY_FROM_ISR(task_handle);
