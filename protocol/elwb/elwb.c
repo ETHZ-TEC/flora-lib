@@ -270,7 +270,10 @@ void elwb_run(void)
           /* synchronize first! wait for the first schedule... */
           do {
             ELWB_RCV_SCHED();
-          } while (elwb_running && !ELWB_GLOSSY_IS_T_REF_UPDATED() && ((ELWB_TIMER_NOW() - bootstrap_started) < ELWB_CONF_BOOTSTRAP_TIMEOUT));
+            if ((ELWB_TIMER_NOW() - bootstrap_started) >= ELWB_CONF_BOOTSTRAP_TIMEOUT) {
+              break;
+            }
+          } while (elwb_running && !ELWB_GLOSSY_IS_T_REF_UPDATED() && !ELWB_SCHED_IS_FIRST(&schedule));
           /* exit bootstrap mode if schedule received, exit bootstrap state */
           if (ELWB_GLOSSY_IS_T_REF_UPDATED()) {
             break;
