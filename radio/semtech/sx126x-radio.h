@@ -405,7 +405,7 @@ struct Radio_s
  * \remark This variable is defined and initialized in the specific radio
  *         board implementation
  */
-extern const struct Radio_s Radio;
+//extern const struct Radio_s Radio;  -> don't export here, the application is not supposed to access this driver directly
 
 
 /* include all radio files by semtech */

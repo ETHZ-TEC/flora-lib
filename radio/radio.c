@@ -9,6 +9,7 @@
 
 
 extern void (*RadioOnDioIrqCallback)(void);
+extern const struct Radio_s Radio;
 
 
 /* global state (shared) */

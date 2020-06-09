@@ -13,6 +13,7 @@ extern volatile bool radio_irq_direct;
 extern bool          cli_interactive_mode;
 extern volatile bool cli_initialized;
 extern SX126x_t      SX126x;
+extern const struct  Radio_s Radio;
 
 
 // See datasheet, https://www.semtech.com/uploads/documents/an1200.22.pdf, or http://www.sghoslya.com/p/lora_6.html for formula
