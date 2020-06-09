@@ -32,9 +32,6 @@ static void gloria_radio_continue_rx();
  * calculate tx marker for data message and set timer for radio_setup
  */
 void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
-#ifdef RXTX_LOGS
-  print(1, "tx");
-#endif
   state = GLORIA_RADIO_TX;
   current_flood = flood;
   callback = tx_callback;
@@ -105,9 +102,6 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
  * calculate rx marker and set timer for radio_setup
  */
 void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
-#ifdef RXTX_LOGS
-  print(1, "rx");
-#endif
   state = GLORIA_RADIO_RX;
   current_flood = flood;
   rx_callback = callback;

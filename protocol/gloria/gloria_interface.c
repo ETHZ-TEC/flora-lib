@@ -373,9 +373,6 @@ static void update_t_ref(void) {
   // determine time difference between reconstructed_marker and sync point
   uint64_t lp_time_diff = (hs_sync_point - flood.reconstructed_marker) / HS_TIMER_FREQUENCY_US * LPTIMER_SECOND / 1000000;
 
-  uint64_t now = hs_timer_get_current_timestamp();
-  LOG_INFO("reconstructed: %llu", (now - flood.reconstructed_marker));
-
   // determine the the reconstructed_marker time in lptimer ticks
   /* update t_ref related internal state */
   last_t_ref = lp_sync_point - lp_time_diff;
