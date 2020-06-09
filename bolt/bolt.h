@@ -5,8 +5,8 @@
  *      Author: rdaforno
  */
 
-#ifndef __DPP_LIB_BOLT_H__
-#define __DPP_LIB_BOLT_H__
+#ifndef BOLT_BOLT_H_
+#define BOLT_BOLT_H_
 
 
 /* DEFAULT CONFIG */
@@ -54,4 +54,4 @@ uint32_t bolt_read(uint8_t* out_data);
 bool bolt_write(uint8_t* data, uint32_t len);
 
 
-#endif /* __DPP_LIB_BOLT_H__ */
+#endif /* BOLT_BOLT_H_ */

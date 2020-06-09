@@ -9,16 +9,19 @@
 #define UTILS_MISC_H_
 
 
-#define IS_INTERRUPT()  ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0)
+#define IS_INTERRUPT()        ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0)
 
-#define REGVAL16(addr)  (*(volatile uint16_t*)(addr))
-#define REGVAL32(addr)  (*(volatile uint32_t*)(addr))
-#define REGVAL64(addr)  (*(volatile uint64_t*)(addr))    /* note: this can lead to undesired results if the address is not aligned to 8 bytes */
-#define REGVAL          REGVAL32
-#define ADDR_VAL16      REGVAL16
-#define ADDR_VAL32      REGVAL32
-#define ADDR_VAL64      REGVAL64
-#define ADDR_VAL        REGVAL32
+#define SUSPEND_SYSTICK()     CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk)
+#define RESUME_SYSTICK()      SET_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk)
+
+#define REGVAL16(addr)        (*(volatile uint16_t*)(addr))
+#define REGVAL32(addr)        (*(volatile uint32_t*)(addr))
+#define REGVAL64(addr)        (*(volatile uint64_t*)(addr))    /* note: this can lead to undesired results if the address is not aligned to 8 bytes */
+#define REGVAL                REGVAL32
+#define ADDR_VAL16            REGVAL16
+#define ADDR_VAL32            REGVAL32
+#define ADDR_VAL64            REGVAL64
+#define ADDR_VAL              REGVAL32
 
 #define ADDR_OFS(addr, ofs)  ((void*)((uint32_t)addr + ofs))
 

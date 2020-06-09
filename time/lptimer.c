@@ -99,10 +99,7 @@ uint64_t lptimer_now(void)
   uint16_t hw, hw2;
 
   /* make sure this routine runs atomically */
-  uint32_t int_status = __get_PRIMASK();
-  if (!int_status) {
-    __disable_irq();
-  }
+  ENTER_CRITICAL_SECTION();
 
   timestamp = lptimer_ext;
   do {
@@ -119,9 +116,7 @@ uint64_t lptimer_now(void)
   timestamp <<= 16;
   timestamp |= hw;
 
-  if (!int_status) {
-    __enable_irq();
-  }
+  LEAVE_CRITICAL_SECTION();
 
   return timestamp;
 }
@@ -134,16 +129,13 @@ bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
 
   /* arguments must be non-zero and timers must be running */
   if (!lp_timestamp || !hs_timestamp ||
-      IS_INTERRUPT() ||
       !(hlptim1.Instance->CR & LPTIM_CR_ENABLE) ||
       !(htim2.Instance->CR1 & TIM_CR1_CEN)) {
     return false;
   }
   /* disable interrupts */
-  uint32_t int_status = __get_PRIMASK();
-  if (!int_status) {
-    __disable_irq();
-  }
+  ENTER_CRITICAL_SECTION();
+
   /* get counter extensions */
   hs_ext = hs_timer_get_counter_extension();
   lp_ext = lptimer_ext;
@@ -180,9 +172,8 @@ bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
   *hs_timestamp = ((uint64_t)hs_ext << 32) | hs_cnt2;
 
   /* re-enable interrupts if necessary */
-  if (!int_status) {
-    __enable_irq();
-  }
+  LEAVE_CRITICAL_SECTION();
+
   return true;
 }
 
