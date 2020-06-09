@@ -29,18 +29,17 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
   /* first, disable interrupt and clear the interrupt pending flag */
   __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
   __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_IT_CMPM);
-  lptimer_cb = cb;
+  lptimer_cb  = cb;
   lptimer_exp = t_exp;
-  if (t_exp == 0 || !cb) {
-    /* stop the timer */
-    __HAL_LPTIM_COMPARE_SET(&hlptim1, 0);
-  } else {
-    __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)t_exp);
+  __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)t_exp);
+
+  if (t_exp != 0 && cb) {
 #if LPTIMER_CHECK_EXP_TIME
     uint64_t curr_timestamp = lptimer_now();
     if (t_exp <= curr_timestamp) {
       LOG_WARNING("wakeup time is in the past");
-      t_exp += LPTIMER_SECOND * 2;    /* expiration will be 2 seconds later */
+      lptimer_exp += 2 * LPTIMER_SECOND;    /* timer will fire 2s (1 period) later */
+
     } else if (t_exp > (curr_timestamp + LPTIMER_SECOND * 86400)) {
       LOG_WARNING("wakeup time is far in the future");
     }
@@ -57,8 +56,7 @@ uint64_t lptimer_get(void)
 /* this function must be called when an lptimer has expired (CCR match) */
 void lptimer_expired(void)
 {
-  uint32_t t_now = lptimer_now();
-  if (lptimer_exp <= t_now) {
+  if ((uint32_t)(lptimer_exp >> 16) <= lptimer_ext) {
     __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
     if (lptimer_cb) {
       lptimer_cb();                            /* execute callback function */
