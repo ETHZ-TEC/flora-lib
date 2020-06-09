@@ -1218,7 +1218,6 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_TX_DONE ) == IRQ_TX_DONE )
         {
-            RADIO_TX_STOP_IND();
             RxTimeoutTimer.IsRunning = false;
             if( ( RadioEvents != NULL ) && ( RadioEvents->TxDone != NULL ) )
             {
@@ -1244,8 +1243,6 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_RX_DONE ) == IRQ_RX_DONE )
         {
-            RADIO_RX_STOP_IND();
-
             bool crc_error = (irqRegs & IRQ_CRC_ERROR) == IRQ_CRC_ERROR || (irqRegs & IRQ_HEADER_ERROR) == IRQ_HEADER_ERROR;
 
             uint8_t size;
@@ -1256,10 +1253,10 @@ void RadioIrqProcess( void )
             if( ( RadioEvents != NULL ) && ( RadioEvents->RxDone != NULL ) )
             {
                 if (RadioPktStatus.packetType == PACKET_TYPE_LORA) {
-                  RadioEvents->RxDone( RadioRxPayload, size, RadioPktStatus.Params.LoRa.RssiPkt, RadioPktStatus.Params.LoRa.SnrPkt, crc_error );
+                    RadioEvents->RxDone( RadioRxPayload, size, RadioPktStatus.Params.LoRa.RssiPkt, RadioPktStatus.Params.LoRa.SnrPkt, crc_error );
                 }
                 else {
-                  RadioEvents->RxDone( RadioRxPayload, size, RadioPktStatus.Params.Gfsk.RssiAvg, 0, crc_error );
+                    RadioEvents->RxDone( RadioRxPayload, size, RadioPktStatus.Params.Gfsk.RssiAvg, 0, crc_error );
                 }
             }
         }
@@ -1279,12 +1276,10 @@ void RadioIrqProcess( void )
         {
             if( ( irqRegs & IRQ_RX_DONE ) != IRQ_RX_DONE )
             {
-                RADIO_TX_STOP_IND();
-                RADIO_RX_STOP_IND();
                 RxTimeoutTimer.IsRunning = false;
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
                 {
-                  RadioEvents->RxError( );
+                    RadioEvents->RxError( );
                 }
             }
         }
@@ -1299,12 +1294,9 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_RX_TX_TIMEOUT ) == IRQ_RX_TX_TIMEOUT )
         {
-            RADIO_TX_STOP_IND();
-            RADIO_RX_STOP_IND();
-            PIN_CLR(COM_GPIO2);
             if( SX126xGetOperatingMode( ) == MODE_TX )
             {
-              TxTimeoutTimer.IsRunning = true;
+                TxTimeoutTimer.IsRunning = true;
                 if( ( RadioEvents != NULL ) && ( RadioEvents->TxTimeout != NULL ) )
                 {
                     RadioEvents->TxTimeout( );
@@ -1312,7 +1304,7 @@ void RadioIrqProcess( void )
             }
             else if( SX126xGetOperatingMode( ) == MODE_RX )
             {
-              RxTimeoutTimer.IsRunning = false;
+                RxTimeoutTimer.IsRunning = false;
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxTimeout != NULL ) )
                 {
                     RadioEvents->RxTimeout( );

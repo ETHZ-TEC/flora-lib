@@ -233,10 +233,6 @@ void SX126xSetSleep( SleepParams_t sleepConfig )
 
     SX126xWriteCommand( RADIO_SET_SLEEP, &sleepConfig.Value, 1 );
     OperatingMode = MODE_SLEEP;
-
-    RADIO_TX_STOP_IND();
-    RADIO_RX_STOP_IND();
-    //FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
 }
 
 void SX126xSetStandby( RadioStandbyModes_t standbyConfig )
@@ -272,8 +268,6 @@ void SX126xSetTx( uint32_t timeout )
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
     buf[2] = ( uint8_t )( timeout & 0xFF );
     SX126xWriteCommand( RADIO_SET_TX, buf, 3 );
-
-    RADIO_TX_START_IND();
 }
 
 void SX126xSetTxWithoutExecute( uint32_t timeout )
@@ -301,8 +295,6 @@ void SX126xSetRx( uint32_t timeout )
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
     buf[2] = ( uint8_t )( timeout & 0xFF );
     SX126xWriteCommand( RADIO_SET_RX, buf, 3 );
-
-    RADIO_RX_START_IND();
 }
 
 void SX126xSetRxWithoutExecute( uint32_t timeout )
@@ -331,8 +323,6 @@ void SX126xSetRxBoosted( uint32_t timeout )
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
     buf[2] = ( uint8_t )( timeout & 0xFF );
     SX126xWriteCommand( RADIO_SET_RX, buf, 3 );
-
-    RADIO_RX_START_IND();
 }
 
 void SX126xSetRxBoostedWithoutExecute( uint32_t timeout )

@@ -49,8 +49,6 @@ void SX126xReset( void )
     delay_us(200);
     RADIO_SET_NRESET_PIN();
     delay_us(100);
-    RADIO_TX_STOP_IND();
-    RADIO_RX_STOP_IND();
 }
 
 void SX126xWaitOnBusy( void )
@@ -60,9 +58,6 @@ void SX126xWaitOnBusy( void )
 
 void SX126xWakeup( void )
 {
-    RADIO_TX_STOP_IND();
-    RADIO_RX_STOP_IND();
-
     CRITICAL_SECTION_BEGIN( );
 
     tmp = RADIO_GET_STATUS;

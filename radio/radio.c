@@ -219,7 +219,7 @@ void radio_set_tx_callback(void (*callback)())
 
 void radio_sleep(bool warm)
 {
-  if(radio_initialized && !radio_sleeping) {
+  if (radio_initialized && !radio_sleeping) {
     SleepParams_t params = { 0 };
     if (warm) {
       params.Fields.WarmStart = 1;
@@ -231,6 +231,8 @@ void radio_sleep(bool warm)
 
     radio_sleeping = warm + 1;
 
+    RADIO_TX_STOP_IND();
+    RADIO_RX_STOP_IND();
     dcstat_stop(&radio_dc_rx);
     dcstat_stop(&radio_dc_tx);
   }
@@ -240,6 +242,8 @@ void radio_sleep(bool warm)
 void radio_reset(void)
 {
   SX126xReset();
+  RADIO_RX_STOP_IND();
+  RADIO_TX_STOP_IND();
   dcstat_stop(&radio_dc_rx);
   dcstat_stop(&radio_dc_tx);
 }
@@ -248,6 +252,8 @@ void radio_reset(void)
 bool radio_wakeup(void)
 {
   if (radio_sleeping) {
+    RADIO_RX_STOP_IND();
+    dcstat_stop(&radio_dc_rx);
     SX126xWakeup();
     if (radio_sleeping == COLD) {
       SX126xSetDio2AsRfSwitchCtrl(true);
@@ -352,6 +358,8 @@ void radio_cad_done_cb(bool detected)
 
 void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error)
 {
+  RADIO_RX_STOP_IND();
+
   if (radio_rx_callback) {
     dcstat_stop(&radio_dc_rx);
     radio_set_timeout_callback(NULL);
@@ -365,6 +373,7 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
   }
   else if(radio_receive_continuous) {
     SX126xSetRxBoosted(0);
+    RADIO_RX_START_IND();
   }
 
 #ifdef FLORA_DEBUG
@@ -409,8 +418,12 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
 
 void radio_rx_error_cb(void)
 {
+  RADIO_TX_STOP_IND();
+  RADIO_RX_STOP_IND();
+
   if(!radio_rx_callback && radio_receive_continuous) {
     SX126xSetRxBoosted(0);
+    RADIO_RX_START_IND();
   }
   else {
     dcstat_stop(&radio_dc_rx);
@@ -429,7 +442,9 @@ void radio_rx_error_cb(void)
 
 void radio_rx_timeout_cb(void)
 {
+  RADIO_RX_STOP_IND();
   dcstat_stop(&radio_dc_rx);
+
   void (*tmp)(bool) = radio_timeout_callback;
   radio_set_timeout_callback(NULL);
 
@@ -462,6 +477,9 @@ void radio_rx_preamble_cb(void)
 
 void radio_tx_done_cb(void)
 {
+  RADIO_TX_STOP_IND();
+  dcstat_stop(&radio_dc_tx);
+
   radio_set_timeout_callback(NULL);
 
   void (*tmp)() = radio_tx_callback;
@@ -470,19 +488,20 @@ void radio_tx_done_cb(void)
   if (tmp) {
     tmp();
   }
-  dcstat_stop(&radio_dc_tx);
 }
 
 
 void radio_tx_timeout_cb(void)
 {
+  RADIO_TX_STOP_IND();
+  dcstat_stop(&radio_dc_tx);
+
   void (*tmp)(bool) = radio_timeout_callback;
   radio_set_timeout_callback(NULL);
 
   if (tmp) {
     tmp(false);
   }
-  dcstat_stop(&radio_dc_tx);
 }
 
 
@@ -645,6 +664,7 @@ void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_time
     else {
       SX126xSetRx(timeout);
     }
+    RADIO_RX_START_IND();
     dcstat_start(&radio_dc_rx);
   }
 }
@@ -654,6 +674,8 @@ void radio_sync_receive(void)
 {
   radio_receive_continuous = false;
   SX126xSetRxBoosted(0);
+  RADIO_RX_START_IND();
+  dcstat_start(&radio_dc_rx);
 }
 
 
@@ -668,7 +690,6 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
     SX126xSetRxDutyCycleWithoutExecute(rx, sleep);
     radio_command_scheduled = true;
   }
-
   else {
     Radio.SetRxDutyCycle(rx, sleep);
   }
