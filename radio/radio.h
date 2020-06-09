@@ -72,6 +72,7 @@ void      radio_reset_sync_counter(void);
 uint8_t   radio_get_sync_counter(void);
 uint32_t  radio_get_rx_dc(void);
 uint32_t  radio_get_tx_dc(void);
+void      radio_dc_counter_reset(void);
 
 
 #endif /* RADIO_FLORA_RADIO_H_ */

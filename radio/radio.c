@@ -117,71 +117,70 @@ void radio_set_irq_mode(lora_irq_mode_t mode)
   switch (mode)
   {
   case IRQ_MODE_ALL:
-    SX126xSetDioIrqParams(  IRQ_RADIO_ALL,
-                IRQ_RADIO_ALL,
-                IRQ_RADIO_NONE,
-                IRQ_RADIO_NONE );
+    SX126xSetDioIrqParams( IRQ_RADIO_ALL,
+                           IRQ_RADIO_ALL,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
   case IRQ_MODE_TX:
     SX126xSetDioIrqParams( IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
   case IRQ_MODE_RX:
     SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
   case IRQ_MODE_RX_CRC:
     SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR,
-                 IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
       break;
   case IRQ_MODE_RX_CRC_PREAMBLE:
     SX126xSetDioIrqParams( IRQ_PREAMBLE_DETECTED | IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR,
-                 IRQ_PREAMBLE_DETECTED | IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_PREAMBLE_DETECTED | IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
       break;
   case IRQ_MODE_RX_PREAMBLE:
     SX126xSetDioIrqParams( IRQ_PREAMBLE_DETECTED | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_PREAMBLE_DETECTED | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_PREAMBLE_DETECTED | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
   case IRQ_MODE_RX_ONLY:
     SX126xSetDioIrqParams( IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
   case IRQ_MODE_SYNC_RX_VALID:
     SX126xSetDioIrqParams( IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE,
-                 IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
   case IRQ_MODE_SYNC_ONLY:
     SX126xSetDioIrqParams( IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID,
-                 IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
   case IRQ_MODE_CAD:
     SX126xSetDioIrqParams( IRQ_CAD_ACTIVITY_DETECTED | IRQ_CAD_DONE,
-                 IRQ_CAD_ACTIVITY_DETECTED | IRQ_CAD_DONE,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_CAD_ACTIVITY_DETECTED | IRQ_CAD_DONE,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
   case IRQ_MODE_CAD_RX:
     SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                 IRQ_RADIO_NONE,
-                 IRQ_RADIO_NONE );
+                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
     break;
-
 
   default:
     break;
@@ -365,6 +364,7 @@ void radio_cad_done_cb(bool detected)
 void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error)
 {
   if (radio_rx_callback) {
+    dcstat_stop(&radio_dc_rx);
     radio_set_timeout_callback(NULL);
 
     void (*tmp)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) = radio_rx_callback;
@@ -373,7 +373,6 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
     if (tmp) {
       tmp(payload, size, rssi, snr, crc_error);
     }
-    dcstat_stop(&radio_dc_rx);
   }
   else if(radio_receive_continuous) {
     SX126xSetRxBoosted(0);
@@ -425,13 +424,13 @@ void radio_rx_error_cb(void)
     SX126xSetRxBoosted(0);
   }
   else {
+    dcstat_stop(&radio_dc_rx);
     void (*tmp)(bool) = radio_timeout_callback;
     radio_set_timeout_callback(NULL);
 
     if(tmp) {
       tmp(true);
     }
-    dcstat_stop(&radio_dc_rx);
   }
 
 #ifdef FLORA_DEBUG
@@ -441,13 +440,13 @@ void radio_rx_error_cb(void)
 
 void radio_rx_timeout_cb(void)
 {
+  dcstat_stop(&radio_dc_rx);
   void (*tmp)(bool) = radio_timeout_callback;
   radio_set_timeout_callback(NULL);
 
   if(tmp) {
     tmp(false);
   }
-  dcstat_stop(&radio_dc_rx);
 
 #ifdef FLORA_DEBUG
   LOG_WARNING("Rx Timeout");
@@ -550,11 +549,20 @@ uint8_t radio_get_sync_counter(void)
 }
 
 
-uint32_t radio_get_rx_dc(void) {
+uint32_t radio_get_rx_dc(void)
+{
   return dcstat_get_dc(&radio_dc_rx);
 }
 
 
-uint32_t radio_get_tx_dc(void) {
+uint32_t radio_get_tx_dc(void)
+{
   return dcstat_get_dc(&radio_dc_tx);
+}
+
+
+void radio_dc_counter_reset(void)
+{
+  dcstat_reset(&radio_dc_rx);
+  dcstat_reset(&radio_dc_tx);
 }

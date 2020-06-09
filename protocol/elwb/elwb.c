@@ -631,30 +631,31 @@ end_of_round:
 
     if (ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
       if (ELWB_IS_HOST()) {
-        LOG_INFO("%llu | period: %lus, slots: %u, pkt cnt: %lu, rcvd: %lu, sent: %lu, dropped: %lu, ref ofs: %lu",
+        LOG_INFO("%llu | period: %lus, slots: %u, pkt cnt (rx/tx/all): %lu/%lu/%lu, dropped: %lu, rssi: %ddBm",
                          network_time,
                          elwb_sched_get_period(),
                          ELWB_SCHED_N_SLOTS(&schedule),
-                         stats.pkt_cnt,
                          stats.pkt_rcvd,
                          stats.pkt_sent,
+                         stats.pkt_cnt,
                          stats.pkt_dropped,
-                         stats.ref_ofs);
+                         stats.rssi_avg);
       } else {
         /* print out some stats (note: takes ~2ms to compose this string!) */
-        LOG_INFO("%s %llu | period: %us, slots: %u, pkt cnt: %lu, rcvd: %lu, sent: %lu, dropped: %lu, acks: %lu, usyn: %lu, boot: %lu, drift: %ld",
+        LOG_INFO("%s %llu | period: %us, slots: %u, pkt cnt (rx/tx/all): %lu/%lu/%lu, dropped: %lu, acks: %lu, usyn: %lu, boot: %lu, drift: %ld, rssi: %ddBm",
                  elwb_syncstate_to_string[sync_state],
                  schedule.time,
                  schedule.period / ELWB_PERIOD_SCALE,
                  ELWB_SCHED_N_SLOTS(&schedule),
-                 stats.pkt_cnt,
                  stats.pkt_rcvd,
                  stats.pkt_sent,
+                 stats.pkt_cnt,
                  stats.pkt_dropped,
                  stats.pkt_ack,
                  stats.unsynced_cnt,
                  stats.bootstrap_cnt,
-                 stats.drift);
+                 stats.drift,
+                 stats.rssi_avg);
       }
       /* poll the post process */
       if (post_task) {
