@@ -38,10 +38,10 @@
 /* Macros */
 
 #define PIN_TOGGLE(p)     HAL_GPIO_TogglePin(p##_GPIO_Port, p##_Pin)
-#define PIN_SET(p)        HAL_GPIO_WritePin(p##_GPIO_Port, p##_Pin, GPIO_PIN_SET)
-#define PIN_CLR(p)        HAL_GPIO_WritePin(p##_GPIO_Port, p##_Pin, GPIO_PIN_RESET)
-#define PIN_GET(p)        HAL_GPIO_ReadPin(p##_GPIO_Port, p##_Pin)      // works for input pins only
-#define PIN_STATE(p)      ((p##_GPIO_Port->ODR & p##_Pin) > 0)          // read the output pin state
+#define PIN_SET(p)        p##_GPIO_Port->BSRR = p##_Pin           // HAL_GPIO_WritePin(p##_GPIO_Port, p##_Pin, GPIO_PIN_SET)
+#define PIN_CLR(p)        p##_GPIO_Port->BRR = p##_Pin            // HAL_GPIO_WritePin(p##_GPIO_Port, p##_Pin, GPIO_PIN_RESET)
+#define PIN_GET(p)        ((p##_GPIO_Port->IDR & p##_Pin) != 0)   // HAL_GPIO_ReadPin(p##_GPIO_Port, p##_Pin)      // works for input pins only
+#define PIN_STATE(p)      ((p##_GPIO_Port->ODR & p##_Pin) != 0)   // read the output pin state
 #define PIN_XOR(p)        PIN_TOGGLE(p)
 
 
