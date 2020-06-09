@@ -12,22 +12,20 @@ extern void (*RadioOnDioIrqCallback)(void);
 
 
 /* global state (shared) */
-RadioEvents_t           radio_RadioEvents;
-volatile bool           radio_command_scheduled = false;
-volatile bool           radio_receive_continuous = false;
-volatile bool           radio_initialized = false;
-volatile bool           radio_irq_direct = false;
-volatile bool           radio_process_irq_in_loop_once = false;
-bool                    radio_mcu_timeout_flag = false;
-uint64_t                radio_last_sync_timestamp;
+volatile bool radio_irq_direct = false;
+volatile bool radio_process_irq_in_loop_once = false;
 
 /* internal state */
-static radio_sleeping_t radio_sleeping = FALSE;
-static lora_irq_mode_t  radio_mode;
-static uint8_t          preamble_detected_counter = 0;
-static uint8_t          sync_detected_counter = 0;
-static dcstat_t         radio_dc_rx = { 0 };
-static dcstat_t         radio_dc_tx = { 0 };
+static volatile bool              radio_initialized = false;
+static volatile radio_sleeping_t  radio_sleeping = false;
+static volatile lora_irq_mode_t   radio_mode;
+static volatile bool              radio_receive_continuous = false;
+static volatile bool              radio_command_scheduled = false;
+static uint64_t                   radio_last_sync_timestamp = 0;
+static uint8_t                    preamble_detected_counter = 0;
+static uint8_t                    sync_detected_counter = 0;
+static dcstat_t                   radio_dc_rx = { 0 };
+static dcstat_t                   radio_dc_tx = { 0 };
 
 /* function pointers */
 static void (*radio_irq_callback) () = NULL;
@@ -52,16 +50,19 @@ void radio_rx_preamble_cb(void);
 
 void radio_init(void)
 {
+  static RadioEvents_t radio_events;      // must be static
+
   radio_initialized = false;
 
-  radio_RadioEvents.CadDone = radio_cad_done_cb;
-  radio_RadioEvents.RxDone = radio_rx_done_cb;
-  radio_RadioEvents.RxError = radio_rx_error_cb;
-  radio_RadioEvents.RxTimeout = radio_rx_timeout_cb;
-  radio_RadioEvents.TxDone = radio_tx_done_cb;
-  radio_RadioEvents.TxTimeout = radio_tx_timeout_cb;
-  radio_RadioEvents.RxSync = radio_rx_sync_cb;
-  radio_RadioEvents.RxPreamble = radio_rx_preamble_cb;
+  // assign callback functions for radio driver
+  radio_events.CadDone    = radio_cad_done_cb;
+  radio_events.RxDone     = radio_rx_done_cb;
+  radio_events.RxError    = radio_rx_error_cb;
+  radio_events.RxTimeout  = radio_rx_timeout_cb;
+  radio_events.TxDone     = radio_tx_done_cb;
+  radio_events.TxTimeout  = radio_tx_timeout_cb;
+  radio_events.RxSync     = radio_rx_sync_cb;
+  radio_events.RxPreamble = radio_rx_preamble_cb;
 
   bool irq_set = RADIO_READ_DIO1_PIN();
 
@@ -69,7 +70,7 @@ void radio_init(void)
     radio_reset();
   }
 
-  Radio.Init(&radio_RadioEvents);
+  Radio.Init(&radio_events);
 
   if (irq_set) {
     (*RadioOnDioIrqCallback)();
@@ -82,15 +83,15 @@ void radio_init(void)
   radio_sleep(true);
 
   // initial configuration
-  uint8_t modulation = 3;
-  uint8_t band = 34;
-  int8_t power = 0;
-  int32_t bandwidth = -1;
-  int32_t fsk_bitrate = -1;
-  int preamble_length = -1;
-  bool implicit = false;
-  uint8_t payload_length = 0;
-  bool crc = true;
+  uint8_t modulation      = 3;
+  uint8_t band            = 34;
+  int8_t  power           = 0;
+  int32_t bandwidth       = -1;
+  int32_t fsk_bitrate     = -1;
+  int     preamble_length = -1;
+  bool    implicit        = false;
+  uint8_t payload_length  = 0;
+  bool    crc             = true;
   radio_set_config_rx(modulation, band, bandwidth, fsk_bitrate, preamble_length, 0, implicit, payload_length, crc, true);
   radio_set_config_tx(modulation, band, power, bandwidth, fsk_bitrate, preamble_length, implicit, crc);
 
@@ -252,7 +253,7 @@ bool radio_wakeup(void)
       SX126xSetDio2AsRfSwitchCtrl(true);
       SX126xSetRegulatorMode( USE_DCDC );
     }
-    radio_sleeping = FALSE;
+    radio_sleeping = false;
     return true;
   }
   return false;
@@ -262,7 +263,7 @@ bool radio_wakeup(void)
 void radio_standby(void)
 {
   Radio.Standby();
-  radio_sleeping = FALSE;
+  radio_sleeping = false;
 }
 
 
@@ -297,8 +298,6 @@ void radio_schedule_callback(void)
 
 void radio_mcu_timeout_callback(void)
 {
-  radio_mcu_timeout_flag = true;
-
   radio_set_rx_callback(NULL);
 
   if (radio_timeout_callback) {
@@ -703,6 +702,12 @@ void radio_stop_mcu_timeout(void)
 void radio_stop_schedule(void)
 {
   hs_timer_schedule_stop();
+}
+
+
+uint64_t radio_get_last_sync_timestamp(void)
+{
+  return radio_last_sync_timestamp;
 }
 
 

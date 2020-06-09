@@ -9,8 +9,7 @@
 
 #if GLORIA_ENABLE
 
-extern uint64_t radio_last_sync_timestamp;
-extern bool hs_timer_recovered_by_rtc;
+
 volatile uint64_t gloria_last_sync = (uint64_t) -1;
 
 
@@ -135,7 +134,7 @@ inline uint16_t gloria_calculate_rx_timeout(gloria_flood_t* flood) {
  */
 inline uint64_t gloria_get_capture_timestamp(uint8_t modulation) {
   const gloria_timings_t* timings = &(gloria_timings[modulation]);
-  return radio_last_sync_timestamp - timings->txSync - GLORIA_BLACK_BOX_SYNC_DELAY;
+  return radio_get_last_sync_timestamp() - timings->txSync - GLORIA_BLACK_BOX_SYNC_DELAY;
 }
 
 

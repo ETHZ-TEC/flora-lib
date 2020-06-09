@@ -76,7 +76,7 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule);
 void radio_sync_receive();
 void radio_execute_manually(int64_t timer);
 
-
+uint64_t  radio_get_last_sync_timestamp(void);
 void      radio_reset_preamble_counter(void);
 uint8_t   radio_get_preamble_counter(void);
 void      radio_reset_sync_counter(void);
