@@ -53,11 +53,6 @@ void radio_reset(void);
 bool radio_wakeup(void);      /* returns true if the radio was in sleep mode and has been woken successfully, false otherwise */
 void radio_standby(void);
 
-void radio_stop_schedule(void);
-void radio_set_mcu_timeout(uint64_t offset);
-void radio_start_mcu_timeout(uint64_t compare_timeout);
-void radio_stop_mcu_timeout(void);
-
 void radio_set_irq_callback(void (*callback)());
 void radio_set_irq_mode(lora_irq_mode_t mode);
 void radio_set_irq_direct(bool direct);

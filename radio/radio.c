@@ -35,10 +35,9 @@ static void (*radio_cad_callback)(bool success) = NULL;
 static void (*radio_timeout_callback)(bool crc_error) = NULL;
 static void (*radio_tx_callback) () = NULL;
 
-
-void radio_irq_capture_callback(void);
-void radio_schedule_callback(void);
-void radio_mcu_timeout_callback(void);
+/* private callback functions */
+void radio_irq_capture_cb(void);
+void radio_timeout_cb(void);
 void radio_cad_done_cb(_Bool detected);
 void radio_rx_done_cb(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr, bool crc_error);
 void radio_rx_error_cb(void);
@@ -78,7 +77,7 @@ void radio_init(void)
     radio_process_irq_in_loop_once = true;
   }
 
-  hs_timer_capture(&radio_irq_capture_callback);
+  hs_timer_capture(&radio_irq_capture_cb);
   radio_set_irq_direct(true);
 
   radio_sleep(true);
@@ -279,10 +278,10 @@ void radio_standby(void)
 }
 
 
-void radio_irq_capture_callback(void)
+void radio_irq_capture_cb(void)
 {
   if (radio_mode != IRQ_MODE_SYNC_ONLY) {
-    radio_stop_mcu_timeout();
+    hs_timer_timeout_stop();
   }
 
   if (radio_irq_callback) {
@@ -302,13 +301,7 @@ void radio_irq_capture_callback(void)
 }
 
 
-void radio_schedule_callback(void)
-{
-  RADIO_SET_NSS_PIN(); // Execute radio command
-  radio_command_scheduled = false;
-}
-
-void radio_mcu_timeout_callback(void)
+void radio_timeout_cb(void)
 {
   radio_set_rx_callback(NULL);
 
@@ -522,8 +515,6 @@ void radio_tx_timeout_cb(void)
 static void radio_execute(void)
 {
   RADIO_SET_NSS_PIN();
-  radio_stop_schedule();
-  radio_command_scheduled = false;
 
   switch (Radio.GetStatus()) {
     case RF_RX_RUNNING:
@@ -537,6 +528,8 @@ static void radio_execute(void)
     default:
       break;
   }
+  hs_timer_schedule_stop();
+  radio_command_scheduled = false;
 }
 
 
@@ -548,6 +541,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
     SX126xSetTxWithoutExecute(0);
   }
   else {
+    RADIO_TX_START_IND();
     Radio.Send(buffer, size);
     hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
     dcstat_start(&radio_dc_tx);
@@ -559,6 +553,17 @@ void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t ti
 {
   radio_command_scheduled = true;
   radio_set_payload(buffer, 0, size);
+  SX126xSetTxWithoutExecute(0);
+
+  hs_timer_schedule(time, &radio_execute);
+}
+
+
+void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time)
+{
+  radio_command_scheduled = true;
+  radio_set_packet_params_and_size(size);
+  SX126xSetPayload(overwrite_buffer, overwrite_size);
   SX126xSetTxWithoutExecute(0);
 
   hs_timer_schedule(time, &radio_execute);
@@ -594,7 +599,13 @@ void radio_set_rx(uint64_t timestamp, uint32_t timeout)
   radio_command_scheduled = true;
   SX126xSetRxBoostedWithoutExecute(timeout);
   hs_timer_schedule(timestamp, &radio_execute);
-  radio_start_mcu_timeout(timestamp);
+
+  if (radio_mode != IRQ_MODE_SYNC_ONLY) {
+    hs_timer_timeout_start(timestamp);
+  }
+  else {
+    hs_timer_timeout_start(0);
+  }
 }
 
 
@@ -604,21 +615,10 @@ void radio_set_continuous_preamble(void)
 }
 
 
-void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time)
-{
-  radio_command_scheduled = true;
-  radio_set_packet_params_and_size(size);
-  SX126xSetPayload(overwrite_buffer, overwrite_size);
-  SX126xSetTxWithoutExecute(0);
-
-  hs_timer_schedule(time, &radio_execute);
-}
-
-
 void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
 {
   radio_receive_continuous = false;
-  radio_set_mcu_timeout(radio_calculate_timeout(false));
+  hs_timer_timeout(radio_calculate_timeout(false), &radio_timeout_cb);
   radio_command_scheduled = true;
 
   uint32_t hardware_timeout = radio_calculate_timeout(true);
@@ -641,10 +641,10 @@ void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_time
 
   if (schedule) {
     if (timeout) {
-      radio_set_mcu_timeout(timeout  + (uint32_t) (85.2 * HS_TIMER_FREQUENCY_US));
+      hs_timer_timeout(timeout  + (uint32_t) (85.2 * HS_TIMER_FREQUENCY_US), &radio_timeout_cb);
     }
     else {
-      radio_set_mcu_timeout(radio_calculate_timeout(false));
+      hs_timer_timeout(radio_calculate_timeout(false), &radio_timeout_cb);
     }
 
     if (boost) {
@@ -704,35 +704,6 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
     Radio.SetRxDutyCycle(rx, sleep);
   }
 
-}
-
-
-void radio_set_mcu_timeout(uint64_t offset)
-{
-  hs_timer_timeout(offset, &radio_mcu_timeout_callback);
-}
-
-
-void radio_start_mcu_timeout(uint64_t compare_timeout)
-{
-  if (radio_mode != IRQ_MODE_SYNC_ONLY) {
-    hs_timer_timeout_start(compare_timeout);
-  }
-  else {
-    hs_timer_timeout_start(0);
-  }
-}
-
-
-void radio_stop_mcu_timeout(void)
-{
-  hs_timer_timeout_stop();
-}
-
-
-void radio_stop_schedule(void)
-{
-  hs_timer_schedule_stop();
 }
 
 
