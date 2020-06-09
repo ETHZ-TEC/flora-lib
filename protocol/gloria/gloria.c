@@ -27,7 +27,8 @@ static void gloria_finish_slot();
  * initialize the necessary flood and message header parameters
  * start the flood
  */
-void gloria_run_flood(gloria_flood_t* flood, void (*callback)()) {
+void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
+{
   current_flood = flood;
   flood_callback = callback;
 
@@ -95,11 +96,15 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)()) {
   gloria_process_slot();
 }
 
-void gloria_update() {
+
+void gloria_update()
+{
   //gloria_print_flood_periodic();
 }
 
-void gloria_process_slot() {
+
+void gloria_process_slot()
+{
   if (gloria_is_not_finished(current_flood)) {
     if (gloria_is_ack_slot(current_flood)) {
       if (current_flood->acked) {
@@ -129,7 +134,9 @@ void gloria_process_slot() {
   }
 }
 
-static void gloria_rx_callback(uint8_t* payload, uint8_t size) {
+
+static void gloria_rx_callback(uint8_t* payload, uint8_t size)
+{
   if (payload == NULL || size == 0) {
     gloria_finish_slot();
   }
@@ -160,59 +167,65 @@ static void gloria_rx_callback(uint8_t* payload, uint8_t size) {
   }
 }
 
-static void gloria_process_rx(uint8_t* payload, uint8_t size) {
+
+static void gloria_process_rx(uint8_t* payload, uint8_t size)
+{
   gloria_message_t* message = (gloria_message_t*) payload;
 
-    if (!current_flood->msg_received) {
-      // get message
-      current_flood->message_size = size;
-      current_flood->msg_received = true;
-      memcpy(current_flood->message, message, size);
+  if (!current_flood->msg_received) {
+    // get message
+    current_flood->message_size = size;
+    current_flood->msg_received = true;
+    memcpy(current_flood->message, message, size);
 
-      // the size of the actual payload is the message size minus the header length and for sync floods minus the timestamp length
-      current_flood->payload_size = current_flood->message_size - GLORIA_HEADER_LENGTH - (message->header.sync? GLORIA_TIMESTAMP_LENGTH:0);
+    // the size of the actual payload is the message size minus the header length and for sync floods minus the timestamp length
+    current_flood->payload_size = current_flood->message_size - GLORIA_HEADER_LENGTH - (message->header.sync? GLORIA_TIMESTAMP_LENGTH:0);
 
-      current_flood->slot_index = message->header.slot_index;
-      gloria_reconstruct_flood_marker(current_flood);
+    current_flood->slot_index = message->header.slot_index;
+    gloria_reconstruct_flood_marker(current_flood);
 
-      // make sure the timer is only synced if the flood contains a timestamp
-      current_flood->sync_timer = current_flood->sync_timer && message->header.sync;
+    // make sure the timer is only synced if the flood contains a timestamp
+    current_flood->sync_timer = current_flood->sync_timer && message->header.sync;
 
-      // sync timer
-      if (current_flood->sync_timer) {
-        gloria_sync_timer(current_flood);
-      }
-
-      current_flood->first_rx_index = current_flood->slot_index;
-      current_flood->last_active_slot = gloria_calculate_last_active_slot(current_flood);
-
-      // set guard time to 0 as node is now synced to this flood
-      current_flood->guard_time = 0;
-
-      // check if node is also the destination
-      if (message->header.dst == current_flood->node_id) {
-        if (current_flood->ack_mode) {
-          // prepare ack if flood should be acked
-          current_flood->acked = true;
-          current_flood->ack_message.dst = message->header.src;
-        }
-        else {
-          // finish flood
-          current_flood->slot_index++;
-          flood_callback();
-          return;
-        }
-      }
+    // sync timer
+    if (current_flood->sync_timer) {
+      gloria_sync_timer(current_flood);
     }
 
+    current_flood->first_rx_index = current_flood->slot_index;
+    current_flood->last_active_slot = gloria_calculate_last_active_slot(current_flood);
+
+    // set guard time to 0 as node is now synced to this flood
+    current_flood->guard_time = 0;
+
+    // check if node is also the destination
+    if (message->header.dst == current_flood->node_id) {
+      if (current_flood->ack_mode) {
+        // prepare ack if flood should be acked
+        current_flood->acked = true;
+        current_flood->ack_message.dst = message->header.src;
+      }
+      else {
+        // finish flood
+        current_flood->slot_index++;
+        flood_callback();
+        return;
+      }
+    }
+  }
+
   gloria_finish_slot();
 }
 
-static void gloria_tx_callback() {
+
+static void gloria_tx_callback()
+{
   gloria_finish_slot();
 }
 
-void gloria_finish_slot() {
+
+void gloria_finish_slot()
+{
   current_flood->slot_index++;
   gloria_process_slot();
 }

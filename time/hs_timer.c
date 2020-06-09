@@ -305,8 +305,6 @@ void hs_timer_schedule(uint64_t timestamp, void (*callback)())
   uint64_t now = hs_timer_get_current_timestamp();
 
   if ((timestamp - now) < TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
-    // FLOCKLAB_PIN_SET(FLOCKLAB_LED1);
-    // FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
     callback();
     LOG_WARNING("Schedule too late!");
   }
