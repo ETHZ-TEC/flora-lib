@@ -144,6 +144,8 @@ void gloria_start(uint16_t initiator_id,
   // TODO disable other potentially interfering interrupts!
   SUSPEND_SYSTICK();
   HAL_SuspendTick();
+  HAL_NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);
+  lptimer_enable_ovf_int(false);
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
   gloria_run_flood(&flood, &gloria_flood_callback);
@@ -216,8 +218,10 @@ uint8_t gloria_stop(void)
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
     /* re-enable other interrupts */
+    HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
     RESUME_SYSTICK();
     HAL_ResumeTick();
+    lptimer_enable_ovf_int(true);
   #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
     GLORIA_STOP_IND();
