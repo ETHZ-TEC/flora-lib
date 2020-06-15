@@ -72,6 +72,8 @@ void leds_init()
 
   leds_initialized = true;
 }
+
+
 void leds_deinit()
 {
   led_off(LED_SYSTEM);
@@ -85,6 +87,7 @@ void leds_deinit()
   leds_initialized = false;
 }
 
+
 void leds_update()
 {
   if (leds_initialized) {
@@ -96,6 +99,7 @@ void leds_update()
   }
 }
 
+
 void leds_sleep()
 {
   if (leds_initialized)
@@ -106,6 +110,8 @@ void leds_sleep()
     led_off(LED_SYSTEM);
   }
 }
+
+
 void leds_wakeup()
 {
   if (leds_initialized)

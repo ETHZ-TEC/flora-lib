@@ -24,10 +24,11 @@
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
 /* returns relative time (elapsed time since MCU start) in milliseconds */
-#define LPTIMER_NOW_MS()    (uint32_t)(lptimer_now() * 1000 / LPTIMER_SECOND)
+#define LPTIMER_NOW_MS()          (uint32_t)(lptimer_now() * 1000 / LPTIMER_SECOND)
 
 /* returns relative time (elapsed time since MCU start) in seconds */
-#define LPTIMER_NOW_SEC()   (uint32_t)(lptimer_now() / LPTIMER_SECOND)
+#define LPTIMER_NOW_SEC()         (uint32_t)(lptimer_now() / LPTIMER_SECOND)
+
 
 
 typedef void (* lptimer_cb_func_t)(void);
@@ -61,6 +62,11 @@ bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp);
  * Clear the timer value.
  */
 void lptimer_clear(void);
+
+/*
+ * enable or disable the timer update (overflow) interrupt
+ */
+void lptimer_enable_ovf_int(bool enable);
 
 
 #endif /* TIME_LPTIMER_H_ */

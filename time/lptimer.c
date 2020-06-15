@@ -48,14 +48,43 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
   }
 }
 
+
 uint64_t lptimer_get(void)
 {
   return lptimer_exp;
 }
 
+
+void lptimer_clear(void)
+{
+  /* clear the timer value */
+  __HAL_TIM_SET_COUNTER(&hlptim1, 0);
+  lptimer_ext = 0;
+}
+
+
+/* this function must be called when an overflow occurs */
+void lptimer_update(void)
+{
+  lptimer_ext++;
+
+#if LPTIMER_RESET_WDG_ON_OVF
+ #ifdef HAL_IWDG_MODULE_ENABLED
+  /* kick the watchdog */
+  HAL_IWDG_Refresh(&hiwdg);
+ #endif /* HAL_IWDG_MODULE_ENABLED */
+#endif /* LPTIMER_RESET_WDG_ON_OVF */
+}
+
+
 /* this function must be called when an lptimer has expired (CCR match) */
 void lptimer_expired(void)
 {
+  /* if an overflow interrupt is pending, execute it manually */
+  if (__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_ARRM)) {
+    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_ARRM);
+    lptimer_update();
+  }
   if ((uint32_t)(lptimer_exp >> 16) <= lptimer_ext) {
     __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
     if (lptimer_cb) {
@@ -71,25 +100,6 @@ void lptimer_expired(void)
 #endif /* LPTIMER_RESET_WDG_ON_EXP */
 }
 
-void lptimer_clear(void)
-{
-  /* clear the timer value */
-  __HAL_TIM_SET_COUNTER(&hlptim1, 0);
-  lptimer_ext = 0;
-}
-
-/* this function must be called when an overflow occurs */
-void lptimer_update(void)
-{
-  lptimer_ext++;
-
-#if LPTIMER_RESET_WDG_ON_OVF
- #ifdef HAL_IWDG_MODULE_ENABLED
-  /* kick the watchdog */
-  HAL_IWDG_Refresh(&hiwdg);
- #endif /* HAL_IWDG_MODULE_ENABLED */
-#endif /* LPTIMER_RESET_WDG_ON_OVF */
-}
 
 uint64_t lptimer_now(void)
 {
@@ -118,6 +128,7 @@ uint64_t lptimer_now(void)
 
   return timestamp;
 }
+
 
 bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
 {
@@ -175,10 +186,23 @@ bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
   return true;
 }
 
+
+void lptimer_enable_ovf_int(bool enable)
+{
+  if (enable) {
+    __HAL_LPTIM_ENABLE_IT(&hlptim1, LPTIM_IT_ARRM);
+  } else {
+    __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_ARRM);
+  }
+}
+
+
 void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef *hlptim)
 {
   lptimer_expired();
 }
+
+
 void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
 {
   lptimer_update();
