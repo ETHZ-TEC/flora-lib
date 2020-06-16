@@ -161,9 +161,6 @@ uint8_t gloria_stop(void)
         // If this node is initiator, we can detect if flood did not terminate and warn the user
         LOG_WARNING("Stopping glossy while flood sending is still ongoing!");
       }
-      else {
-        //LOG_VERBOSE("Stopping glossy before finishing to participate in the flood!");
-      }
     }
 
     // Stop gloria timers

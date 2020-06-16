@@ -222,6 +222,7 @@ void radio_sleep(bool warm)
     else {
       params.Fields.WarmStart = 0;
     }
+    RADIO_SET_NSS_PIN();
     SX126xSetSleep( params );
 
     radio_sleeping = warm + 1;
@@ -264,6 +265,7 @@ bool radio_wakeup(void)
 /* puts the radio into idle mode */
 void radio_standby(void)
 {
+  RADIO_SET_NSS_PIN();
   Radio.Standby();
   radio_sleeping = false;
 
