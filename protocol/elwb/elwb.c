@@ -329,7 +329,7 @@ void elwb_run(void)
           last_synced  = t_start;
         } else {
           /* just use the previous wakeup time as start time */
-          t_start = ELWB_TIMER_LAST_EXP();
+          t_start = start_of_next_round;
         }
         /* update stats */
         int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
@@ -357,7 +357,7 @@ void elwb_run(void)
           ELWB_SCHED_SET_STATE_IDLE(&schedule);
         } else {
           /* missed schedule is at beginning of a round */
-          t_start = ELWB_TIMER_LAST_EXP();
+          t_start = start_of_next_round;
         }
         schedule.period = period_idle;  /* reset period to idle period */
       }
