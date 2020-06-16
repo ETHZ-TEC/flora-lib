@@ -610,3 +610,15 @@ int32_t radio_get_rssi(void)
   return pktStatus.Params.LoRa.RssiPkt;
 }
 
+
+RadioState_t radio_get_status(void)
+{
+  return Radio.GetStatus();
+}
+
+
+uint32_t radio_get_toa_in_ms(RadioModems_t modem, uint32_t len)
+{
+  return Radio.TimeOnAir(modem, len);
+}
+

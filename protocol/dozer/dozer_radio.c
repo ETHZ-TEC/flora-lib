@@ -95,8 +95,8 @@ uint8_t dozer_receive(uint32_t rx_timeout, int64_t rx_delay) {
     dozer_print(3, "dozer receive");
     print_ts(1);
 
-    if (Radio.GetStatus()) { // check if radio idle
-        sprintf(dozer_print_buffer, "receive failed, radio status: %X", Radio.GetStatus());
+    if (radio_get_status()) { // check if radio idle
+        sprintf(dozer_print_buffer, "receive failed, radio status: %X", radio_get_status());
         dozer_print(3 , dozer_print_buffer);
         return ERROR; // return ERROR if radio not in IDLE state
     }
@@ -148,8 +148,8 @@ uint8_t dozer_send(dozer_send_message_t* msg, uint8_t size, uint32_t timeout) {
     dozer_print(1, "dozer_send");
     print_ts(1);
 
-    if (Radio.GetStatus()) { // check if radio idle
-        sprintf(dozer_print_buffer, "send failed, radio status: %X", Radio.GetStatus());
+    if (radio_get_status()) { // check if radio idle
+        sprintf(dozer_print_buffer, "send failed, radio status: %X", radio_get_status());
         dozer_print(0, dozer_print_buffer);
         return ERROR; // return ERROR if radio not in IDLE state
     }
@@ -167,7 +167,7 @@ uint8_t dozer_send(dozer_send_message_t* msg, uint8_t size, uint32_t timeout) {
         to = timeout;
     }
     else {
-        to = Radio.TimeOnAir(MODEM_FSK, size) + 10; // compute tx timeout and add 10ms
+        to = radio_get_toa_in_ms(MODEM_FSK, size) + 10; // compute tx timeout and add 10ms
     }
 
     to = to * 64; // convert ms to ticks from radio (15.625us)
@@ -438,13 +438,5 @@ uint16_t get_to_count() {
   return to_count;
 }
 
-
-/*
- * shut down radio
- */
-void radio_shut_down() {
-        Radio.Sleep();
-        radio_stats_off();
-}
 
 #endif // DOZER_ENABLE
