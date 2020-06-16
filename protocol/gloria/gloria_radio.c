@@ -40,7 +40,7 @@ void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
     gloria_radio_setup_callback();
   }
   else {
-    setup_timestamp = setup_timestamp - GLORIA_TX_SETUP - GLORIA_GAP;
+    setup_timestamp = setup_timestamp - GLORIA_TX_SETUP - GLORIA_TIME_BUFFER;
     setup_timestamp = gloria_try_to_sleep(setup_timestamp);
 
     switch (setup_timestamp) {
@@ -75,7 +75,7 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
     gloria_radio_setup_callback();
   }
   else {
-    setup_timestamp = setup_timestamp - GLORIA_TX_SETUP - GLORIA_GAP;
+    setup_timestamp = setup_timestamp - GLORIA_TX_SETUP - GLORIA_TIME_BUFFER;
     setup_timestamp = gloria_try_to_sleep(setup_timestamp);
 
     switch (setup_timestamp) {
@@ -112,7 +112,7 @@ void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
       gloria_radio_setup_callback();
     }
     else {
-      setup_timestamp = setup_timestamp - GLORIA_RX_SETUP - GLORIA_GAP;
+      setup_timestamp = setup_timestamp - GLORIA_RX_SETUP - GLORIA_TIME_BUFFER;
       setup_timestamp = gloria_try_to_sleep(setup_timestamp);
 
       switch (setup_timestamp) {

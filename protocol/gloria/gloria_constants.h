@@ -19,8 +19,8 @@
 #define GLORIA_RADIO_WAKEUP_TIME_COLD 36000 // 4.5 ms;   time needed to wake up from cold sleep
 #define GLORIA_MIN_RX_TIME 2000   // 250 us;       min time left before rx timeout for which radio is still set in receive mode
 
-#define GLORIA_BLACK_BOX_SYNC_DELAY 16 // 2.000 us
-#define GLORIA_GAP 0  //7200 // 900.000 us;           time buffer
+#define GLORIA_HSTIMER_TRIGGER_DELAY 36   // ~4.5 us  implementation specific time between the timer compare trigger and the actual NSS pin actuation, assumes ~18 CPU cycles for ISR entry + register saving + ISR_IND setting)
+#define GLORIA_TIME_BUFFER 800            // time buffer for RX / TX radio setup
 #define GLORIA_FLOOD_FINISH_OVERHEAD 152 // 19.000 us
 #define GLORIA_RX_TRIGGER_DELAY 682 // 85.250 us    delay after the rx command has been sent to the radio until it is executed
 #define GLORIA_TX_TRIGGER_DELAY 1010 // 126.250 us    delay after the tx command has been sent to the radio until it is executed

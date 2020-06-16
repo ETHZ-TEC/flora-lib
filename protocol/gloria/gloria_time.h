@@ -21,9 +21,7 @@ uint16_t gloria_calculate_rx_timeout(gloria_flood_t* flood);
 uint32_t gloria_calculate_mcu_timeout(uint8_t modulation);
 uint32_t gloria_calculate_tx_ex_offset(uint8_t modulation);
 
-uint64_t gloria_get_capture_timestamp(uint8_t modulation);
 void gloria_reconstruct_flood_marker(gloria_flood_t* flood);
 void gloria_sync_timer(gloria_flood_t* flood);
-uint64_t get_message_timestamp(gloria_flood_t* flood);
 
 #endif /* PROTOCOL_GLORIA_GLORIA_TIME_H_ */
