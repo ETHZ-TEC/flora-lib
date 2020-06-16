@@ -265,6 +265,7 @@ bool radio_wakeup(void)
   return false;
 }
 
+
 /* puts the radio into idle mode */
 void radio_standby(void)
 {
@@ -439,6 +440,7 @@ void radio_rx_error_cb(void)
 #endif
 }
 
+
 void radio_rx_timeout_cb(void)
 {
   RADIO_RX_STOP_IND();
@@ -581,8 +583,6 @@ void radio_execute_manually(int64_t timer)
       hs_timer_schedule(timer, &radio_execute);
     }
   }
-
-  return;
 }
 
 
@@ -609,12 +609,6 @@ void radio_set_rx(uint64_t timestamp, uint32_t timeout)
 }
 
 
-void radio_set_continuous_preamble(void)
-{
-  SX126xWriteCommand(RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 );
-}
-
-
 void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
 {
   radio_receive_continuous = false;
@@ -630,7 +624,7 @@ void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
     SX126xSetRxWithoutExecute(hardware_timeout);
   }
 
-  radio_execute_manually(schedule_timer);
+  hs_timer_schedule(schedule_timer, &radio_execute);
 }
 
 

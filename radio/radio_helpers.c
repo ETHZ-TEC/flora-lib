@@ -588,6 +588,12 @@ void radio_set_cad(void)
 }
 
 
+void radio_set_continuous_preamble(void)
+{
+  SX126xWriteCommand(RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 );
+}
+
+
 uint32_t radio_get_snr(void)
 {
   PacketStatus_t pktStatus;

@@ -43,6 +43,7 @@ void      radio_print_message(radio_message_t* message);
 
 void      radio_set_cad_params(bool rx, bool use_timeout);
 void      radio_set_cad(void);
+void      radio_set_continuous_preamble(void);
 
 uint32_t  radio_get_snr(void);
 int32_t   radio_get_rssi(void);
