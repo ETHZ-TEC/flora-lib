@@ -365,8 +365,10 @@ void hs_timer_schedule_stop(void)
 {
 #ifndef DEVKIT
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
+  __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC2);
 #else
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_1);
+  __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC1);
 #endif
 }
 

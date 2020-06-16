@@ -17,7 +17,6 @@ volatile bool radio_irq_direct = false;
 volatile bool radio_process_irq_in_loop_once = false;
 
 /* internal state */
-static volatile bool              radio_initialized = false;
 static volatile radio_sleeping_t  radio_sleeping = false;
 static volatile lora_irq_mode_t   radio_mode;
 static volatile bool              radio_receive_continuous = false;
@@ -51,8 +50,6 @@ void radio_rx_preamble_cb(void);
 void radio_init(void)
 {
   static RadioEvents_t radio_events;      // must be static
-
-  radio_initialized = false;
 
   // assign callback functions for radio driver
   radio_events.CadDone    = radio_cad_done_cb;
@@ -98,8 +95,6 @@ void radio_init(void)
   // reset duty cycle counters
   dcstat_reset(&radio_dc_rx);
   dcstat_reset(&radio_dc_tx);
-
-  radio_initialized = true;
 }
 
 
@@ -219,7 +214,7 @@ void radio_set_tx_callback(void (*callback)())
 
 void radio_sleep(bool warm)
 {
-  if (radio_initialized && !radio_sleeping) {
+  if (!radio_sleeping) {
     SleepParams_t params = { 0 };
     if (warm) {
       params.Fields.WarmStart = 1;

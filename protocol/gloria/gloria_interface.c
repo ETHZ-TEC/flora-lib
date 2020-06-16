@@ -166,18 +166,12 @@ uint8_t gloria_stop(void)
       }
     }
 
-    // put radio in standby mode
-    radio_standby();
-
     // Stop gloria timers
     hs_timer_schedule_stop();
     hs_timer_timeout_stop();
-    // FIXME: clear corresponding interrupt flags (if any)
-    // FIXME: reset/cleanup state of current flood -> not necessary? All state is contained in flood variable which is passed by reference to gloria_run_flood()
 
-    // Clear interrupt flags (which potentially could prevent the MCU from sleeping or cause a higher sleep current)
-    __HAL_GPIO_EXTI_CLEAR_IT(RADIO_DIO1_WAKEUP_Pin);
-    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+    // put radio in standby mode
+    radio_standby();
 
     /* Set internal state for the case nothing has been received */
     lastrun_msg_received  = 0;
