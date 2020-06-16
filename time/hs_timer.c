@@ -5,6 +5,11 @@
  *      Author: marku
  */
 
+/*
+ * Notes:
+ * - hs_timer_handle_overflow() must be called from HAL_TIM_PeriodElapsedCallback(), which is located in the project specific files (typically main.c)
+ */
+
 #include "flora_lib.h"
 
 
@@ -34,7 +39,6 @@ static uint32_t hs_timer_timeout_counter_extension  = 0;
 static uint32_t hs_timer_generic_counter_extension  = 0;
 #endif /* BOLT_ENABLE */
 
-static bool     hs_timer_initialized  = false;
 static uint64_t timeout_offset        = 0;
 
 
@@ -59,8 +63,6 @@ bool tim5_initialized = false;
 #endif
 static void (*rx_timeout_watchdog_callback)() = NULL;
 static void (*data_gen_timer_callback)() = NULL;
-//static void (*rec_rx_timeout_watchdog_callback)() = NULL;
-//static void (*con_req_timer_callback)() = NULL;
 
 #endif /* DOZER_ENABLE */
 
@@ -74,8 +76,6 @@ void hs_timer_init(void)
 #else
   hs_timer_counter_extension = 0;
 #endif /* HS_TIMER_INIT_FROM_RTC */
-
-  hs_timer_initialized = true;
 }
 
 
@@ -410,7 +410,7 @@ void hs_timer_handle_overflow(TIM_HandleTypeDef *htim)
 {
 #if DOZER_ENABLE
 
-  if (hs_timer_initialized && htim->Instance == TIM2) {
+  if (htim->Instance == TIM2) {
     hs_timer_counter_extension++;
   }
  #ifndef DEVKIT
@@ -425,9 +425,7 @@ void hs_timer_handle_overflow(TIM_HandleTypeDef *htim)
 
 #else /* DOZER_ENABLE */
 
-  if (hs_timer_initialized) {
-    hs_timer_counter_extension++;
-  }
+  hs_timer_counter_extension++;
 
 #endif /* DOZER_ENABLE */
 }
