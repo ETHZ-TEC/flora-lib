@@ -123,13 +123,12 @@ void     elwb_sched_set_time_offset(uint32_t ofs);
 void elwb_notify(void)
 {
   if (task_handle) {
-    if (xTaskGetCurrentTaskHandle() == task_handle) {
-      /* this is not supposed to happen -> print warning and make sure the post task gets to run */
+    /*if (xTaskGetCurrentTaskHandle() == task_handle) {
       LOG_WARNING("elwb_notify(): task is already running");
       if (post_task) {
         ELWB_TASK_NOTIFY(post_task);
       }
-    }
+    }*/
     ELWB_ON_WAKEUP();
     ELWB_TASK_NOTIFY_FROM_ISR(task_handle);
   }
@@ -329,7 +328,7 @@ void elwb_run(void)
           last_synced  = t_start;
         } else {
           /* just use the previous wakeup time as start time */
-          t_start = start_of_next_round;
+          t_start = start_of_next_round + ELWB_CONF_T_GUARD_ROUND;
         }
         /* update stats */
         int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
