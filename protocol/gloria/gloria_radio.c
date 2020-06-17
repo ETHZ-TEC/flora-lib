@@ -179,14 +179,10 @@ static void gloria_radio_setup_callback() {
     radio_wakeup();
   }
 
-  //radio_set_lora_syncword(LORA_SYNCWORD_PERMASENSE);
-
-  uint16_t radio_rx_timeout;
-
   switch (state) {
   case GLORIA_RADIO_TX:
     radio_set_irq_mode(IRQ_MODE_TX);
-    radio_set_config_tx(current_flood->modulation, RADIO_DEFAULT_BAND, current_flood->power, -1, -1, -1, false, true);
+    radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
     radio_set_payload((uint8_t*) current_flood->message, 0, current_flood->message_size);
     radio_set_tx_callback(&gloria_radio_tx_callback);
     radio_set_tx(current_flood->current_tx_marker);
@@ -194,7 +190,7 @@ static void gloria_radio_setup_callback() {
 
   case GLORIA_RADIO_ACK_TX:
     radio_set_irq_mode(IRQ_MODE_TX);
-    radio_set_config_tx(current_flood->modulation, RADIO_DEFAULT_BAND, current_flood->power, -1, -1, -1, false, true);
+    radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
     radio_set_payload((uint8_t*) &current_flood->ack_message, 0, GLORIA_ACK_LENGTH);
     radio_set_tx_callback(&gloria_radio_tx_ack_callback);
     radio_set_tx(current_flood->current_tx_marker);
@@ -208,13 +204,13 @@ static void gloria_radio_setup_callback() {
       // many false positive preamble detected events for FSK => we don't use it and therefore disable them
       radio_set_irq_mode(IRQ_MODE_RX_CRC);
     }
-    radio_set_config_rx(current_flood->modulation, RADIO_DEFAULT_BAND, -1, -1, -1, 0, false, 0, true, false);
+    radio_set_config_rx(current_flood->modulation, current_flood->band, -1, -1, -1, 0, false, 0, true, false);
     radio_set_rx_callback(&gloria_radio_rx_callback);
     radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
 
     if (current_flood->msg_received || current_flood->lp_listening) {
       // if a msg has been received listen for predefined timeout
-      radio_rx_timeout = gloria_calculate_rx_timeout(current_flood);
+      uint32_t radio_rx_timeout = gloria_calculate_rx_timeout(current_flood);
       radio_set_rx(current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood), radio_rx_timeout);
     }
     else if (current_flood->marker) {
@@ -249,8 +245,6 @@ static void gloria_radio_tx_ack_callback() {
 static void gloria_radio_rx_timeout_callback(bool crc_error) {
   if (crc_error) {
     current_flood->crc_timeout = true;
-    // FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
-    // FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
     gloria_radio_continue_rx();
   }
   else {
@@ -261,8 +255,6 @@ static void gloria_radio_rx_timeout_callback(bool crc_error) {
 static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) {
   if (crc_error) {
     current_flood->crc_error = true;
-    // FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
-    // FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
     gloria_radio_continue_rx();
   }
   else {
