@@ -65,6 +65,7 @@ void lptimer_clear(void);
 
 /*
  * enable or disable the timer update (overflow) interrupt
+ * note: disabling the overflow interrupt can cause issues, especially in conjunction with the LPM (stop mode)
  */
 void lptimer_enable_ovf_int(bool enable);
 
