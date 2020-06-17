@@ -29,8 +29,8 @@
 #define ENTER_CRITICAL_SECTION()    uint32_t mask; mask = __get_PRIMASK(); __disable_irq()
 #define LEAVE_CRITICAL_SECTION()    __set_PRIMASK(mask);
 
-#define MASK_INTERRUPTS()           __set_BASEPRI( (TICK_INT_PRIORITY + 1) << (8 - __NVIC_PRIO_BITS) )
-#define UNMASK_INTERRUPTS()         __set_BASEPRI(0)
+#define MASK_INTERRUPTS(priority)   __set_BASEPRI(priority)  /* prevents interrupts with given or lower priority (higher number = lower priority) */
+#define UNMASK_INTERRUPTS()         __set_BASEPRI(0)         /* allow all interrupts */
 
 
 void delay(volatile uint32_t loop_passes);

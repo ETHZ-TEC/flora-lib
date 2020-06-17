@@ -215,18 +215,15 @@ void radio_set_tx_callback(void (*callback)())
 void radio_sleep(bool warm)
 {
   if (!radio_sleeping) {
-    SleepParams_t params = { 0 };
+    RADIO_SET_NSS_PIN();
+    delay_us(1);
     if (warm) {
-      params.Fields.WarmStart = 1;
+      Radio.Sleep();
     }
     else {
-      params.Fields.WarmStart = 0;
+      Radio.ColdSleep();
     }
-    RADIO_SET_NSS_PIN();
-    SX126xSetSleep( params );
-
     radio_sleeping = warm + 1;
-
     RADIO_TX_STOP_IND();
     RADIO_RX_STOP_IND();
     dcstat_stop(&radio_dc_rx);
@@ -266,6 +263,7 @@ bool radio_wakeup(void)
 void radio_standby(void)
 {
   RADIO_SET_NSS_PIN();
+  delay_us(1);
   Radio.Standby();
   radio_sleeping = false;
 
