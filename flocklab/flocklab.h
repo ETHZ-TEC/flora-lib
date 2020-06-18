@@ -12,6 +12,8 @@
 #define FLOCKLAB      0
 #endif /* FLOCKLAB */
 
+extern volatile uint16_t FLOCKLAB_NODE_ID;
+
 #if FLOCKLAB
 
 /* use the flocklab node ID */
@@ -66,8 +68,6 @@ typedef enum {
   FLOCKLAB_SIG2 = FLOCKLAB_SIG2_Pin,
 } flocklab_actuation_pin_t;
 
-
-extern volatile uint16_t FLOCKLAB_NODE_ID;
 
 /*
  * init GPIOs for Flocklab
