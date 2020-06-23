@@ -160,8 +160,10 @@ void log_println(log_level_t level, const char* module, const char* msg)
   /* first, print the timestamp */
 #if LOG_ADD_TIMESTAMP
   static char tmp[32];
-  uint32_t relative_time = LPTIMER_NOW_MS();
-  snprintf(tmp, sizeof(tmp), "[%7lu] ", relative_time);
+  uint64_t relative_time_ms = lptimer_now() * 1000 / LPTIMER_SECOND;
+  uint32_t secs = relative_time_ms / 1000;
+  uint32_t ms = relative_time_ms - (secs * 1000);
+  snprintf(tmp, sizeof(tmp), "[%7lu.%03lu] ", secs, ms);
   log_buffer_add(tmp, 0);
 #endif /* LOG_ADD_TIMESTAMP */
 
