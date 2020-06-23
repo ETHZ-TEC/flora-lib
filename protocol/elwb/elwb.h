@@ -354,7 +354,8 @@ void     elwb_start(void* elwb_task,
                     void* pre_elwb_task,
                     void* post_elwb_task,
                     void* in_queue_handle,
-                    void* out_queue_handle);    /* queue data type must be dpp_message_t */
+                    void* out_queue_handle,     /* queue data type must be dpp_message_t */
+                    void* listen_timeout_callback);
 void     elwb_stop(void);
 
 void     elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp);
@@ -370,9 +371,10 @@ void     elwb_set_drift(int32_t drift_ppm);
 
 /* scheduler functions */
 uint32_t elwb_sched_get_period(void);
-void     elwb_sched_set_period(uint32_t p);
+bool     elwb_sched_set_period(uint32_t period);
 elwb_time_t elwb_sched_get_time(void);
 void     elwb_sched_set_time(elwb_time_t new_time);
+bool     elwb_sched_add_node(uint16_t node_id);
 
 /*---------------------------------------------------------------------------*/
 

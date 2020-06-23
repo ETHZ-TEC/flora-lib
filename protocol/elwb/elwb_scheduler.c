@@ -84,7 +84,7 @@ typedef enum {
 
 static elwb_time_t         elwb_time;         /* global time in microseconds */
 static uint32_t            elwb_time_ofs;                     /* time offset */
-static uint32_t            period;          /* base (idle) period in seconds */
+static uint32_t            base_period;     /* base (idle) period in seconds */
 static uint32_t            n_nodes;                        /* # active nodes */
 static elwb_sched_state_t  sched_state;
 static elwb_node_list_t    node_list[ELWB_CONF_MAX_NODES];    /* actual list */
@@ -242,14 +242,14 @@ bool elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots)
 }
 
 
-void elwb_sched_add_node(uint16_t id)
+bool elwb_sched_add_node(uint16_t node_id)
 {
-  if (id == 0) {
-    return;     /* invalid argument */
+  if (node_id == 0 || node_id == 0xffff) {
+    return false;     /* invalid argument */
   }
   if (n_nodes >= ELWB_CONF_MAX_NODES) {
     LOG_WARNING("request ignored, max #nodes reached");
-    return;
+    return false;
   }
   elwb_node_list_t* node = 0;
   uint32_t i;
@@ -263,20 +263,19 @@ void elwb_sched_add_node(uint16_t id)
   if (node == 0) {
     /* this will never happen (if there's no bug in the code) */
     LOG_ERROR("out of memory: request dropped");
-    return;
+    return false;
   }
-  node->id         = id;
+  node->id         = node_id;
   node->n_pkts     = 0;
   node->t_last_req = elwb_time / 1000000;
   /* insert the node into the list, ordered by node id */
-  if (!head || id < head->id) {
+  if (!head || node_id < head->id) {
     node->next = head;
     head = node;
   } else {
     elwb_node_list_t* prev;
     for (prev = head; prev != 0; prev = prev->next) {
-      if ((id >= prev->id) && ((prev->next == 0) ||
-         (id < prev->next->id))) {
+      if ((node_id >= prev->id) && ((prev->next == 0) || (node_id < prev->next->id))) {
         break;  /* this is the spot */
       }
     }
@@ -284,7 +283,8 @@ void elwb_sched_add_node(uint16_t id)
     prev->next = node;
   }
   n_nodes++;
-  LOG_INFO("node %u registered", id);
+  LOG_INFO("node %u registered", node_id);
+  return true;
 }
 
 
@@ -436,7 +436,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
       }
     }
     sched->n_slots = n_slots_assigned;
-    sched->period  = period - t_round;
+    sched->period  = base_period - t_round;
     t_round += TICKS_TO_SCHEDUNITS(ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP +
                 n_slots_assigned * (ELWB_CONF_T_DATA + ELWB_CONF_T_GAP) + 
 #if ELWB_CONF_DATA_ACK
@@ -494,7 +494,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     /* calculate round duration (standard idle round + #slots for host) */
     t_round = ELWB_T_IDLE_ROUND + TICKS_TO_SCHEDUNITS(n_slots_assigned * 
                                       (ELWB_CONF_T_DATA + ELWB_CONF_T_GAP));
-    sched->period = period;   /* assume idle period for next round */
+    sched->period = base_period;   /* assume idle period for next round */
     if (n_slots_assigned) {
       ELWB_SCHED_SET_DATA_SLOTS(sched);
     }
@@ -556,11 +556,11 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   memset(node_list, 0, sizeof(elwb_node_list_t) * ELWB_CONF_MAX_NODES);
   head           = 0;
   n_nodes        = 0;
-  period         = ELWB_CONF_SCHED_PERIOD_IDLE * ELWB_PERIOD_SCALE;
+  base_period    = ELWB_CONF_SCHED_PERIOD_IDLE * ELWB_PERIOD_SCALE;
   sched_state    = ELWB_SCHED_STATE_IDLE;
   sched->n_slots = 0;
   sched->time    = elwb_time + elwb_time_ofs;
-  sched->period  = period;
+  sched->period  = base_period;
   ELWB_SCHED_SET_CONT_SLOT(sched);              /* include a contention slot */
   ELWB_SCHED_SET_STATE_IDLE(sched);
 
@@ -587,15 +587,17 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
 uint32_t elwb_sched_get_period(void)
 {
   /* period in seconds */
-  return period / ELWB_PERIOD_SCALE;
+  return base_period / ELWB_PERIOD_SCALE;
 }
 
 
-void elwb_sched_set_period(uint32_t p)
+bool elwb_sched_set_period(uint32_t period)
 {
-  if (p >= ELWB_CONF_SCHED_PERIOD_MIN && p <= ELWB_SCHED_PERIOD_MAX) {
-    period = (uint16_t)((uint32_t)p * ELWB_PERIOD_SCALE);
+  if (period >= ELWB_CONF_SCHED_PERIOD_MIN && period <= ELWB_SCHED_PERIOD_MAX) {
+    base_period = (uint16_t)(period * ELWB_PERIOD_SCALE);
+    return true;
   }
+  return false;
 }
 
 

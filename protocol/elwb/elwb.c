@@ -107,6 +107,7 @@ static void*              pre_task     = 0;
 static void*              rx_queue     = 0;
 static void*              tx_queue     = 0;
 static bool               elwb_running = false;
+static void               (*listen_timeout_cb)(void);
 
 
 /* private (not exposed) scheduler functions */
@@ -240,7 +241,9 @@ void elwb_run(void)
     /* --- COMMUNICATION ROUND STARTS --- */
 
     if (ELWB_IS_HOST()) {
-      t_start = start_of_next_round;
+      /* at this point start_of_next_round and ELWB_TIMER_LAST_EXP() should be the same. However, if the wakeup time is in the past (for whatever reason),
+       * the lptimer will set last expiration to the current time and thus prevents that the host gets stuck in a "wakeup too late" loop */
+      t_start = ELWB_TIMER_LAST_EXP();
 
       /* --- SEND SCHEDULE --- */
       ELWB_SEND_SCHED();
@@ -283,6 +286,9 @@ void elwb_run(void)
           /* poll the post process */
           if (post_task) {
             ELWB_TASK_NOTIFY(post_task);
+          }
+          if (listen_timeout_cb) {
+            listen_timeout_cb();
           }
           ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
         }
@@ -709,7 +715,8 @@ void elwb_start(void* elwb_task,
                 void* pre_elwb_task,
                 void* post_elwb_task,
                 void* in_queue,
-                void* out_queue)
+                void* out_queue,
+                void* listen_timeout_callback)
 {
   if (!in_queue || !out_queue || !elwb_task) {
     LOG_ERROR("invalid parameters");
@@ -721,6 +728,7 @@ void elwb_start(void* elwb_task,
   post_task    = post_elwb_task;
   rx_queue     = in_queue;
   tx_queue     = out_queue;
+  listen_timeout_cb = listen_timeout_callback;
   elwb_running = true;
 
   memset(&stats, 0, sizeof(elwb_stats_t));
