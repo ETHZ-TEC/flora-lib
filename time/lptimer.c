@@ -38,13 +38,13 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 #if LPTIMER_CHECK_EXP_TIME
     uint64_t curr_timestamp = lptimer_now();
     if (t_exp <= curr_timestamp) {
-      LOG_WARNING("expiration time is in the past");
+      LOG_WARNING("expiration time is in the past (now: %llu, scheduled: %llu)", curr_timestamp, t_exp);
       /* schedule expiration in a few ticks */
-      lptimer_exp = curr_timestamp + 2;
+      lptimer_exp = curr_timestamp + 3;
       /* remark: do not execute the callback here */
 
     } else if (t_exp > (curr_timestamp + LPTIMER_SECOND * 86400)) {
-      LOG_WARNING("expiration time is more than 24h in the future");
+      LOG_WARNING("expiration time is more than 24h in the future (now: %llu, scheduled: %llu)", curr_timestamp, t_exp);
     }
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
