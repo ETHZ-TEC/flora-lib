@@ -3,7 +3,7 @@
 #include "flora_lib.h"
 
 
-const radio_config_t radio_modulations[] =
+const radio_config_t radio_modulations[RADIO_NUM_MODULATIONS] =
 {
         {   // 0
             .modem = MODEM_LORA,

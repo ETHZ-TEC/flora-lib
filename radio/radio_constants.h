@@ -28,6 +28,8 @@
 #define RADIO_MAX_POWER 22 // dBm (SX1262)
 #define RADIO_MIN_POWER -9 // dBm (SX1262)
 
+#define RADIO_NUM_MODULATIONS 11
+
 #ifndef US915
 #define RADIO_DEFAULT_BAND 48
 #else

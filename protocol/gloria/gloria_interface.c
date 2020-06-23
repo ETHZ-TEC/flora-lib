@@ -276,7 +276,9 @@ void gloria_set_tx_power(int8_t power)
 
 void gloria_set_modulation(uint8_t modulation)
 {
-  internal_modulation = modulation;
+  if (modulation < RADIO_NUM_MODULATIONS) {
+    internal_modulation = modulation;
+  }
 }
 
 
