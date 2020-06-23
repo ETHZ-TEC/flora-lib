@@ -106,6 +106,7 @@ static void*              post_task    = 0;
 static void*              pre_task     = 0;
 static void*              rx_queue     = 0;
 static void*              tx_queue     = 0;
+static void*              re_tx_queue  = 0;
 static bool               elwb_running = false;
 static void               (*listen_timeout_cb)(void);
 
@@ -432,10 +433,15 @@ void elwb_run(void)
             /* send the packet */
             if (payload_len) {
     #if ELWB_CONF_DATA_ACK
-              if (my_slots == 0xffff) {
-                my_slots = (slot_idx << 8);   /* store the index of the first assigned slot in the upper 8 bytes */
+              /* only source nodes receive a D-ACK */
+              if (!ELWB_IS_HOST()) {
+                if (my_slots == 0xffff) {
+                  my_slots = (slot_idx << 8);   /* store the index of the first assigned slot in the upper 8 bytes */
+                }
+                my_slots++;
+                /* copy the packet into the queue for retransmission (in case we don't receive a D-ACK for this packet) */
+                ELWB_QUEUE_PUSH(re_tx_queue, payload);
               }
-              my_slots++;
     #endif /* ELWB_CONF_DATA_ACK */
               /* wait until the data slot starts */
               ELWB_WAIT_UNTIL(t_slot_ofs);
@@ -524,21 +530,27 @@ void elwb_run(void)
             uint8_t* data_acks = (uint8_t*)payload;
             uint32_t i;
             for (i = 0; i < num_slots; i++) {
+              ELWB_QUEUE_POP(re_tx_queue, payload);
               /* bit not set? => not acknowledged */
-              if (!(data_acks[(first_slot + i) >> 3] &
-                  (1 << ((first_slot + i) & 0x07)))) {
+              if (!(data_acks[(first_slot + i) >> 3] & (1 << ((first_slot + i) & 0x07)))) {
                 /* resend the packet (re-insert it into the output FIFO) */
-                //TODO requeue packet
+                ELWB_QUEUE_PUSH(tx_queue, payload);
               } else {
                 stats.pkt_ack++;
               }
             }
           } else {
             /* requeue all packets */
-            //TODO
+            while (ELWB_QUEUE_POP(re_tx_queue, payload)) {
+              if (!ELWB_QUEUE_PUSH(tx_queue, payload)) {
+                LOG_ERROR("failed to requeue packet");
+                break;
+              }
+            }
             LOG_WARNING("D-ACK pkt missed, %u pkt requeued", num_slots);
           }
           my_slots = 0xffff;
+          ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
         }
       }
       t_slot_ofs += (ELWB_CONF_T_DACK + ELWB_CONF_T_GAP);
@@ -711,14 +723,15 @@ end_of_round:
 }
 
 
-void elwb_start(void* elwb_task,
-                void* pre_elwb_task,
-                void* post_elwb_task,
-                void* in_queue,
-                void* out_queue,
-                void* listen_timeout_callback)
+void elwb_init(void* elwb_task,
+               void* pre_elwb_task,
+               void* post_elwb_task,
+               void* in_queue_handle,
+               void* out_queue_handle,
+               void* retransmit_queue_handle,
+               void* listen_timeout_callback)
 {
-  if (!in_queue || !out_queue || !elwb_task) {
+  if (!in_queue_handle || !out_queue_handle || !elwb_task) {
     LOG_ERROR("invalid parameters");
     return;
   }
@@ -726,13 +739,18 @@ void elwb_start(void* elwb_task,
   task_handle  = elwb_task;
   pre_task     = pre_elwb_task;
   post_task    = post_elwb_task;
-  rx_queue     = in_queue;
-  tx_queue     = out_queue;
+  rx_queue     = in_queue_handle;
+  tx_queue     = out_queue_handle;
+  re_tx_queue  = retransmit_queue_handle;
   listen_timeout_cb = listen_timeout_callback;
   elwb_running = true;
 
   memset(&stats, 0, sizeof(elwb_stats_t));
+}
 
+
+void elwb_start()
+{
   if (ELWB_IS_HOST()) {
     LOG_INFO("host node");
   } else {
@@ -753,7 +771,7 @@ void elwb_start(void* elwb_task,
   if (post_task) {
     ELWB_TASK_NOTIFY(post_task);
   }
-  ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_STARTUP_DELAY * LPTIMER_SECOND / 1000);
+  ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_STARTUP_DELAY * LPTIMER_SECOND / 1000);
 #endif /* ELWB_CONF_STARTUP_DELAY */
 
   elwb_run();

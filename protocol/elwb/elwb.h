@@ -120,6 +120,10 @@
 #define ELWB_CONF_T_DEEPSLEEP     (ELWB_TIMER_SECOND * 3600)    /* 1h */
 #endif /* ELWB_CONF_T_DEEPSLEEP */
 
+#ifndef ELWB_CONF_DATA_ACK
+#define ELWB_CONF_DATA_ACK        0
+#endif /* ELWB_CONF_DATA_ACK */
+
 #ifndef ELWB_CONF_SCHED_PERIOD_IDLE
 #define ELWB_CONF_SCHED_PERIOD_IDLE 15
 #endif /* ELWB_CONF_SCHED_PERIOD_IDLE */
@@ -280,8 +284,9 @@
 /* message passing */
 #define ELWB_QUEUE_SIZE(handle)         uxQueueMessagesWaiting(handle)          /* polls the queue size (# elements in queue) */
 #define ELWB_QUEUE_SPACE(handle)        uxQueueSpacesAvailable(handle)          /* polls the empty queue space */
-#define ELWB_QUEUE_POP(handle, data)    xQueueReceive(handle, data, 0)          /* don't block */
-#define ELWB_QUEUE_PUSH(handle, data)   xQueueSend(handle, data, 0)
+#define ELWB_QUEUE_POP(handle, data)    xQueueReceive(handle, data, 0)          /* receive / remove an element from the queue (non-blocking, return true on success) */
+#define ELWB_QUEUE_PUSH(handle, data)   xQueueSend(handle, data, 0)             /* append an element to the queue */
+#define ELWB_QUEUE_CLEAR(handle)        xQueueReset(handle)                     /* empty a queue (drop all elements) */
 
 /* task related stuff */
 #define ELWB_TASK_YIELD()               ulTaskNotifyTake(pdTRUE, portMAX_DELAY) /* function used to yield the eLWB task (and allow other, lower priority tasks to run) */
@@ -350,12 +355,14 @@ typedef uint64_t elwb_time_t;
 
 void     elwb_notify(void);
 
-void     elwb_start(void* elwb_task,
-                    void* pre_elwb_task,
-                    void* post_elwb_task,
-                    void* in_queue_handle,
-                    void* out_queue_handle,     /* queue data type must be dpp_message_t */
-                    void* listen_timeout_callback);
+void     elwb_init(void* elwb_task,
+                   void* pre_elwb_task,
+                   void* post_elwb_task,
+                   void* in_queue_handle,
+                   void* out_queue_handle,         /* queue data type must be dpp_message_t */
+                   void* retransmit_queue_handle,  /* buffer to queue packets for retransmission */
+                   void* listen_timeout_callback);
+void     elwb_start(void);
 void     elwb_stop(void);
 
 void     elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp);
