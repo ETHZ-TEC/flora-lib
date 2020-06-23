@@ -36,8 +36,7 @@ static volatile bolt_state_t bolt_state = BOLT_STATE_INVALID;
 bool bolt_init(void)
 {
   /* note: control signals and SPI must be initialized before calling bolt_init! */
-
-  bolt_state = BOLT_STATE_IDLE;
+  bolt_state = BOLT_STATE_IDLE;   /* must be set to IDLE before calling bolt_status() */
   if (!bolt_status()) {
     LOG_ERROR("not accessible, init failed");
     bolt_state = BOLT_STATE_INVALID;
@@ -80,7 +79,7 @@ bool bolt_acquire(bolt_op_mode_t mode)
 
   PIN_SET(BOLT_REQ);
   /* now wait for a rising edge on the ACK line */
-  uint8_t cnt = 6;
+  uint8_t cnt = 10;
   while (!BOLT_ACK_STATUS && cnt) {
     delay_us(10);
     cnt--;
