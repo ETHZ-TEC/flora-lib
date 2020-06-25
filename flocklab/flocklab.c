@@ -124,14 +124,6 @@ void flocklab_blink(flocklab_trace_pin_t pin, uint8_t count)
       }
       break;
 #endif /* !FLOCKLAB_SWD */
-#if !SWO_ENABLE
-    case FLOCKLAB_LED2:
-      for (uint32_t i = 0; i < count; i++) {
-        FLOCKLAB_PIN_SET(FLOCKLAB_LED2);
-        FLOCKLAB_PIN_CLR(FLOCKLAB_LED2);
-      }
-      break;
-#endif /* SWO_ENABLE */
   }
 }
 

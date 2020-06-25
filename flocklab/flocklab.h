@@ -64,9 +64,6 @@ typedef enum {
   FLOCKLAB_INT2 = FLOCKLAB_INT2_Pin,
   FLOCKLAB_LED3 = FLOCKLAB_LED3_Pin,
 #endif /* !FLOCKLAB_SWD */
-#if !SWO_ENABLE
-  FLOCKLAB_LED2 = FLOCKLAB_LED2_Pin,
-#endif
 } flocklab_trace_pin_t;
 
 typedef enum {
