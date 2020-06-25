@@ -30,26 +30,32 @@ void flocklab_init(void)
 
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
 
-  /* outputs */
+  /* --- OUTPUTS --- */
+
   HAL_GPIO_WritePin(FLOCKLAB_LED1_GPIO_Port, FLOCKLAB_LED1_Pin, GPIO_PIN_RESET);
-#if !FLOCKLAB_SWD
-  // SWCLK and SWDIO are connected to LED1 and LED3 -> those pins cannot be used if SWD shall be used
-  HAL_GPIO_WritePin(FLOCKLAB_LED3_GPIO_Port, FLOCKLAB_LED3_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(FLOCKLAB_INT1_GPIO_Port, FLOCKLAB_INT1_Pin, GPIO_PIN_RESET);
-#endif /* !FLOCKLAB_SWD */
-
 #if FLOCKLAB_SWD
+  // SWCLK and SWDIO are connected to INT2 and LED3 -> cannot be used if SWD is enabled
   GPIO_InitStruct.Pin = FLOCKLAB_INT1_Pin;
 #else
-  GPIO_InitStruct.Pin = FLOCKLAB_INT1_Pin | FLOCKLAB_LED3_Pin | FLOCKLAB_LED1_Pin;
+  HAL_GPIO_WritePin(FLOCKLAB_LED3_GPIO_Port, FLOCKLAB_LED3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(FLOCKLAB_INT2_GPIO_Port, FLOCKLAB_INT2_Pin, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin = FLOCKLAB_INT1_Pin | FLOCKLAB_INT2_Pin | FLOCKLAB_LED3_Pin;
 #endif /* FLOCKLAB_SWD */
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+#if !SWO_ENABLE
+  /* SWO pin is shared with LED2 -> if not used as SWO, then use it for tracing */
+  HAL_GPIO_WritePin(FLOCKLAB_LED2_GPIO_Port, FLOCKLAB_LED2_Pin, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin = FLOCKLAB_LED2_Pin;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+#endif /* SWO_ENABLE */
 
-  /* input */
+  /* --- INPUTS --- */
+
   GPIO_InitStruct.Pin = FLOCKLAB_SIG1_Pin | FLOCKLAB_SIG2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 #if FLOCKLAB_SWD
@@ -61,11 +67,18 @@ void flocklab_init(void)
 #endif /* FLOCKLAB_SWD */
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  // LED2 is connected to RF_DIO1 on COM boards on FlockLab -> configure it as input to not drive LED2 signal from MCU as well
-  GPIO_InitStruct.Pin = FLOCKLAB_LED2_Pin | BOLT_ACK_Pin;
+  // LED1 is connected to RF_DIO1 on COM boards on FlockLab -> configure it as input
+  GPIO_InitStruct.Pin = FLOCKLAB_LED1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+
+  // BOLT ACK is floating on flocklab, needs a pulldown
+  GPIO_InitStruct.Pin = BOLT_ACK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
 }
 
 /*
@@ -78,6 +91,9 @@ void flocklab_reset_pins(void)
   FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
   FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
 #endif /* !FLOCKLAB_SWD */
+#if !SWO_ENABLE
+  FLOCKLAB_PIN_CLR(FLOCKLAB_LED2);
+#endif /* SWO_ENABLE */
 }
 
 /*
@@ -95,19 +111,27 @@ void flocklab_blink(flocklab_trace_pin_t pin, uint8_t count)
       }
       break;
 #if !FLOCKLAB_SWD
-      case FLOCKLAB_LED3:
+    case FLOCKLAB_LED3:
       for (uint32_t i = 0; i < count; i++) {
         FLOCKLAB_PIN_SET(FLOCKLAB_LED3);
         FLOCKLAB_PIN_CLR(FLOCKLAB_LED3);
       }
       break;
-      case FLOCKLAB_LED1:
+    case FLOCKLAB_INT2:
       for (uint32_t i = 0; i < count; i++) {
-        FLOCKLAB_PIN_SET(FLOCKLAB_LED1);
-        FLOCKLAB_PIN_CLR(FLOCKLAB_LED1);
+        FLOCKLAB_PIN_SET(FLOCKLAB_INT2);
+        FLOCKLAB_PIN_CLR(FLOCKLAB_INT2);
       }
       break;
 #endif /* !FLOCKLAB_SWD */
+#if !SWO_ENABLE
+    case FLOCKLAB_LED2:
+      for (uint32_t i = 0; i < count; i++) {
+        FLOCKLAB_PIN_SET(FLOCKLAB_LED2);
+        FLOCKLAB_PIN_CLR(FLOCKLAB_LED2);
+      }
+      break;
+#endif /* SWO_ENABLE */
   }
 }
 

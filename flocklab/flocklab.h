@@ -29,24 +29,27 @@ extern volatile uint16_t FLOCKLAB_NODE_ID;
 #endif /* LOG_USE_COLORS */
 
 /* error check */
-#if BOLT_ENABLE || SWO_ENABLE
+#if BOLT_ENABLE
 /* SWO cannot be used at the moment since the pin is connected to the DIO1 of the SX1262 radio */
 #error "can't use BOLT or SWO on FlockLab"
 #endif
 
 
-#define FLOCKLAB_SIG1_Pin GPIO_PIN_0
-#define FLOCKLAB_SIG1_GPIO_Port GPIOA
-#define FLOCKLAB_SIG2_Pin GPIO_PIN_4
-#define FLOCKLAB_SIG2_GPIO_Port GPIOA
-#define FLOCKLAB_INT1_Pin GPIO_PIN_3
-#define FLOCKLAB_INT1_GPIO_Port GPIOA
-#define FLOCKLAB_LED3_Pin GPIO_PIN_13
-#define FLOCKLAB_LED3_GPIO_Port GPIOA
-#define FLOCKLAB_LED2_Pin GPIO_PIN_3
-#define FLOCKLAB_LED2_GPIO_Port GPIOB
-#define FLOCKLAB_LED1_Pin GPIO_PIN_14
-#define FLOCKLAB_LED1_GPIO_Port GPIOA
+/* pin mapping for rev1.1 adapter (small black PCB) */
+#define FLOCKLAB_SIG1_Pin           GPIO_PIN_0
+#define FLOCKLAB_SIG1_GPIO_Port     GPIOA
+#define FLOCKLAB_SIG2_Pin           GPIO_PIN_4
+#define FLOCKLAB_SIG2_GPIO_Port     GPIOA
+#define FLOCKLAB_INT1_Pin           GPIO_PIN_3
+#define FLOCKLAB_INT1_GPIO_Port     GPIOA
+#define FLOCKLAB_INT2_Pin           GPIO_PIN_14
+#define FLOCKLAB_INT2_GPIO_Port     GPIOA
+#define FLOCKLAB_LED3_Pin           GPIO_PIN_13
+#define FLOCKLAB_LED3_GPIO_Port     GPIOA
+#define FLOCKLAB_LED2_Pin           GPIO_PIN_3
+#define FLOCKLAB_LED2_GPIO_Port     GPIOB
+#define FLOCKLAB_LED1_Pin           GPIO_PIN_3
+#define FLOCKLAB_LED1_GPIO_Port     GPIOH
 
 
 #define FLOCKLAB_PIN_SET(p)         PIN_SET(p)
@@ -58,9 +61,12 @@ extern volatile uint16_t FLOCKLAB_NODE_ID;
 typedef enum {
   FLOCKLAB_INT1 = FLOCKLAB_INT1_Pin,
 #if !FLOCKLAB_SWD
+  FLOCKLAB_INT2 = FLOCKLAB_INT2_Pin,
   FLOCKLAB_LED3 = FLOCKLAB_LED3_Pin,
-  FLOCKLAB_LED1 = FLOCKLAB_LED1_Pin,
 #endif /* !FLOCKLAB_SWD */
+#if !SWO_ENABLE
+  FLOCKLAB_LED2 = FLOCKLAB_LED2_Pin,
+#endif
 } flocklab_trace_pin_t;
 
 typedef enum {
