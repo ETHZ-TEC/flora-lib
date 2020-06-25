@@ -45,6 +45,13 @@
 #define PIN_XOR(p)        PIN_TOGGLE(p)
 
 
+/* Parameter checks */
+
+#if SWO_ENABLE && BASEBOARD
+#error "SWO_ENABLE and BASEBOARD cannot be enabled at the same time"
+#endif
+
+
 /* Function Prototypes */
 
 void gpio_init(void);

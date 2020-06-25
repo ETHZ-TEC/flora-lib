@@ -8,10 +8,6 @@
 #ifndef SYSTEM_PLATFORM_H_
 #define SYSTEM_PLATFORM_H_
 
-#ifndef BASEBOARD
-#define BASEBOARD     0
-#endif /* BASEBOARD */
-
 
 #ifndef DEVKIT
   #define CONFIG_MEMORY_BANK FLASH_BANK_1

@@ -11,12 +11,12 @@ volatile uint16_t FLOCKLAB_NODE_ID = 0xbeef;    // any value is ok, will be bina
 
 #if FLOCKLAB
 
-// /* GPIO interrupt callback (called from GPIO interrupt HAL_GPIO_EXTI_Callback implemeneted in gpio_exti.h) */
+// /* GPIO interrupt callback (called from GPIO interrupt HAL_GPIO_EXTI_Callback implemented in gpio_exti.h) */
 // void GPIO_SIG1_Callback(void) {
 //   // NOP
 // }
 //
-// /* GPIO interrupt callback (called from GPIO interrupt HAL_GPIO_EXTI_Callback implemeneted in gpio_exti.h) */
+// /* GPIO interrupt callback (called from GPIO interrupt HAL_GPIO_EXTI_Callback implemented in gpio_exti.h) */
 // void GPIO_SIG2_Callback(void) {
 //   // NOP
 // }
@@ -34,24 +34,24 @@ void flocklab_init(void)
 
   /* --- OUTPUTS --- */
 
-  HAL_GPIO_WritePin(FLOCKLAB_LED1_GPIO_Port, FLOCKLAB_LED1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(FLOCKLAB_INT1_GPIO_Port, FLOCKLAB_INT1_Pin, GPIO_PIN_RESET);
 #if FLOCKLAB_SWD
   // SWCLK and SWDIO are connected to INT2 and LED3 -> cannot be used if SWD is enabled
   GPIO_InitStruct.Pin = FLOCKLAB_INT1_Pin;
 #else
-  HAL_GPIO_WritePin(FLOCKLAB_LED3_GPIO_Port, FLOCKLAB_LED3_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(FLOCKLAB_INT2_GPIO_Port, FLOCKLAB_INT2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(FLOCKLAB_LED3_GPIO_Port, FLOCKLAB_LED3_Pin, GPIO_PIN_RESET);
   GPIO_InitStruct.Pin = FLOCKLAB_INT1_Pin | FLOCKLAB_INT2_Pin | FLOCKLAB_LED3_Pin;
 #endif /* FLOCKLAB_SWD */
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(FLOCKLAB_INT1_GPIO_Port, &GPIO_InitStruct);
 #if !SWO_ENABLE
   /* SWO pin is shared with LED2 -> if not used as SWO, then use it for tracing */
   HAL_GPIO_WritePin(FLOCKLAB_LED2_GPIO_Port, FLOCKLAB_LED2_Pin, GPIO_PIN_RESET);
   GPIO_InitStruct.Pin = FLOCKLAB_LED2_Pin;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(FLOCKLAB_LED2_GPIO_Port, &GPIO_InitStruct);
 #endif /* SWO_ENABLE */
 
   /* --- INPUTS --- */
@@ -65,20 +65,19 @@ void flocklab_init(void)
   /* SWD not used, actuation can be disabled -> pins need a pulldown */
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 #endif /* FLOCKLAB_SWD */
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(FLOCKLAB_SIG1_GPIO_Port, &GPIO_InitStruct);
 
   // LED1 is connected to RF_DIO1 on COM boards on FlockLab -> configure it as input
   GPIO_InitStruct.Pin = FLOCKLAB_LED1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+  HAL_GPIO_Init(FLOCKLAB_LED1_GPIO_Port, &GPIO_InitStruct);
 
   // BOLT ACK is floating on flocklab, needs a pulldown
   GPIO_InitStruct.Pin = BOLT_ACK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
+  HAL_GPIO_Init(BOLT_ACK_GPIO_Port, &GPIO_InitStruct);
 }
 
 /*
