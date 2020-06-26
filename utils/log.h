@@ -102,10 +102,13 @@
 #endif /* LOG_TASK_HANDLE != 0 */
 
 /* color codes */
+#define LOG_COLOR_BLACK         "\e[30m"
 #define LOG_COLOR_RED           "\e[31m"
+#define LOG_COLOR_GREEN         "\e[32m"
 #define LOG_COLOR_YELLOW        "\e[33m"
-#define LOG_COLOR_GREEN         "\e[31m"
+#define LOG_COLOR_BLUE          "\e[34m"
 #define LOG_COLOR_WHITE         "\e[37m"
+#define LOG_COLOR_GRAY          "\e[90m"
 #define LOG_COLOR_RESET         "\e[0m"
 
 

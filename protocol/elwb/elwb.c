@@ -185,7 +185,7 @@ void elwb_run(void)
   static elwb_time_t      start_of_next_round;
   static elwb_time_t      t_start;
   static uint32_t         t_slot;
-  static uint32_t         t_slot_ofs;
+  static uint64_t         t_slot_ofs;
   static uint32_t         drift_counter = 0;
   static uint32_t         drift_comp = 0;
   static uint32_t         payload_len = 0;

@@ -181,10 +181,13 @@ void log_println(log_level_t level, const char* module, const char* msg)
     log_buffer_add(LOG_LEVEL_WARNING_STR, 0);
   } else if (level == LOG_LEVEL_INFO) {
  #if LOG_USE_COLORS
-    log_buffer_add(LOG_COLOR_WHITE, 0);
+    log_buffer_add(LOG_COLOR_BLACK, 0);
  #endif /* LOG_USE_COLORS */
     log_buffer_add(LOG_LEVEL_INFO_STR, 0);
   } else if (level == LOG_LEVEL_VERBOSE) {
+ #if LOG_USE_COLORS
+    log_buffer_add(LOG_COLOR_GRAY, 0);
+ #endif /* LOG_USE_COLORS */
     log_buffer_add(LOG_LEVEL_VERBOSE_STR, 0);
   }
 #endif /* LOG_ADD_LEVEL */
