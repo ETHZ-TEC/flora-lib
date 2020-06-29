@@ -28,7 +28,7 @@ volatile static uint8_t current_modulation = 0;
 volatile static uint8_t current_band = 0;
 volatile static int32_t override_preamble_length = -1;
 
-static radio_message_t* last_message_list = NULL;
+radio_message_t* last_message_list = NULL;
 
 
 void radio_update_cli()

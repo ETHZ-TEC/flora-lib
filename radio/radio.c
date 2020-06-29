@@ -10,6 +10,7 @@
 
 extern void (*RadioOnDioIrqCallback)(void);
 extern const struct Radio_s Radio;
+extern radio_message_t* last_message_list;
 
 
 /* global state (shared) */
@@ -95,6 +96,8 @@ void radio_init(void)
   // reset duty cycle counters
   dcstat_reset(&radio_dc_rx);
   dcstat_reset(&radio_dc_tx);
+  RADIO_TX_STOP_IND();
+  RADIO_RX_STOP_IND();
 }
 
 
@@ -215,8 +218,6 @@ void radio_set_tx_callback(void (*callback)())
 void radio_sleep(bool warm)
 {
   if (!radio_sleeping) {
-    RADIO_SET_NSS_PIN();
-    delay_us(1);
     if (warm) {
       Radio.Sleep();
     }
@@ -245,8 +246,6 @@ void radio_reset(void)
 bool radio_wakeup(void)
 {
   if (radio_sleeping) {
-    RADIO_RX_STOP_IND();
-    dcstat_stop(&radio_dc_rx);
     SX126xWakeup();
     if (radio_sleeping == COLD) {
       SX126xSetDio2AsRfSwitchCtrl(true);
@@ -262,8 +261,6 @@ bool radio_wakeup(void)
 /* puts the radio into idle mode */
 void radio_standby(void)
 {
-  RADIO_SET_NSS_PIN();
-  delay_us(1);
   Radio.Standby();
   radio_sleeping = false;
 

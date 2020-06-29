@@ -13,6 +13,7 @@
 #define RADIO_SET_NRESET_PIN()    HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_SET)       // release reset
 #define RADIO_CLR_NRESET_PIN()    HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_RESET)     // activate reset
 
+#define RADIO_READ_NSS_PIN()      (RADIO_NSS_GPIO_Port->ODR & (uint32_t)RADIO_NSS_Pin)
 #define RADIO_SET_NSS_PIN()       RADIO_NSS_GPIO_Port->BSRR = (uint32_t)RADIO_NSS_Pin
 #define RADIO_CLR_NSS_PIN()       RADIO_NSS_GPIO_Port->BRR = (uint32_t)RADIO_NSS_Pin
 

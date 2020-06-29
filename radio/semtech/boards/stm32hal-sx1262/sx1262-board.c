@@ -53,6 +53,10 @@ void SX126xReset( void )
 
 void SX126xWaitOnBusy( void )
 {
+    if (RADIO_READ_NSS_PIN() == 0) {
+      RADIO_SET_NSS_PIN();    // make sure the pin is high
+      delay_us(1);            // 600ns max required between two NSS edges
+    }
     while( RADIO_READ_BUSY_PIN( ) );
 }
 
