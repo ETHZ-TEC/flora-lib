@@ -279,7 +279,8 @@
 #define ELWB_GLOSSY_GET_T_REF()         gloria_get_t_ref()
 #define ELWB_GLOSSY_GET_T_REF_HF()      0  //TODO
 #define ELWB_GLOSSY_IS_T_REF_UPDATED()  gloria_is_t_ref_updated()
-#define ELWB_GLOSSY_GET_RSSI()          radio_get_rssi()
+#define ELWB_GLOSSY_GET_RSSI()          gloria_get_rssi()
+#define ELWB_GLOSSY_GET_SNR()           gloria_get_snr()
 
 /* message passing */
 #define ELWB_QUEUE_SIZE(handle)         uxQueueMessagesWaiting(handle)          /* polls the queue size (# elements in queue) */
@@ -326,6 +327,7 @@ typedef struct {
   uint32_t pkt_rcvd;      /* total number of received packets (forwarded to the application) */
   uint32_t pkt_dropped;   /* packets dropped due to input buffer full */
   int_fast8_t rssi_avg;   /* average RSSI value */
+  int_fast8_t snr_avg;    /* average SNR value */
 } elwb_stats_t;
 
 #define ELWB_SCHED_HDR_LEN   12

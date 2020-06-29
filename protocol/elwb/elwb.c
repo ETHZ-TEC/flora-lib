@@ -179,7 +179,28 @@ void elwb_set_drift(int32_t drift_ppm)
 }
 
 
-void elwb_run(void)
+static void elwb_update_rssi_snr(void)
+{
+  int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
+  if (rssi_curr != 0) {
+    if (stats.rssi_avg != 0) {
+      stats.rssi_avg = (stats.rssi_avg + rssi_curr) / 2;  /* update the average RSSI value */
+    } else {
+      stats.rssi_avg = rssi_curr;
+    }
+  }
+  int32_t snr_curr = ELWB_GLOSSY_GET_SNR();
+  if (snr_curr != 0) {
+    if (stats.snr_avg != 0) {
+      stats.snr_avg = (stats.snr_avg + snr_curr) / 2;     /* update the average SNR value */
+    } else {
+      stats.snr_avg = snr_curr;
+    }
+  }
+}
+
+
+static void elwb_run(void)
 {
   static elwb_schedule_t  schedule;
   static elwb_time_t      start_of_next_round;
@@ -338,14 +359,8 @@ void elwb_run(void)
           t_start = start_of_next_round + ELWB_CONF_T_GUARD_ROUND;
         }
         /* update stats */
-        int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
-        if (rssi_curr != 0) {
-          if (stats.rssi_avg != 0) {
-            stats.rssi_avg = (stats.rssi_avg + rssi_curr) / 2;  /* update the average RSSI value */
-          } else {
-            stats.rssi_avg = rssi_curr;
-          }
-        }
+        elwb_update_rssi_snr();
+
       } else {
         /* update the sync state machine */
         sync_state = next_state[EVT_SCHED_MISSED][sync_state];
@@ -613,14 +628,7 @@ void elwb_run(void)
             /* else: no update to schedule needed; set period to 0 to indicate 'no change in period' */
             payload[0] = 0;
           }
-          int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
-          if (rssi_curr != 0) {
-            if (stats.rssi_avg != 0) {
-              stats.rssi_avg = (stats.rssi_avg + rssi_curr) / 2;  /* update the average RSSI value */
-            } else {
-              stats.rssi_avg = rssi_curr;
-            }
-          }
+          elwb_update_rssi_snr();
         }
       }
       t_slot_ofs += ELWB_CONF_T_CONT + ELWB_CONF_T_GAP;
