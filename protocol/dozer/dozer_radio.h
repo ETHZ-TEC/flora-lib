@@ -37,7 +37,7 @@ uint16_t get_to_fails();
 uint16_t get_to_count();
 
 // shut down function
-void radio_shut_down();
+void dozer_radio_shutdown();
 
 // allocate memory for received message buffer
 void dozer_alloc_msg();

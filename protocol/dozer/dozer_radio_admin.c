@@ -101,7 +101,7 @@ void dozer_tx_done(uint64_t tx_ts) {
             current_state = STATE_CONNECTION_REQUEST_TRANSITION;
             dozer_print(6, "cs con req trans");
             // shut radio down until we send the connection request
-            radio_shut_down();
+            dozer_radio_shutdown();
             received_bm(curr_beacon_ptr);
             break;
 
@@ -277,7 +277,7 @@ void dozer_rx_done(dozer_message_t* message, uint16_t size) {
             }
             else {
                 // normally the radio should be switched off!!! -> should not happen
-                radio_shut_down();
+                dozer_radio_shutdown();
             }
             break;
 
@@ -509,7 +509,7 @@ void stop_overhearing() {
 
         if (current_state == STATE_IDLE) {
             // shut down radio
-            radio_shut_down();
+            dozer_radio_shutdown();
         }
     }
 }
@@ -554,7 +554,7 @@ void radio_reset_state() {
 
     if (!overhearing) {
         // shut down radio
-        radio_shut_down();
+        dozer_radio_shutdown();
     }
 }
 

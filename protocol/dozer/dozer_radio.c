@@ -300,7 +300,7 @@ void dozer_rx_callback(uint8_t* payload, uint16_t size, int16_t rssi, int8_t snr
  * callback function for timeout interrupts from radio
  */
 void dozer_timeout_callback(bool crc_error) {
-  radio_shut_down();
+    dozer_radio_shutdown();
 #ifndef DEVKIT
     tq_stop_timer(RX_WATCHDOG);
 #else
@@ -436,6 +436,11 @@ uint16_t get_to_fails() {
  */
 uint16_t get_to_count() {
   return to_count;
+}
+
+
+void dozer_radio_shutdown() {
+  radio_sleep(true);
 }
 
 
