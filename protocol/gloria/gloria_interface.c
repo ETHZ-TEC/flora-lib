@@ -24,6 +24,8 @@ static gloria_flood_t   flood;                                           // floo
 static gloria_message_t message;                                         // buffer for the message (static to avoid allocation on the stack)
 static bool             flood_running;                                   // indicates whether flood is onging or not
 static bool             flood_completed;                                 // indicates whether the flood completed (N_TX reached)
+static int8_t           lastrun_rssi = 0;
+static int8_t           lastrun_snr = 0;
 static uint8_t          lastrun_msg_received = 0;                        // number of times a message has been received during the last gloria run
 static uint8_t          lastrun_payload_len = 0;                         // length of the payload received during the last gloria run (0 if no payload has been received)
 static uint8_t          lastrun_rx_index = 0;                            // slot index (slot in which the message was received (corresponds to relay counter in Glossy terminology)
@@ -95,6 +97,8 @@ void gloria_start(uint16_t initiator_id,
   lastrun_rx_index      = 0;
   lastrun_n_rx_started  = 0;
   lastrun_t_ref_updated = false;
+  lastrun_rssi          = 0;
+  lastrun_snr           = 0;
   // last_t_ref: not initialized here since old values of previous floods are still valid and useful if current flood does not update the value
 
   /* prepare flood struct */
@@ -175,6 +179,8 @@ uint8_t gloria_stop(void)
     lastrun_payload_len   = 0;
     lastrun_rx_index      = 0;
     lastrun_t_ref_updated = false;
+    lastrun_rssi          = flood.rssi;
+    lastrun_snr           = flood.snr;
 
     /* Overwrite defaults if at least parts of the flood have been received */
     if (flood.msg_received && !flood.initial) {
@@ -263,6 +269,18 @@ uint64_t gloria_get_t_ref(void)
 uint32_t gloria_get_flood_time(void)
 {
   return gloria_calculate_flood_time(&flood);
+}
+
+
+int32_t gloria_get_rssi(void)
+{
+  return lastrun_rssi;
+}
+
+
+int32_t gloria_get_snr(void)
+{
+  return lastrun_snr;
 }
 
 

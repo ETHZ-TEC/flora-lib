@@ -235,6 +235,20 @@ void gloria_enable_flood_printing(bool enable);
 void gloria_register_flood_callback(gloria_cb_func_t cb);
 
 
+/**
+ * \brief           Get the RSSI value of the last received packet.
+ * \return          RSSI value in dBm
+ */
+int32_t gloria_get_rssi();
+
+
+/**
+ * \brief           Get the SNR value of the last received packet.
+ * \return          SNR value in dBm
+ */
+int32_t gloria_get_snr();
+
+
 /*******************************************************************************
  * END: GMW INTERFACE
  ******************************************************************************/
