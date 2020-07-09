@@ -25,6 +25,10 @@ extern volatile uint16_t FLOCKLAB_NODE_ID;
 #define FLOCKLAB_SWD  0
 #endif /* FLOCKLAB_SWD */
 
+#ifndef FLOCKLAB_SIG_INT
+#define FLOCKLAB_SIG_INT  0           /* enable SIG1 pin interrupt? */
+#endif /* FLOCKLAB_SIG_INT */
+
 /* don't print color codes */
 #ifndef LOG_USE_COLORS
 #define LOG_USE_COLORS  0

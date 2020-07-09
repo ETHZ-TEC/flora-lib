@@ -11,16 +11,6 @@ volatile uint16_t FLOCKLAB_NODE_ID = 0xbeef;    // any value is ok, will be bina
 
 #if FLOCKLAB
 
-// /* GPIO interrupt callback (called from GPIO interrupt HAL_GPIO_EXTI_Callback implemented in gpio_exti.h) */
-// void GPIO_SIG1_Callback(void) {
-//   // NOP
-// }
-//
-// /* GPIO interrupt callback (called from GPIO interrupt HAL_GPIO_EXTI_Callback implemented in gpio_exti.h) */
-// void GPIO_SIG2_Callback(void) {
-//   // NOP
-// }
-
 /*
  * init GPIOs
  */
@@ -57,14 +47,12 @@ void flocklab_init(void)
   /* --- INPUTS --- */
 
   GPIO_InitStruct.Pin = FLOCKLAB_SIG1_Pin | FLOCKLAB_SIG2_Pin;
+#if FLOCKLAB_SIG_INT
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+#else /* FLOCKLAB_SIG_INT */
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-#if FLOCKLAB_SWD
-  /* if SWD is used, actuation must be enabled -> pins will be driven */
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-#else /* FLOCKLAB_SWD */
-  /* SWD not used, actuation can be disabled -> pins need a pulldown */
+#endif /* FLOCKLAB_SIG_INT */
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-#endif /* FLOCKLAB_SWD */
   HAL_GPIO_Init(FLOCKLAB_SIG1_GPIO_Port, &GPIO_InitStruct);
 
   // LED1 is connected to RF_DIO1 on COM boards on FlockLab -> configure it as input
@@ -78,6 +66,16 @@ void flocklab_init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(BOLT_ACK_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = FLOCKLAB_SIG1_Pin;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(FLOCKLAB_SIG1_GPIO_Port, &GPIO_InitStruct);
+
+  /* --- INTERRUPTS --- */
+#if FLOCKLAB_SIG_INT
+  HAL_NVIC_SetPriority(EXTI0_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+#endif /* FLOCKLAB_SIG_INT */
 }
 
 /*
