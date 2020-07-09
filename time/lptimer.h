@@ -24,10 +24,15 @@
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
 /* returns relative time (elapsed time since MCU start) in milliseconds */
-#define LPTIMER_NOW_MS()          (uint32_t)(lptimer_now() * 1000 / LPTIMER_SECOND)
+#define LPTIMER_NOW_MS()          (uint32_t)(lptimer_now() * 1000UL / LPTIMER_SECOND)
 
 /* returns relative time (elapsed time since MCU start) in seconds */
 #define LPTIMER_NOW_SEC()         (uint32_t)(lptimer_now() / LPTIMER_SECOND)
+
+#define LPTIMER_TICKS_TO_MS(t)    ((uint64_t)(t) * 1000UL / LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_S(t)     ((uint64_t)(t) / LPTIMER_SECOND)
+#define LPTIMER_MS_TO_TICKS(ms)   ((uint64_t)(ms) * LPTIMER_SECOND / 1000UL)
+#define LPTIMER_S_TO_TICKS(s)     ((uint64_t)(s) * LPTIMER_SECOND)
 
 
 
