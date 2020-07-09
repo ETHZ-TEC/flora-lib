@@ -42,19 +42,19 @@ extern volatile uint16_t FLOCKLAB_NODE_ID;
 
 
 /* pin mapping for rev1.1 adapter (small black PCB) */
-#define FLOCKLAB_SIG1_Pin           GPIO_PIN_0
+#define FLOCKLAB_SIG1_Pin           GPIO_PIN_0      /* = BOLT_IND_Pin */
 #define FLOCKLAB_SIG1_GPIO_Port     GPIOA
-#define FLOCKLAB_SIG2_Pin           GPIO_PIN_4
+#define FLOCKLAB_SIG2_Pin           GPIO_PIN_4      /* = APP_IND_Pin */
 #define FLOCKLAB_SIG2_GPIO_Port     GPIOA
-#define FLOCKLAB_INT1_Pin           GPIO_PIN_3
+#define FLOCKLAB_INT1_Pin           GPIO_PIN_3      /* = COM_TREQ_Pin */
 #define FLOCKLAB_INT1_GPIO_Port     GPIOA
-#define FLOCKLAB_INT2_Pin           GPIO_PIN_14
+#define FLOCKLAB_INT2_Pin           GPIO_PIN_14     /* = COM_PROG_Pin (SWDCLK) */
 #define FLOCKLAB_INT2_GPIO_Port     GPIOA
-#define FLOCKLAB_LED3_Pin           GPIO_PIN_13
+#define FLOCKLAB_LED3_Pin           GPIO_PIN_13     /* = COM_PROG2_Pin (SWDIO) */
 #define FLOCKLAB_LED3_GPIO_Port     GPIOA
-#define FLOCKLAB_LED2_Pin           GPIO_PIN_3
+#define FLOCKLAB_LED2_Pin           GPIO_PIN_3      /* = COM_GPIO2_Pin (SWO) */
 #define FLOCKLAB_LED2_GPIO_Port     GPIOB
-#define FLOCKLAB_LED1_Pin           GPIO_PIN_3
+#define FLOCKLAB_LED1_Pin           GPIO_PIN_3      /* = COM_GPIO1_Pin (RFDIO1) */
 #define FLOCKLAB_LED1_GPIO_Port     GPIOH
 
 
