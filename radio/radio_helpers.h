@@ -17,7 +17,7 @@ void      radio_set_lora_syncword(radio_lora_syncword_t syncword);
 uint16_t  radio_get_syncword(void);
 void      radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, uint16_t timeout, bool implicit, uint8_t implicit_length, bool crc, bool stop_rx_on_preamble);
 void      radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t power, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, bool implicit, bool crc);
-void      radio_set_config_rxtx(uint8_t modulation, uint32_t freq, int32_t datarate, int8_t power, int32_t bandwidth, int32_t preamble_length, uint8_t coderate, uint16_t timeout, bool implicit,  uint8_t implicit_length, bool crc);
+void      radio_set_config_rxtx(uint8_t modulation_index, uint8_t band_index, int32_t datarate, int8_t power, int32_t bandwidth, int32_t preamble_length, uint8_t coderate, uint16_t timeout, bool implicit,  uint8_t implicit_length, bool crc);
 void      radio_set_continuous_preamble(void);
 void      radio_set_tx(uint64_t timestamp);
 void      radio_set_rx(uint64_t timestamp, uint32_t timeout);
