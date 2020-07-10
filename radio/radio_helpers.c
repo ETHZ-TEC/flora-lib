@@ -269,7 +269,7 @@ void radio_set_config_rxtx(uint8_t modulation_index,
   uint32_t fdev = 0;
   int32_t  bandwidth_rx = 0;
   uint32_t freq = radio_bands[current_band].centerFrequency;
-  if (modulation == 1) {
+  if (modulation_index == 1) {
     uint32_t afc_bandwidth = 2 * (bandwidth / 2 + freq) / RADIO_CLOCK_DRIFT;
     fdev = (bandwidth - datarate) / 2;
     bandwidth_rx = bandwidth + afc_bandwidth;
