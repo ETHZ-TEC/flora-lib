@@ -93,7 +93,7 @@
 
 /* duration of a data ACK slot in ticks */
 #ifndef ELWB_CONF_T_DACK
-#define ELWB_CONF_T_DACK          (ELWB_CONF_T_CONT * 2)
+#define ELWB_CONF_T_DACK          (ELWB_CONF_T_CONT)
 #endif /* ELWB_CONF_T_DACK */
 
 /* gap time between 2 slots in ticks */
