@@ -347,6 +347,14 @@ void RadioIrqProcess( void );
 void RadioRxBoosted( uint32_t timeout );
 
 /*!
+ * \brief Sets the radio in reception mode with Max LNA gain for the given time
+ * \param [IN] timeout Reception timeout [ms]
+ *                     [0: continuous, others timeout]
+ * \param [IN] mask    Mask to enable/disable radio interrupts
+ */
+void RadioRxBoostedMask( uint32_t timeout, uint16_t mask );
+
+/*!
  * \brief Sets the Rx duty cycle management parameters
  *
  * \param [in]  rxTime        Structure describing reception timeout value
@@ -388,6 +396,7 @@ const struct Radio_s Radio =
     RadioIrqProcess,
     // Available on SX126x only
     RadioRxBoosted,
+    RadioRxBoostedMask,
     RadioSetRxDutyCycle
 };
 
@@ -689,12 +698,6 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
 
     RxContinuous = rxContinuous;
 
-//    sprintf(char_buff, "rx conf: %d, %lu, %lu, %d, %lu, %d, %d, %d, %d, %d, %d, %d, %d, %d",
-//        modem, bandwidth, datarate, coderate, bandwidthAfc, preambleLen, symbTimeout,
-//      fixLen, payloadLen, crcOn, freqHopOn, hopPeriod, iqInverted, rxContinuous);
-//    print(1, char_buff);
-
-
     if( fixLen == true )
     {
         MaxPayloadLength = payloadLen;
@@ -994,7 +997,6 @@ void RadioStandby( void )
 void RadioRx( uint32_t timeout )
 {
     RadioRxMask( timeout, (IRQ_RADIO_ALL) );
-    // RadioRxMask( timeout, (IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT) );
 }
 
 void RadioRxMask( uint32_t timeout, uint16_t mask )
@@ -1021,8 +1023,13 @@ void RadioRxMask( uint32_t timeout, uint16_t mask )
 
 void RadioRxBoosted( uint32_t timeout )
 {
-    SX126xSetDioIrqParams( IRQ_RADIO_ALL, //IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
-                           IRQ_RADIO_ALL, //IRQ_RX_DONE | IRQ_RX_TX_TIMEOUT,
+    RadioRxBoostedMask(timeout, (IRQ_RADIO_ALL) );
+}
+
+void RadioRxBoostedMask( uint32_t timeout, uint16_t mask )
+{
+    SX126xSetDioIrqParams( mask,
+                           mask,
                            IRQ_RADIO_NONE,
                            IRQ_RADIO_NONE );
     if( timeout != 0 )
