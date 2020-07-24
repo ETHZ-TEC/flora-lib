@@ -478,6 +478,7 @@ static void elwb_run(void)
             /* the payload length is known in the request round */
             payload_len = ELWB_REQ_PKT_LEN;
           }
+          memset(payload, 0, sizeof(payload));    /* clear payload before receiving the packet */
           ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
           ELWB_RCV_PACKET();
           payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
@@ -532,10 +533,8 @@ static void elwb_run(void)
         memset(data_ack, 0, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8);
 
       } else {
-        payload_len = 0;
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();                 /* receive data ack */
-        payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
         /* only look into the D-ACK packet if we actually sent some data in the previous round */
         if (my_slots != 0xffff) {
           uint32_t first_slot = my_slots >> 8;
@@ -612,7 +611,7 @@ static void elwb_run(void)
           rand_backoff--;
         }
         if (ELWB_IS_HOST()) {
-          uint32_t req_id = *payload;
+          uint16_t req_id = payload[0];
           if (ELWB_GLOSSY_RX_CNT() && req_id != 0) {
             /* process the request only if there is a valid node ID */
             elwb_sched_process_req(req_id, 0);
@@ -743,6 +742,13 @@ void elwb_init(void* elwb_task,
     LOG_ERROR("invalid parameters");
     return;
   }
+
+#if ELWB_CONF_DATA_ACK
+  if (!retransmit_queue_handle) {
+    LOG_ERROR("invalid parameters");
+    return;
+  }
+#endif /* ELWB_CONF_DATA_ACK */
 
   task_handle  = elwb_task;
   pre_task     = pre_elwb_task;
