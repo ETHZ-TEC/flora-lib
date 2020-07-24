@@ -111,7 +111,7 @@ typedef struct
      * \brief Premable detected callback prototype.
      */
     void ( *RxPreamble ) ( void ) ;
-    
+
 }RadioEvents_t;
 
 /*!
@@ -388,6 +388,16 @@ struct Radio_s
      *                     [0: continuous, others timeout]
      */
     void    ( *RxBoosted )( uint32_t timeout );
+    /*!
+     * \brief Sets the radio in reception mode with Max LNA gain for the given time
+     *
+     * \remark Available on SX126x radios only.
+     *
+     * \param [IN] timeout Reception timeout [ms]
+     *                     [0: continuous, others timeout]
+     * \param [IN] mask Mask to enable/disable radio interrupts
+     */
+    void    ( *RxBoostedMask )( uint32_t timeout, uint16_t mask );
     /*!
      * \brief Sets the Rx duty cycle management parameters
      *

@@ -90,6 +90,7 @@ static elwb_sched_state_t  sched_state;
 static elwb_node_list_t    node_list[ELWB_CONF_MAX_NODES];    /* actual list */
 static elwb_node_list_t*   head;                  /* head of the linked list */
 static uint16_t            slots_buffer[ELWB_CONF_MAX_DATA_SLOTS];
+static uint32_t            t_round;
 
 
 /* the number of bits for depth and length are stored in the thirds slot;
@@ -337,7 +338,6 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
 {
 #define ELWB_SCHED_PRINT_BUFFER_SIZE  128
   static char print_buffer[ELWB_SCHED_PRINT_BUFFER_SIZE];
-  static uint32_t t_round   = ELWB_T_IDLE_ROUND;
   static uint32_t req_nodes = 0;
   static uint32_t req_slots = 0;
   uint32_t n_slots_assigned = 0;
@@ -556,6 +556,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   memset(node_list, 0, sizeof(elwb_node_list_t) * ELWB_CONF_MAX_NODES);
   head           = 0;
   n_nodes        = 0;
+  t_round        = ELWB_T_IDLE_ROUND;
   base_period    = ELWB_CONF_SCHED_PERIOD_IDLE * ELWB_PERIOD_SCALE;
   sched_state    = ELWB_SCHED_STATE_IDLE;
   sched->n_slots = 0;

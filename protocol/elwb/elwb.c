@@ -529,7 +529,6 @@ static void elwb_run(void)
           ELWB_SEND_PACKET();
           LOG_INFO("D-ACK sent (%u bytes)", payload_len);
         }
-        t_slot_ofs += (ELWB_CONF_T_DACK + ELWB_CONF_T_GAP);
         memset(data_ack, 0, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8);
 
       } else {

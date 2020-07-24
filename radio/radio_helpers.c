@@ -252,8 +252,8 @@ void radio_set_config_rx(uint8_t modulation_index,
 }
 
 
-void radio_set_config_rxtx(uint8_t modulation,
-                           uint32_t freq,
+void radio_set_config_rxtx(bool lora_mode,
+                           uint8_t band_index,
                            int32_t datarate,
                            int8_t power,
                            int32_t bandwidth,
@@ -267,8 +267,9 @@ void radio_set_config_rxtx(uint8_t modulation,
   // determine fdev from bandwidth and datarate
   // NOTE: according to the datasheet afc_bandwidth (automated frequency control bandwidth) variable represents the frequency error (2x crystal frequency error)
   uint32_t fdev = 0;
-  int32_t bandwidth_rx = 0;
-  if (modulation == 1) {
+  int32_t  bandwidth_rx = 0;
+  uint32_t freq = radio_bands[band_index].centerFrequency;
+  if (!lora_mode) {
     uint32_t afc_bandwidth = 2 * (bandwidth / 2 + freq) / RADIO_CLOCK_DRIFT;
     fdev = (bandwidth - datarate) / 2;
     bandwidth_rx = bandwidth + afc_bandwidth;
@@ -278,36 +279,36 @@ void radio_set_config_rxtx(uint8_t modulation,
   Radio.SetChannel(freq);
 
   Radio.SetTxConfig(
-      (modulation == 0) ? MODEM_LORA : MODEM_FSK,   // modem [0: FSK, 1: LoRa]
-      power,                                        // power [dBm]
-      (modulation == 1) ? fdev : 0,                 // frequency deviation (FSK only)
-      (modulation == 0) ? bandwidth : 0,            // bandwidth (LoRa only)
-      datarate,                                      // datarate (FSK: bits/s, LoRa: spreading-factor)
-      (modulation == 0) ? coderate : 0,              // coderate (LoRa only)
-      preamble_length,                              // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
-      implicit,                                     // Fixed length packets [0: variable, 1: fixed]
-      crc,                                          // CRC on
-      false,                                        // no FHSS
-      0,                                            // no FHSS
-      0,                                            // no FHSS
-      0                                             // no timeout
+      (lora_mode) ? MODEM_LORA : MODEM_FSK,   // modem [0: FSK, 1: LoRa]
+      power,                                  // power [dBm]
+      (!lora_mode) ? fdev : 0,                // frequency deviation (FSK only)
+      (lora_mode) ? bandwidth : 0,            // bandwidth (LoRa only)
+      datarate,                               // datarate (FSK: bits/s, LoRa: spreading-factor)
+      (lora_mode) ? coderate : 0,             // coderate (LoRa only)
+      preamble_length,                        // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
+      implicit,                               // Fixed length packets [0: variable, 1: fixed]
+      crc,                                    // CRC on
+      false,                                  // no FHSS
+      0,                                      // no FHSS
+      0,                                      // no FHSS
+      0                                       // no timeout
   );
 
   Radio.SetRxConfig(
-      (modulation == 0) ? MODEM_LORA : MODEM_FSK,   // modem [0: FSK, 1: LoRa]
-      (modulation == 0) ? bandwidth : bandwidth_rx,  // bandwidth
-      datarate,                                     // datarate (FSK: bits/s, LoRa: spreading-factor)
-      (modulation == 0) ? coderate : 0,             // coderate (LoRa only)
-      0,                                            // AFC Bandwidth (FSK only, not used with SX126x!)
-      preamble_length,                              // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
-      timeout,                                      // RxSingle timeout value
-      implicit,                                     // Fixed length packets [0: variable, 1: fixed]
-      (implicit ? implicit_length : 0),             // no fixed payload length (as it is explicit header mode / variable packet length)
-      crc,                                          // CRC on
-      false,                                        // no FHSS
-      0,                                            // no FHSS
-      false,                                        // no FHSS
-      false                                         // not continuous rx
+      (lora_mode) ? MODEM_LORA : MODEM_FSK,   // modem [0: FSK, 1: LoRa]
+      (lora_mode) ? bandwidth : bandwidth_rx, // bandwidth
+      datarate,                               // datarate (FSK: bits/s, LoRa: spreading-factor)
+      (lora_mode) ? coderate : 0,             // coderate (LoRa only)
+      0,                                      // AFC Bandwidth (FSK only, not used with SX126x!)
+      preamble_length,                        // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
+      timeout,                                // RxSingle timeout value
+      implicit,                               // Fixed length packets [0: variable, 1: fixed]
+      (implicit ? implicit_length : 0),       // no fixed payload length (as it is explicit header mode / variable packet length)
+      crc,                                    // CRC on
+      false,                                  // no FHSS
+      0,                                      // no FHSS
+      false,                                  // no FHSS
+      false                                   // not continuous rx
   );
 
   SX126xSetStopRxTimerOnPreambleDetect(true);
