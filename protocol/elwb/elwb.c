@@ -449,7 +449,7 @@ static void elwb_run(void)
             if (payload_len) {
     #if ELWB_CONF_DATA_ACK
               /* only source nodes receive a D-ACK */
-              if (!ELWB_IS_HOST()) {
+              if (!ELWB_IS_HOST() && ELWB_SCHED_HAS_DATA_SLOTS(&schedule)) {
                 if (my_slots == 0xffff) {
                   my_slots = (slot_idx << 8);   /* store the index of the first assigned slot in the upper 8 bytes */
                 }
