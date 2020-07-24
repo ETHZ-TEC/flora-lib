@@ -507,7 +507,7 @@ static void elwb_run(void)
               /* this is a request packet */
               elwb_sched_process_req(schedule.slot[slot_idx], *payload);
             }
-          } else {
+          } else if (ELWB_SCHED_HAS_DATA_SLOTS(&schedule)) {
             LOG_VERBOSE("no data received from node %u", schedule.slot[slot_idx]);
           }
         }
@@ -563,8 +563,8 @@ static void elwb_run(void)
             LOG_WARNING("D-ACK pkt missed, %u pkt requeued", num_slots);
           }
           my_slots = 0xffff;
-          ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
         }
+        ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
       }
       t_slot_ofs += (ELWB_CONF_T_DACK + ELWB_CONF_T_GAP);
     }
@@ -757,6 +757,12 @@ void elwb_init(void* elwb_task,
   re_tx_queue  = retransmit_queue_handle;
   listen_timeout_cb = listen_timeout_callback;
   elwb_running = true;
+
+  ELWB_QUEUE_CLEAR(rx_queue);
+  ELWB_QUEUE_CLEAR(tx_queue);
+#if ELWB_CONF_DATA_ACK
+  ELWB_QUEUE_CLEAR(re_tx_queue);
+#endif /* ELWB_CONF_DATA_ACK */
 
   memset(&stats, 0, sizeof(elwb_stats_t));
 }
