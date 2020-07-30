@@ -351,9 +351,9 @@ void radio_cad_done_cb(bool detected)
 void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error)
 {
   RADIO_RX_STOP_IND();
+  dcstat_stop(&radio_dc_rx);
 
   if (radio_rx_callback) {
-    dcstat_stop(&radio_dc_rx);
     radio_set_timeout_callback(NULL);
 
     void (*tmp)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) = radio_rx_callback;
@@ -366,6 +366,7 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
   else if(radio_receive_continuous) {
     SX126xSetRxBoosted(0);
     RADIO_RX_START_IND();
+    dcstat_start(&radio_dc_rx);
   }
 
 #ifdef FLORA_DEBUG
