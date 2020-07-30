@@ -437,7 +437,7 @@ static void elwb_run(void)
               payload_len = 0;
               if (ELWB_QUEUE_POP(tx_queue, payload)) {
                 payload_len = ELWB_PAYLOAD_LEN(payload);
-                /* sanitiy check for packet size */
+                /* sanity check for packet size */
                 if (payload_len > ELWB_CONF_MAX_PKT_LEN) {
                   LOG_ERROR("invalid payload length detected");
                   payload_len = 0;
@@ -468,7 +468,7 @@ static void elwb_run(void)
               }
             }
 
-          } else {
+          } else if (is_data_round) {
             LOG_VERBOSE("no message to send (data slot ignored)");
           }
 
@@ -537,18 +537,19 @@ static void elwb_run(void)
       } else {
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();                 /* receive data ack */
+        payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
         /* only look into the D-ACK packet if we actually sent some data in the previous round */
         if (my_slots != 0xffff) {
           uint32_t first_slot = my_slots >> 8;
           uint32_t num_slots  = my_slots & 0xff;
           if (ELWB_GLOSSY_RX_CNT()) {
             LOG_VERBOSE("D-ACK received");
-            uint8_t* data_acks = (uint8_t*)payload;
+            memcpy(data_ack, payload, payload_len);
             uint32_t i;
             for (i = 0; i < num_slots; i++) {
               if (ELWB_QUEUE_POP(re_tx_queue, payload)) {
                 /* bit not set? => not acknowledged */
-                if (!(data_acks[(first_slot + i) >> 3] & (1 << ((first_slot + i) & 0x07)))) {
+                if (!(data_ack[(first_slot + i) >> 3] & (1 << ((first_slot + i) & 0x07)))) {
                   /* resend the packet (re-insert it into the output FIFO) */
                   if (ELWB_QUEUE_PUSH(tx_queue, payload)) {
                     LOG_VERBOSE("packet queued for retransmission");
