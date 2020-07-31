@@ -569,23 +569,19 @@ end:
 }
 
 
-void radio_set_cad_params(bool rx, bool use_timeout)
+void radio_set_cad(uint8_t modulation, bool rx, bool use_timeout)
 {
-  radio_cad_params_t params = radio_cad_params[current_modulation];
-
-  if (use_timeout) {
-    uint32_t timeout = ((uint64_t) radio_calculate_message_toa(current_modulation, 0, -1) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS);
-    SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, rx, timeout);
+  if (modulation <= RADIO_NUM_CAD_PARAMS) {
+    radio_cad_params_t params = radio_cad_params[modulation];
+    if (use_timeout) {
+      uint32_t timeout = ((uint64_t) radio_calculate_message_toa(current_modulation, 0, -1) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS);
+      SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, rx, timeout);
+    }
+    else {
+      SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, rx, 0);
+    }
+    SX126xSetCad();
   }
-  else {
-    SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, rx, 0);
-  }
-}
-
-
-void radio_set_cad(void)
-{
-  SX126xSetCad();
 }
 
 

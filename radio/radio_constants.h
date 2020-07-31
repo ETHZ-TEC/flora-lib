@@ -29,6 +29,7 @@
 #define RADIO_MIN_POWER -9 // dBm (SX1262)
 
 #define RADIO_NUM_MODULATIONS 11
+#define RADIO_NUM_CAD_PARAMS  8
 
 #ifndef US915
 #define RADIO_DEFAULT_BAND 48
@@ -39,6 +40,9 @@
 #define RADIO_CLOCK_DRIFT 100000 // 1/(+-10ppm)
 #define RADIO_TIMER_PERIOD_NS 15625U
 #define RADIO_TIMER_FREQUENCY 64000 // Hz
+
+#define RADIO_LORA_SF_TO_MODULATION_INDEX(sf)     ((sf >= 5 && sf <= 12) ? (12 - sf) : 0)
+
 
 typedef enum
 {

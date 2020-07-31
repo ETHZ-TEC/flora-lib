@@ -41,8 +41,7 @@ void      radio_set_packet_params_and_size(uint8_t size);
 
 void      radio_print_message(radio_message_t* message);
 
-void      radio_set_cad_params(bool rx, bool use_timeout);
-void      radio_set_cad(void);
+void      radio_set_cad(uint8_t modulation, bool rx, bool use_timeout);
 void      radio_set_continuous_preamble(void);
 
 uint32_t  radio_get_last_pkt_snr(void);

@@ -173,7 +173,7 @@ const radio_band_group_t radio_band_groups[] = {
 #endif
 
 // CAD with 1 Symbol is totally random!
-const radio_cad_params_t radio_cad_params[] = {
+const radio_cad_params_t radio_cad_params[RADIO_NUM_CAD_PARAMS] = {
     {.symb_num = LORA_CAD_04_SYMBOL, .cad_det_peak = 25, .cad_det_min = 10}, // SF12
     {.symb_num = LORA_CAD_04_SYMBOL, .cad_det_peak = 24, .cad_det_min = 10}, // SF11
     {.symb_num = LORA_CAD_04_SYMBOL, .cad_det_peak = 23, .cad_det_min = 10}, // SF10
