@@ -108,6 +108,7 @@ static void*              rx_queue     = 0;
 static void*              tx_queue     = 0;
 static void*              re_tx_queue  = 0;
 static bool               elwb_running = false;
+static uint32_t           host_id      = 0;
 static void               (*listen_timeout_cb)(void);
 
 
@@ -489,7 +490,7 @@ static void elwb_run(void)
               bool keep_packet = ELWB_IS_SINK() || ELWB_RCV_PKT_FILTER();
               if (!ELWB_IS_HOST()) {
                 /* source nodes keep all packets received from the host */
-                keep_packet |= (schedule.slot[slot_idx] == 0) || (schedule.slot[slot_idx] == HOST_ID);
+                keep_packet |= (schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK) || (schedule.slot[slot_idx] == host_id);
               }
               if (keep_packet) {
                 LOG_VERBOSE("data received from node %u (%lub)", schedule.slot[slot_idx], payload_len);
@@ -782,8 +783,9 @@ void elwb_init(void* elwb_task,
 }
 
 
-void elwb_start()
+void elwb_start(uint32_t _host_id)
 {
+  host_id = _host_id;
   if (ELWB_IS_HOST()) {
     LOG_INFO("host node");
   } else {

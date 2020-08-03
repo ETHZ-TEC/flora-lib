@@ -37,13 +37,6 @@
 #endif /* ELWB_ENABLE */
 
 
-/* values that need to be defined globally */
-#ifndef HOST_ID
-#warning "HOST_ID not defined, set to 0"
-#define HOST_ID                   0
-#endif
-
-
 /* --------------- START OF CONFIG (default values) ------------------------ */
 
 /* max. packet length */
@@ -300,7 +293,7 @@
 
 /* misc */
 #ifndef ELWB_IS_HOST
-#define ELWB_IS_HOST()                  (HOST_ID == NODE_ID)
+#define ELWB_IS_HOST()                  (host_id == NODE_ID)      /* note: host_id is a state variable inside eLWB */
 #endif /* ELWB_IS_HOST */
 #ifndef ELWB_IS_SINK
 #define ELWB_IS_SINK()                  ELWB_IS_HOST()
@@ -364,7 +357,7 @@ void     elwb_init(void* elwb_task,
                    void* out_queue_handle,         /* queue data type must be dpp_message_t */
                    void* retransmit_queue_handle,  /* buffer to queue packets for retransmission */
                    void* listen_timeout_callback);
-void     elwb_start(void);
+void     elwb_start(uint32_t _host_id);
 void     elwb_stop(void);
 
 void     elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp);
