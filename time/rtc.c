@@ -11,7 +11,7 @@
 
 RTC_TimeTypeDef rtc_time = {0};
 RTC_DateTypeDef rtc_date = {0};
-static volatile void (*rtc_alarm_callback) = NULL;
+static void (*rtc_alarm_callback)(void) = NULL;
 
 extern RTC_HandleTypeDef hrtc;
 extern bool     hs_timer_scheduled;
@@ -218,6 +218,35 @@ void rtc_set_alarm(uint64_t timestamp, void* callback)
 }
 
 
+void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, void (*callback)(void))
+{
+  rtc_alarm_callback = callback;
+
+  if (!callback) {
+    __HAL_RTC_ALARMA_DISABLE(&hrtc);
+    __HAL_RTC_ALARM_CLEAR_FLAG(&hrtc, RTC_FLAG_ALRAF);
+    return;
+  }
+
+  HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
+
+  if (hour < 24 && minute < 60) {
+    rtc_time.Hours   = hour;
+    rtc_time.Minutes = minute;
+    rtc_time.Seconds = 0;
+    RTC_AlarmTypeDef alarm = {
+        .AlarmTime = rtc_time,
+        .AlarmMask = RTC_ALARMMASK_DATEWEEKDAY,
+        .AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_NONE,
+        .AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE,
+        .AlarmDateWeekDay = 0,
+        .Alarm = RTC_ALARM_A,
+    };
+    HAL_RTC_SetAlarm_IT(&hrtc, &alarm, RTC_FORMAT_BIN);
+  }
+}
+
+
 /*
  * delay in ms
  */
@@ -242,11 +271,12 @@ void rtc_try_to_sleep()
 }
 
 
-/*
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 {
-  return;
+  if (rtc_alarm_callback) {
+    rtc_alarm_callback();
+  }
 }
-*/
+
 
 #endif /* HAL_RTC_MODULE_ENABLED */

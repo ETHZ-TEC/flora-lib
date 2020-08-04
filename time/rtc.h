@@ -11,6 +11,7 @@
 
 #ifdef HAL_RTC_MODULE_ENABLED
 
+
 void rtc_init();
 
 bool rtc_set_date(uint32_t year, uint32_t month, uint32_t day);
@@ -24,6 +25,7 @@ bool rtc_format_time(char* buffer, uint8_t buffer_size);
 
 bool rtc_parse_date_string(RTC_DateTypeDef* rtc_date, RTC_TimeTypeDef* rtc_time, char* date_string);
 void rtc_set_alarm(uint64_t timestamp, void* callback);
+void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, void (*callback)(void));
 void rtc_try_to_sleep();
 
 #else /* HAL_RTC_MODULE_ENABLED */
