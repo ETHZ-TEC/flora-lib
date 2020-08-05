@@ -68,21 +68,14 @@ const radio_config_t radio_modulations[RADIO_NUM_MODULATIONS] =
             .fdev = 50000,
             .preambleLen = 2,
         },
-        // {   // 9 rtrueb
-        //     .modem = MODEM_FSK,
-        //     .bandwidth = 467000,
-        //     .datarate = 200000,
-        //     .fdev = 100000,
-        //     .preambleLen = 2,
-        // },
-        {   // 9 (kelmicha latest)
+        {   // 9
             .modem = MODEM_FSK,
             .bandwidth = 234300,
             .datarate = 200000,
             .fdev = 10000,
             .preambleLen = 2,
         },
-        {   // 10 (for comparison with CC430 glossy)
+        {   // 10
             .modem = MODEM_FSK,
             .bandwidth = 312000,
             .datarate = 250000,

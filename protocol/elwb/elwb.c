@@ -802,10 +802,6 @@ void elwb_start(uint32_t _host_id)
 
   /* instead of calling elwb_run(), schedule the start */
 #if ELWB_CONF_STARTUP_DELAY > 0
-  /* let post task run */
-  if (post_task) {
-    ELWB_TASK_NOTIFY(post_task);
-  }
   ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_STARTUP_DELAY * LPTIMER_SECOND / 1000);
 #endif /* ELWB_CONF_STARTUP_DELAY */
 
