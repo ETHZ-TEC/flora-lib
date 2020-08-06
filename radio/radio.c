@@ -530,15 +530,15 @@ static void radio_execute(void)
 
 void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
 {
+  radio_set_payload(buffer, 0, size);
   if (schedule) {
     radio_command_scheduled = true;
-    radio_set_payload(buffer, 0, size);
     SX126xSetTxWithoutExecute(0);
   }
   else {
-    RADIO_TX_START_IND();
-    Radio.Send(buffer, size);
+    SX126xSetTx(0);
     hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
+    RADIO_TX_START_IND();
     dcstat_start(&radio_dc_tx);
   }
 }
