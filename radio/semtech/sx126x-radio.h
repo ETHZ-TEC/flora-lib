@@ -288,20 +288,6 @@ struct Radio_s
                               uint32_t datarate, uint8_t coderate,
                               uint16_t preambleLen, bool fixLen, uint8_t payloadLen,
                               bool crcOn );
-
-    // TO_REMOVE
-    // /*!
-    //  * \brief Computes the packet time on air in ms for the given payload
-    //  *
-    //  * \Remark Can only be called once SetRxConfig or SetTxConfig have been called
-    //  *
-    //  * \param [IN] modem      Radio modem to be used [0: FSK, 1: LoRa]
-    //  * \param [IN] pktLen     Packet payload length
-    //  *
-    //  * \retval airTime        Computed airTime (ms) for the given packet payload length
-    //  */
-    // uint32_t  ( *TimeOnAir )( RadioModems_t modem, uint8_t pktLen );
-
     /*!
      * \brief Sends the buffer of size. Prepares the packet to be sent and sets
      *        the radio in transmission

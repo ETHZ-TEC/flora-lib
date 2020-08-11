@@ -29,8 +29,6 @@ uint8_t   radio_get_payload_size(void);
 void      radio_set_payload(uint8_t* buffer, uint8_t offset, uint8_t size);
 void      radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint8_t size);
 
-// TO_REMOVE
-// uint16_t  radio_get_preamble_length_from_duration(uint16_t duration, uint8_t modulation);
 
 /*!
  * \brief Calculates the time-on-air a number of symbols
@@ -46,13 +44,6 @@ uint32_t  radio_get_symbol_toa(uint16_t length, uint8_t modulation);
  * \retval airTime               Time-on-air in hs_timer ticks
  */
 uint32_t  radio_get_preamble_toa(uint16_t length, uint8_t modulation);
-
-// TO_REMOVE
-// uint32_t  radio_lookup_toa(uint8_t modulation, uint8_t size);
-
-// TO_REMOVE
-// return packet toa in hs_timer ticks
-// uint32_t  radio_calculate_message_toa(uint8_t modulation, uint8_t size, int32_t preamble);
 
 
 void      radio_set_packet_params_and_size(uint8_t size);
