@@ -15,10 +15,6 @@
 #endif /* GLORIA_START_IND */
 
 
-/*******************************************************************************
- * BEGIN: GLORIA INTERFACE
- ******************************************************************************/
-
 /* internal state */
 static gloria_flood_t   flood;                                           // flood struct which (serves as input, state, and output to/from gloria_run_flood)
 static gloria_message_t message;                                         // buffer for the message (static to avoid allocation on the stack)
@@ -266,12 +262,6 @@ uint64_t gloria_get_t_ref(void)
 }
 
 
-uint32_t gloria_get_flood_time(void)
-{
-  return gloria_calculate_flood_time(&flood);
-}
-
-
 int32_t gloria_get_rssi(void)
 {
   return lastrun_rssi;
@@ -306,7 +296,33 @@ void gloria_set_band(uint8_t band)
 }
 
 
-uint32_t gloria_get_time_on_air(uint8_t payload_len)
+uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation)
+{
+  return radio_get_toa(payload_len + GLORIA_HEADER_LENGTH, modulation);
+}
+
+
+uint32_t gloria_get_toa(uint8_t payload_len)
+{
+  return gloria_get_toa_sl(payload_len, internal_modulation);
+}
+
+
+uint32_t gloria_get_flood_time(void)
+{
+  return gloria_calculate_flood_time(&flood);
+}
+
+
+// TODO
+// uint32_t gloria_get_flood_time(uint8_t modulation, radio_band_t band)
+// {
+//   return gloria_calculate_flood_time(&flood);
+// }
+
+
+// BEGIN: TO_REMOVE
+uint32_t gloria_get_time_on_air_old(uint8_t payload_len)
 {
   // TODO: arg check
   uint32_t toa = 10000000UL; // default initialization
@@ -337,6 +353,7 @@ uint32_t gloria_get_time_on_air(uint8_t payload_len)
   }
   return toa;
 }
+// END: TO_REMOVE
 
 
 void gloria_enable_flood_printing(bool enable)
@@ -412,9 +429,5 @@ static void update_t_ref(void)
   last_t_ref = lp_sync_point - lp_time_diff;
   lastrun_t_ref_updated = true;
 }
-
-/*******************************************************************************
- * END: GLORIA INTERFACE
- ******************************************************************************/
 
 #endif /* GLORIA_ENABLE */

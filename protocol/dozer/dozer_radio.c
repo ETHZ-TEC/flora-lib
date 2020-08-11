@@ -167,7 +167,8 @@ uint8_t dozer_send(dozer_send_message_t* msg, uint8_t size, uint32_t timeout) {
         to = timeout;
     }
     else {
-        to = radio_get_toa_in_ms(MODEM_FSK, size) + 10; // compute tx timeout and add 10ms
+      // FIXME: add all params or use function that only needs mod as additional param
+        to = radio_get_toa(MODEM_FSK, size) + 10; // compute tx timeout and add 10ms
     }
 
     to = to * 64; // convert ms to ticks from radio (15.625us)
