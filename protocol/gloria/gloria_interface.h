@@ -70,16 +70,6 @@
 
 /* MISC ***********************************************************************/
 
-/**
- * calculates an estimate for the required slot size (duration of one flood with a given N_TX and message size)
- */
-// TO_REMOVE
-// #define GLORIA_INTERFACE_HOP_DURATION(len)            (radio_toas[GLORIA_INTERFACE_MODULATION][len] + gloria_timings[GLORIA_INTERFACE_MODULATION].slotOverhead)
-#define GLORIA_INTERFACE_HOP_DURATION(len)            (gloria_get_toa_hs(len, GLORIA_INTERFACE_MODULATION) + gloria_timings[GLORIA_INTERFACE_MODULATION].slotOverhead)
-#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, len) (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * 1000UL / HS_TIMER_FREQUENCY)
-#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, len)    (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * LPTIMER_SECOND / HS_TIMER_FREQUENCY)
-
-
 typedef void (* gloria_cb_func_t)(void);
 
 
@@ -214,7 +204,7 @@ void gloria_set_band(uint8_t band);
  *
  * \param            payload_len: Number of payload Bytes from the upper layer
  *                   (i.e. without overhead added by gloria).
- * \returns          Time-on-air in ms
+ * \returns          Time-on-air in us
  */
 uint32_t gloria_get_toa(uint8_t payload_len);
 
@@ -226,7 +216,7 @@ uint32_t gloria_get_toa(uint8_t payload_len);
  * \param            payload_len: Number of payload Bytes from the upper layer
  *                   (i.e. without overhead added by gloria).
  * \param            modulation: flora modulation (see radio_constants.c)
- * \returns          Time-on-air in ms
+ * \returns          Time-on-air in us
  */
 uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation);
 
@@ -284,6 +274,15 @@ int32_t gloria_get_rssi();
  * \return          SNR value in dBm
  */
 int32_t gloria_get_snr();
+
+
+/**
+ * calculates an estimate for the required slot size (duration of one flood with a given N_TX and message size)
+ */
+#define GLORIA_INTERFACE_HOP_DURATION(len)                    (((uint64_t)gloria_get_toa_sl(len, GLORIA_INTERFACE_MODULATION))*HS_TIMER_FREQUENCY/1000000UL + gloria_timings[GLORIA_INTERFACE_MODULATION].slotOverhead)
+#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, n_hops, len) (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * 1000UL / HS_TIMER_FREQUENCY)
+#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, n_hops, len)    (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * LPTIMER_SECOND / HS_TIMER_FREQUENCY)
+
 
 
 #endif /* PROTOCOL_GLORIA_GLORIA_INTERFACE_H_ */

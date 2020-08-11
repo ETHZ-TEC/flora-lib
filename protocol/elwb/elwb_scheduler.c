@@ -550,7 +550,6 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
      (SCHEDUNITS_TO_MS(ELWB_T_ROUND_MAX) + 
       ((uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_PREPROCESS)))) {
     LOG_ERROR("invalid parameters");
-    return 0;
   }
   /* initialize node list */
   memset(node_list, 0, sizeof(elwb_node_list_t) * ELWB_CONF_MAX_NODES);
