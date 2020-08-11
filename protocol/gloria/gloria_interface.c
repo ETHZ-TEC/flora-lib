@@ -296,64 +296,34 @@ void gloria_set_band(uint8_t band)
 }
 
 
-uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation)
-{
-  return radio_get_toa(payload_len + GLORIA_HEADER_LENGTH, modulation);
-}
-
-
 uint32_t gloria_get_toa(uint8_t payload_len)
 {
   return gloria_get_toa_sl(payload_len, internal_modulation);
 }
 
 
-uint32_t gloria_get_flood_time(void)
+uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation)
 {
-  return gloria_calculate_flood_time(&flood);
+  return radio_get_toa(payload_len + GLORIA_HEADER_LENGTH, modulation);
 }
 
 
-// TODO
-// uint32_t gloria_get_flood_time(uint8_t modulation, radio_band_t band)
-// {
-//   return gloria_calculate_flood_time(&flood);
-// }
-
-
-// BEGIN: TO_REMOVE
-uint32_t gloria_get_time_on_air_old(uint8_t payload_len)
+uint32_t gloria_get_flood_time(uint8_t payload_len)
 {
-  // TODO: arg check
-  uint32_t toa = 10000000UL; // default initialization
-
-  uint8_t phyPl = payload_len + GLORIA_HEADER_LENGTH;
-
-  if (radio_modulations[internal_modulation].modem == MODEM_LORA) {
-    // LoRa modulation
-    uint8_t sf = radio_modulations[internal_modulation].datarate;
-    double syncSyms = sf <= 6 ? 6.25 : 4.25;
-    uint8_t nPreambleSyms = radio_modulations[internal_modulation].preambleLen;
-    uint8_t coderate = radio_modulations[internal_modulation].coderate;
-
-    int32_t arg1 = 8*phyPl + 16 - 4*sf + 20;
-    int32_t ceilPart = ceil(MAX(arg1, 0)/(4*sf));
-    double nSymbol = nPreambleSyms + syncSyms + 8 + ceilPart*(coderate + 4);
-    toa = pow(2, sf)*nSymbol * 1000000UL / 125000;
-  } else if (radio_modulations[internal_modulation].modem == MODEM_FSK) {
-    // FSK modulation
-    uint32_t bitrate = radio_modulations[internal_modulation].datarate;
-    uint8_t nPreambleBits = 8*radio_modulations[internal_modulation].preambleLen;
-    // NOTE: addr is disabled -> length is assumed to be 0 bytes
-    // syncword=3, length=1, address=0, crc=2 (in bytes)
-    uint32_t nBits = nPreambleBits + 3*8 + 1*8 + 0*8 + phyPl*8 + 2*8;
-    toa = nBits * 1000000UL / bitrate;
-  } else {
-    LOG_WARNING("Unknown modulation!");
-  }
-  return toa;
+  return gloria_get_flood_time_sl(payload_len, internal_modulation);
 }
-// END: TO_REMOVE
+
+
+uint32_t gloria_get_flood_time_sl(uint8_t payload_len, uint8_t modulation)
+{
+  return gloria_calculate_flood_time(
+    payload_len,
+    modulation,
+    GLORIA_INTERFACE_MAX_SLOTS,
+    false,        // sync
+    0             // ack_mode
+  );
+}
 
 
 void gloria_enable_flood_printing(bool enable)

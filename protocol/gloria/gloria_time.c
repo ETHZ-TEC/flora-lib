@@ -39,10 +39,10 @@ uint64_t gloria_calculate_tx_marker(gloria_flood_t* flood)
 
   offset += timings->floodInitOverhead - GLORIA_HSTIMER_TRIGGER_DELAY;
 
-  uint32_t slot_time_data = gloria_calculate_slot_time(flood, 0, flood->message_size);
+  uint32_t slot_time_data = gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size);
 
   if (flood->ack_mode) {
-    uint32_t slot_time_ack = gloria_calculate_slot_time(flood, 1, GLORIA_ACK_LENGTH);
+    uint32_t slot_time_ack = gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH);
     offset += (flood->slot_index + 1) / 2 * slot_time_data + (flood->slot_index) / 2 * slot_time_ack;
   }
   else {
@@ -72,19 +72,22 @@ inline uint64_t gloria_calculate_rx_marker(gloria_flood_t* flood)
  * msg_size: size of the whole message
  * returns slot time in hs_timer ticks
  */
-uint32_t gloria_calculate_slot_time(gloria_flood_t* flood, uint8_t index, uint8_t msg_size)
+uint32_t gloria_calculate_slot_time(uint8_t modulation, uint8_t ack_mode, uint8_t index, uint8_t msg_size)
 {
-  const gloria_timings_t* timings = &(gloria_timings[flood->modulation]);
-  const radio_config_t* radiocfg = &(radio_modulations[flood->modulation]);
+  const gloria_timings_t* timings = &(gloria_timings[modulation]);
+  // TO_REMOVE
+  // const radio_config_t* radiocfg = &(radio_modulations[modulation]);
   uint32_t slot_time;
-  if (flood->ack_mode && (index % 2)) {
+  if (ack_mode && (index % 2)) {
     slot_time = timings->slotAckOverhead;
   }
   else {
     slot_time = timings->slotOverhead;
   }
 
-  slot_time += radio_calculate_message_toa(flood->modulation, msg_size, radiocfg->preambleLen); //radio_lookup_toa(flood->modulation, msg_size);
+  slot_time += radio_get_toa_hs(msg_size, modulation);
+  // TO_REMOVE
+  // slot_time += radio_calculate_message_toa(flood->modulation, msg_size, radiocfg->preambleLen); //radio_lookup_toa(flood->modulation, msg_size);
 
   return slot_time;
 }
@@ -95,18 +98,18 @@ uint32_t gloria_calculate_slot_time(gloria_flood_t* flood, uint8_t index, uint8_
  * flood: modulation, data_slots, payload, ack_mode and header->sync must be specified in the flood struct
  * returns flood duration in hs_timer ticks
  */
-uint32_t gloria_calculate_flood_time(gloria_flood_t* flood)
+uint32_t gloria_calculate_flood_time(uint8_t payload_len, uint8_t modulation, uint8_t data_slots, uint8_t sync, uint8_t ack_mode)
 {
-  const gloria_timings_t* timings = &(gloria_timings[flood->modulation]);
+  const gloria_timings_t* timings = &(gloria_timings[modulation]);
 
   uint32_t offset = timings->floodInitOverhead + GLORIA_FLOOD_FINISH_OVERHEAD;
 
-  uint8_t slot_count = flood->data_slots;
-  uint8_t msg_size = flood->payload_size + GLORIA_HEADER_LENGTH + (flood->message->header.sync? GLORIA_TIMESTAMP_LENGTH:0);
-  uint32_t slot_time_data = gloria_calculate_slot_time(flood, 0, msg_size);
+  uint8_t slot_count = data_slots;
+  uint8_t msg_size = payload_len + GLORIA_HEADER_LENGTH + (sync ? GLORIA_TIMESTAMP_LENGTH : 0);
+  uint32_t slot_time_data = gloria_calculate_slot_time(modulation, ack_mode, 0, msg_size);
 
-  if (flood->ack_mode) {
-    uint32_t slot_time_ack = gloria_calculate_slot_time(flood, 1, GLORIA_ACK_LENGTH);
+  if (ack_mode) {
+    uint32_t slot_time_ack = gloria_calculate_slot_time(modulation, ack_mode, 1, GLORIA_ACK_LENGTH);
     offset += slot_count * slot_time_data + slot_count * slot_time_ack;
   }
   else {
@@ -115,6 +118,27 @@ uint32_t gloria_calculate_flood_time(gloria_flood_t* flood)
 
   return offset;
 }
+// TO_REMOVE
+// uint32_t gloria_calculate_flood_time(gloria_flood_t* flood)
+// {
+//   const gloria_timings_t* timings = &(gloria_timings[flood->modulation]);
+//
+//   uint32_t offset = timings->floodInitOverhead + GLORIA_FLOOD_FINISH_OVERHEAD;
+//
+//   uint8_t slot_count = flood->data_slots;
+//   uint8_t msg_size = flood->payload_size + GLORIA_HEADER_LENGTH + (flood->message->header.sync ? GLORIA_TIMESTAMP_LENGTH : 0);
+//   uint32_t slot_time_data = gloria_calculate_slot_time(flood, 0, msg_size);
+//
+//   if (flood->ack_mode) {
+//     uint32_t slot_time_ack = gloria_calculate_slot_time(flood, 1, GLORIA_ACK_LENGTH);
+//     offset += slot_count * slot_time_data + slot_count * slot_time_ack;
+//   }
+//   else {
+//     offset += slot_count * slot_time_data;
+//   }
+//
+//   return offset;
+// }
 
 
 inline int32_t gloria_get_rx_ex_offset(gloria_flood_t* flood)
@@ -132,7 +156,7 @@ inline uint16_t gloria_calculate_rx_timeout(gloria_flood_t* flood)
 {
   const gloria_timings_t* timings = &(gloria_timings[flood->modulation]);
 
-  return (uint64_t) (2*timings->rxOffset + radio_lookup_toa(flood->modulation, 0) + 2*flood->guard_time) * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
+  return (uint64_t) (2*timings->rxOffset + radio_get_toa_hs(0, flood->modulation) + 2*flood->guard_time) * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
 }
 
 
@@ -157,9 +181,9 @@ void gloria_reconstruct_flood_marker(gloria_flood_t* flood)
 
   uint32_t slot_time_sum;
   if (flood->ack_mode) {
-    slot_time_sum = (flood->slot_index / 2 * (gloria_calculate_slot_time(flood, 0, flood->message_size) + gloria_calculate_slot_time(flood, 1, GLORIA_ACK_LENGTH)));
+    slot_time_sum = (flood->slot_index / 2 * (gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size) + gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH)));
   } else {
-    slot_time_sum = (flood->slot_index * gloria_calculate_slot_time(flood, 0, flood->message_size));
+    slot_time_sum = (flood->slot_index * gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size));
   }
   flood->reconstructed_marker = radio_get_last_sync_timestamp() -
                                 timings->txSync -

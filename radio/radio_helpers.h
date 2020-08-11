@@ -32,12 +32,27 @@ void      radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint
 // TO_REMOVE
 // uint16_t  radio_get_preamble_length_from_duration(uint16_t duration, uint8_t modulation);
 
+/*!
+ * \brief Calculates the time-on-air a number of symbols
+ * \param [IN] length            Number of symbols (LoRa) / Bytes (FSK)
+ * \param [IN] modulation        Modulation index (see radio_constants.c)
+ * \retval airTime               Time-on-air in hs_timer ticks
+ */
 uint32_t  radio_get_symbol_toa(uint16_t length, uint8_t modulation);
-uint32_t  radio_get_header_toa(void);
-uint32_t  radio_get_preamble_toa(uint16_t length);
-uint32_t  radio_get_preamble_toa_for_modulation(uint16_t length, uint8_t modulation);
-uint32_t  radio_lookup_toa(uint8_t modulation, uint8_t size);
-uint32_t  radio_calculate_message_toa(uint8_t modulation, uint8_t size, int32_t preamble);
+/*!
+ * \brief Calculates the time-on-air of the preamble
+ * \param [IN] length            Number of symbols (LoRa) / Bytes (FSK)
+ * \param [IN] modulation        Modulation index (see radio_constants.c)
+ * \retval airTime               Time-on-air in hs_timer ticks
+ */
+uint32_t  radio_get_preamble_toa(uint16_t length, uint8_t modulation);
+
+// TO_REMOVE
+// uint32_t  radio_lookup_toa(uint8_t modulation, uint8_t size);
+
+// TO_REMOVE
+// return packet toa in hs_timer ticks
+// uint32_t  radio_calculate_message_toa(uint8_t modulation, uint8_t size, int32_t preamble);
 
 
 void      radio_set_packet_params_and_size(uint8_t size);
@@ -89,6 +104,14 @@ uint32_t  radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
 * \retval           Time-on-air in ms
 */
 uint32_t  radio_get_toa(uint8_t payload_len, uint8_t modulation);
+/**
+* \brief            Get time-on-air for specified flora modulation.
+*
+* \param            payload_len: Number of payload Bytes from the upper layer
+* \param            modulation: flora modulation (see radio_constants.c)
+* \retval           Time-on-air in hs_timer ticks
+*/
+uint32_t  radio_get_toa_hs(uint8_t payload_len, uint8_t modulation);
 
 
 
