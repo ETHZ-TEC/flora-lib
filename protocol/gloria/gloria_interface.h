@@ -9,10 +9,6 @@
 #define PROTOCOL_GLORIA_GLORIA_INTERFACE_H_
 
 
-/*******************************************************************************
-* BEGIN: GMW INTERFACE
-******************************************************************************/
-
 /* CONFIG DEFAULTS ************************************************************/
 
 /**
@@ -73,14 +69,6 @@
 #endif
 
 /* MISC ***********************************************************************/
-
-/**
- * calculates an estimate for the required slot size (duration of one flood with a given N_TX and message size)
- */
-#define GLORIA_INTERFACE_HOP_DURATION(len)                    (radio_toas[GLORIA_INTERFACE_MODULATION][len] + gloria_timings[GLORIA_INTERFACE_MODULATION].slotOverhead)
-#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, n_hops, len) (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * 1000UL / HS_TIMER_FREQUENCY)
-#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, n_hops, len)    (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * LPTIMER_SECOND / HS_TIMER_FREQUENCY)
-
 
 typedef void (* gloria_cb_func_t)(void);
 
@@ -198,32 +186,64 @@ void gloria_set_tx_power(int8_t power);
 /**
  * \brief            Set modulation config of the radio (valid options are
  *                   defined in radio_constants.c)
+ * \param            modulation: flora modulation (see radio_constants.c)
  */
 void gloria_set_modulation(uint8_t modulation);
 
 /**
  * \brief            Set frequency and bandwidth config of the radio (valid
  *                   options are defined in radio_constants.c)
+ * \param            band: flora band (see radio_constants.c)
  */
 void gloria_set_band(uint8_t band);
 
 /**
  * \brief            Calculates the time-on-air (in us) for a single packet with
- *                   the current radio settings. Argument `len` relates to the
- *                   upper layer payload length (i.e. without overhead added by
- *                   gloria).
- * \param            len: Number of payload Bytes from the upper layer
+ *                   the current radio settings.
+ *                   NOTE: Before calling this function, configure gloria.
+ *
+ * \param            payload_len: Number of payload Bytes from the upper layer
+ *                   (i.e. without overhead added by gloria).
+ * \returns          Time-on-air in us
  */
-uint32_t gloria_get_time_on_air(uint8_t payload_len);
+uint32_t gloria_get_toa(uint8_t payload_len);
+
+/**
+ * \brief            Calculates the time-on-air (in us) for a single packet with
+ *                   a specific radio setting.
+ *                   (sl = stateless)
+ *
+ * \param            payload_len: Number of payload Bytes from the upper layer
+ *                   (i.e. without overhead added by gloria).
+ * \param            modulation: flora modulation (see radio_constants.c)
+ * \returns          Time-on-air in us
+ */
+uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation);
 
 /**
  * \brief            Returns the flood time (in us)
  *                   with the current modulation and band settings.
- *                   NOTE: Before calling this function, configure gloria.
+ *                   NOTE: Before calling this function, make sure to configure
+ *                   gloria.
  *
+ * \param            payload_len: Number of payload Bytes from the upper layer
+ *                   (i.e. without overhead added by gloria).
  * \return           Duration of the flood (in us)
  */
-uint32_t gloria_get_flood_time();
+uint32_t gloria_get_flood_time(uint8_t payload_len);
+
+
+/**
+ * \brief            Returns the flood time (in us)
+ *                   for a specific modulation and band setting.
+ *                   (sl = stateless)
+ *
+ * \param            payload_len: Number of payload Bytes from the upper layer
+ *                   (i.e. without overhead added by gloria).
+ * \param            modulation: flora modulation (see radio_constants.c)
+ * \return           Duration of the flood (in us)
+ */
+uint32_t gloria_get_flood_time_sl(uint8_t payload_len, uint8_t modulation);
 
 /**
  * \brief            Enable the printing of finished (i.e. completely
@@ -256,8 +276,13 @@ int32_t gloria_get_rssi();
 int32_t gloria_get_snr();
 
 
-/*******************************************************************************
- * END: GMW INTERFACE
- ******************************************************************************/
+/**
+ * calculates an estimate for the required slot size (duration of one flood with a given N_TX and message size)
+ */
+#define GLORIA_INTERFACE_HOP_DURATION(len)                    (((uint64_t)gloria_get_toa_sl(len, GLORIA_INTERFACE_MODULATION))*HS_TIMER_FREQUENCY/1000000UL + gloria_timings[GLORIA_INTERFACE_MODULATION].slotOverhead)
+#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, n_hops, len) (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * 1000UL / HS_TIMER_FREQUENCY)
+#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, n_hops, len)    (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * LPTIMER_SECOND / HS_TIMER_FREQUENCY)
+
+
 
 #endif /* PROTOCOL_GLORIA_GLORIA_INTERFACE_H_ */

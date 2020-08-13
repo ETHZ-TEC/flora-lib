@@ -259,16 +259,35 @@ struct Radio_s
      */
     bool    ( *CheckRfFrequency )( uint32_t frequency );
     /*!
-     * \brief Computes the packet time on air in ms for the given payload
+     * \brief Computes the packet time-on-air for the given payload
      *
-     * \Remark Can only be called once SetRxConfig or SetTxConfig have been called
+     * NOTE: modified in order to return us instead of ms!
      *
-     * \param [IN] modem      Radio modem to be used [0: FSK, 1: LoRa]
-     * \param [IN] pktLen     Packet payload length
+     * \param [IN] modem        Radio modem to be used [0: FSK, 1: LoRa]
+     * \param [IN] bandwidth    Sets the bandwidth
+     *                          FSK : >= 2600 and <= 250000 Hz
+     *                          LoRa: [0: 125 kHz, 1: 250 kHz,
+     *                                 2: 500 kHz, 3: Reserved]
+     * \param [IN] datarate     Sets the Datarate
+     *                          FSK : 600..300000 bits/s
+     *                          LoRa: [5: 32, 6: 64, 7: 128, 8: 256, 9: 512,
+     *                                10: 1024, 11: 2048, 12: 4096  chips]
+     * \param [IN] coderate     Sets the coding rate (LoRa only)
+     *                          FSK : N/A ( set to 0 )
+     *                          LoRa: [1: 4/5, 2: 4/6, 3: 4/7, 4: 4/8]
+     * \param [IN] preambleLen  Sets the Preamble length
+     *                          FSK : Number of bytes
+     *                          LoRa: Length in symbols (the hardware adds 4 more symbols)
+     * \param [IN] fixLen       Fixed length packets [0: variable, 1: fixed]
+     * \param [IN] payloadLen   Sets payload length (in Bytes) when fixed length is used
+     * \param [IN] crcOn        Enables/Disables the CRC [0: OFF, 1: ON]
      *
-     * \retval airTime        Computed airTime (ms) for the given packet payload length
+     * \retval airTime          Computed airTime (us) for the given packet payload length
      */
-    uint32_t  ( *TimeOnAir )( RadioModems_t modem, uint8_t pktLen );
+    uint32_t  ( *TimeOnAir )( RadioModems_t modem, uint32_t bandwidth,
+                              uint32_t datarate, uint8_t coderate,
+                              uint16_t preambleLen, bool fixLen, uint8_t payloadLen,
+                              bool crcOn );
     /*!
      * \brief Sends the buffer of size. Prepares the packet to be sent and sets
      *        the radio in transmission

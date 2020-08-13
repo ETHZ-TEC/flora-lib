@@ -718,7 +718,7 @@ static void gloria_cont_callback() {
     gloria_last_sync = flood.marker;
   }
   if (flood.msg_received) {
-    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(&flood) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
+    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(flood.payload_size, flood.modulation, flood.data_slots, flood.message->header.sync, flood.ack_mode) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
   }
 
   memcpy(&print_message, &message, sizeof(gloria_message_t));
@@ -737,7 +737,7 @@ static void gloria_cont_callback() {
 
 static void gloria_finish_callback() {
   if (flood.msg_received) {
-    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(&flood) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
+    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(flood.payload_size, flood.modulation, flood.data_slots, flood.message->header.sync, flood.ack_mode) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
   }
   if (flood.initial) {
     gloria_last_sync = flood.marker;

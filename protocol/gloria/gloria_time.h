@@ -10,8 +10,8 @@
 
 #define GLORIA_SYNC_SEARCH_SPACE 3
 
-uint32_t gloria_calculate_slot_time(gloria_flood_t* flood, uint8_t index, uint8_t msg_size);
-uint32_t gloria_calculate_flood_time(gloria_flood_t* flood);
+uint32_t gloria_calculate_slot_time(uint8_t modulation, uint8_t ack_mode, uint8_t index, uint8_t msg_size);
+uint32_t gloria_calculate_flood_time(uint8_t payload_len, uint8_t modulation, uint8_t data_slots, uint8_t sync, uint8_t ack_mode);
 
 uint64_t gloria_calculate_tx_marker(gloria_flood_t* flood);
 uint64_t gloria_calculate_rx_marker(gloria_flood_t* flood);

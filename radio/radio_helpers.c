@@ -98,10 +98,10 @@ void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint8_t s
 {
   if (size > 0) {
     uint8_t margin = 16;
-    uint32_t preamble_toa = radio_get_preamble_toa(SX126x.PacketParams.Params.LoRa.PreambleLength);
-    uint32_t header_toa = radio_get_header_toa();
+    uint32_t preamble_toa = radio_get_preamble_toa(SX126x.PacketParams.Params.LoRa.PreambleLength, current_modulation);
+    uint32_t header_toa = radio_get_toa_hs(0, current_modulation);
     uint32_t start_time = (uint32_t) hs_timer_get_schedule_timestamp() + preamble_toa + header_toa + RADIO_TIME_STBY_RC_TO_TX * HS_TIMER_FREQUENCY_US;
-    volatile uint32_t toa = radio_calculate_message_toa(current_modulation, lora_last_payload_size, -1) - preamble_toa - header_toa - RADIO_TIME_STBY_RC_TO_TX * HS_TIMER_FREQUENCY_US; // - lora_get_header_toa(current_modulation);
+    volatile uint32_t toa = radio_get_toa_hs(lora_last_payload_size, current_modulation) - preamble_toa - header_toa - RADIO_TIME_STBY_RC_TO_TX * HS_TIMER_FREQUENCY_US; // - lora_get_header_toa(current_modulation);
     uint32_t toa_per_byte = toa / lora_last_payload_size;
 
     radio_set_packet_params_and_size(size);
@@ -319,35 +319,21 @@ uint32_t radio_calculate_timeout(bool preamble)
 {
   if (preamble) {
     if (override_preamble_length != -1) {
-      return ((uint64_t) radio_get_preamble_toa(override_preamble_length))  * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
+      return ((uint64_t) radio_get_preamble_toa(override_preamble_length, current_modulation))  * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
     }
     else {
-      return ((uint64_t) radio_get_preamble_toa(0)) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
+      return ((uint64_t) radio_get_preamble_toa(0, current_modulation)) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
     }
   }
   else {
-    return radio_calculate_message_toa(current_modulation, 0, override_preamble_length) * 2.0 + (85.2 + 100.0) * HS_TIMER_FREQUENCY_US;
+    return radio_get_toa_hs(0, current_modulation) * 2.0 + (85.2 + 100.0) * HS_TIMER_FREQUENCY_US;
   }
 }
 
-
-uint16_t radio_get_preamble_length_from_duration(uint16_t duration, uint8_t modulation)
-{
-  uint16_t preamble_length;
-
-  if (duration && radio_modulations[modulation].modem == MODEM_LORA) {
-    preamble_length = duration / radio_lora_symb_times[radio_modulations[modulation].bandwidth][12 - radio_modulations[modulation].datarate];
-  }
-  else {
-    preamble_length = radio_modulations[modulation].preambleLen;
-  }
-
-  return preamble_length;
-}
 
 uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation)
 {
-  if (modulation < 8) {
+  if (radio_modulations[modulation].modem == MODEM_LORA) {
     return length * radio_lora_symb_times[radio_modulations[modulation].bandwidth][12 - radio_modulations[modulation].datarate] * HS_TIMER_FREQUENCY_MS;
   }
   else {
@@ -356,19 +342,7 @@ uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation)
 }
 
 
-uint32_t radio_get_header_toa(void)
-{
-  return radio_calculate_message_toa(current_modulation, 0, -1);
-}
-
-
-uint32_t radio_get_preamble_toa(uint16_t length)
-{
-  return radio_get_preamble_toa_for_modulation(length, current_modulation);
-}
-
-
-uint32_t radio_get_preamble_toa_for_modulation(uint16_t length, uint8_t modulation)
+uint32_t radio_get_preamble_toa(uint16_t length, uint8_t modulation)
 {
   if (!length) {
     length = radio_modulations[modulation].preambleLen;
@@ -385,69 +359,6 @@ uint32_t radio_get_preamble_toa_for_modulation(uint16_t length, uint8_t modulati
   else {
     return rint((double) 8 * (length + 3.0) / (double) radio_modulations[modulation].datarate * HS_TIMER_FREQUENCY);
   }
-}
-
-
-inline uint32_t radio_lookup_toa(uint8_t modulation, uint8_t size)
-{
-  return radio_toas[modulation][size];
-}
-
-
-uint32_t radio_calculate_message_toa(uint8_t modulation, uint8_t size, int32_t preamble)
-{
-  uint32_t airTime = 0;
-
-  if (preamble == -1) {
-      preamble = radio_modulations[modulation].preambleLen;
-  }
-
-  switch( radio_modulations[modulation].modem )
-  {
-  case MODEM_FSK:
-    {
-       airTime = rint( ( 8 * ( ( preamble ) +
-                   ( SX126x.PacketParams.Params.Gfsk.SyncWordLength >> 3 ) +
-                   ( ( SX126x.PacketParams.Params.Gfsk.HeaderType == RADIO_PACKET_FIXED_LENGTH ) ? 0.0 : 1.0 ) +
-                   size +
-                   ( ( size && SX126x.PacketParams.Params.Gfsk.CrcLength == RADIO_CRC_2_BYTES && SX126x.PacketParams.Params.Gfsk.HeaderType != RADIO_PACKET_FIXED_LENGTH) ? 2.0 : 0 ) ) /
-                   SX126x.ModulationParams.Params.Gfsk.BitRate ) * HS_TIMER_FREQUENCY);
-    }
-    break;
-  case MODEM_LORA:
-    {
-      double ts = radio_get_symbol_toa(1, modulation);
-      double tPreamble = radio_get_preamble_toa(preamble);
-      double tmp = (
-        (
-          ceil(
-            (
-                8 * size
-                - 4 * SX126x.ModulationParams.Params.LoRa.SpreadingFactor
-                + 28
-                + (16 * SX126x.PacketParams.Params.LoRa.CrcMode)
-                - ((SX126x.PacketParams.Params.LoRa.HeaderType == LORA_PACKET_FIXED_LENGTH ) ? 20 : 0)
-            )
-            / (double)(
-                4 * (
-                    SX126x.ModulationParams.Params.LoRa.SpreadingFactor
-                    - ((SX126x.ModulationParams.Params.LoRa.LowDatarateOptimize > 0) ? 2 : 0)
-                  )
-            )
-          )
-        )
-        * ((SX126x.ModulationParams.Params.LoRa.CodingRate % 4 ) + 4 )
-      );
-
-      double nPayload = 8 + ((tmp > 0) ? tmp : 0);
-      double tPayload = nPayload * ts;
-      double tOnAir = tPreamble + tPayload;
-
-      airTime = tOnAir;
-    }
-    break;
-  }
-  return airTime;
 }
 
 
@@ -574,7 +485,7 @@ void radio_set_cad(uint8_t modulation, bool rx, bool use_timeout)
   if (modulation <= RADIO_NUM_CAD_PARAMS) {
     radio_cad_params_t params = radio_cad_params[modulation];
     if (use_timeout) {
-      uint32_t timeout = ((uint64_t) radio_calculate_message_toa(current_modulation, 0, -1) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS);
+      uint32_t timeout = ((uint64_t) radio_get_toa(0, current_modulation)*1000U / RADIO_TIMER_PERIOD_NS);
       SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, rx, timeout);
     }
     else {
@@ -620,8 +531,36 @@ RadioState_t radio_get_status(void)
 }
 
 
-uint32_t radio_get_toa_in_ms(RadioModems_t modem, uint32_t len)
+uint32_t radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
+                        uint32_t datarate, uint8_t coderate,
+                        uint16_t preambleLen, bool fixLen, uint8_t payloadLen,
+                        bool crcOn)
 {
-  return Radio.TimeOnAir(modem, len);
+  return Radio.TimeOnAir( modem,
+                          bandwidth,
+                          datarate,
+                          coderate,
+                          preambleLen,
+                          fixLen,
+                          payloadLen,
+                          crcOn);
 }
 
+uint32_t radio_get_toa(uint8_t payload_len, uint8_t modulation)
+{
+  return Radio.TimeOnAir( radio_modulations[modulation].modem,
+                          radio_modulations[modulation].bandwidth,
+                          radio_modulations[modulation].datarate,
+                          radio_modulations[modulation].coderate - 4,
+                          radio_modulations[modulation].preambleLen,
+                          false, // fixLen
+                          payload_len,
+                          true   // crcOn
+  );
+}
+
+
+uint32_t radio_get_toa_hs(uint8_t payload_len, uint8_t modulation)
+{
+  return ((uint64_t) radio_get_toa(payload_len, modulation))*HS_TIMER_FREQUENCY/1000000UL;
+}

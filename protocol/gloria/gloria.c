@@ -65,18 +65,19 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
     // check if lp listening possible with the given guard time
     if (current_flood->lp_listening) {
       uint32_t slot_time;
-      uint32_t rx2rx_trans = gloria_timings[flood->modulation].slotAckOverhead;
+      uint32_t rx2rx_trans = gloria_timings[current_flood->modulation].slotAckOverhead;
       if (current_flood->ack_mode) {
-        slot_time = gloria_calculate_slot_time(current_flood, 1, GLORIA_ACK_LENGTH);
+        slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 1, GLORIA_ACK_LENGTH);
       }
       else {
-        slot_time = gloria_calculate_slot_time(current_flood, 0, current_flood->message_size);
+        slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 0, current_flood->message_size);
       }
 
       if (slot_time < rx2rx_trans + gloria_calculate_rx_timeout(current_flood)) {
         // deactivate lp listening and listen for the whole flood time
         current_flood->lp_listening = false;
-        current_flood->rx_timeout = gloria_calculate_flood_time(current_flood) + 2*current_flood->guard_time;
+        current_flood->rx_timeout = gloria_calculate_flood_time(current_flood->payload_size, current_flood->modulation, current_flood->data_slots, current_flood->message->header.sync, current_flood->ack_mode)
+ + 2*current_flood->guard_time;
       }
     }
     else if (current_flood->rx_timeout) {
