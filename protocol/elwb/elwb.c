@@ -297,9 +297,9 @@ static void elwb_run(void)
             if ((ELWB_TIMER_NOW() - bootstrap_started) >= ELWB_CONF_BOOTSTRAP_TIMEOUT) {
               break;
             }
-          } while (elwb_running && !ELWB_GLOSSY_IS_T_REF_UPDATED() && !ELWB_SCHED_IS_FIRST(&schedule));
+          } while (elwb_running && (!ELWB_GLOSSY_IS_T_REF_UPDATED() || !ELWB_SCHED_IS_FIRST(&schedule)));
           /* exit bootstrap mode if schedule received, exit bootstrap state */
-          if (ELWB_GLOSSY_IS_T_REF_UPDATED()) {
+          if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_SCHED_IS_FIRST(&schedule)) {
             break;
           }
           /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
@@ -734,7 +734,7 @@ end_of_round:
     if (call_preprocess) {
       start_of_next_round -= ELWB_CONF_T_PREPROCESS;    /* wake up earlier such that the pre task can run */
     }
-    //LOG_VERBOSE("wakeup in %d ticks", (int32_t)(start_of_next_round - lptimer_now()));
+    //LOG_VERBOSE("wakeup in %ld ticks", (int32_t)(start_of_next_round - lptimer_now()));
     ELWB_WAIT_UNTIL(start_of_next_round);
   }
 
