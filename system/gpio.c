@@ -20,16 +20,15 @@ void gpio_check_baseboard(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(BASEBOARD_ENABLE_GPIO_Port, &GPIO_InitStruct);
   /* read pin value */
-  uint32_t c = 10, n = 0;
+  uint32_t c = 10;
   while (c) {
     delay_us(1000);
-    if (PIN_GET(BASEBOARD_ENABLE)) {
-      LOG_INFO("pin high");
-      n++;
+    if (PIN_GET(BASEBOARD_ENABLE) == 0) {
+      break;
     }
     c--;
   }
-  if (n == 10) {
+  if (c == 0) {
     /* comboard is most likely installed on a baseboard! */
     LOG_ERROR("baseboard detected, but compiled without flag 'BASEBOARD'!");
     log_flush();
