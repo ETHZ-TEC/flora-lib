@@ -98,6 +98,8 @@ void radio_init(void)
   dcstat_reset(&radio_dc_tx);
   RADIO_TX_STOP_IND();
   RADIO_RX_STOP_IND();
+
+  LOG_VERBOSE("initialized");
 }
 
 
