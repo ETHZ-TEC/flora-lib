@@ -13,11 +13,14 @@ void gpio_check_baseboard(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
+  /* store pin config */
+  uint32_t prev_iotype = BASEBOARD_ENABLE_GPIO_Port->OTYPER;
+  uint32_t prev_pull   = BASEBOARD_ENABLE_GPIO_Port->PUPDR;
+
   /* to check whether the comboard is indeed not on a baseboard: read state of enable pin (has external pullup) */
   GPIO_InitStruct.Pin   = BASEBOARD_ENABLE_Pin;
   GPIO_InitStruct.Mode  = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(BASEBOARD_ENABLE_GPIO_Port, &GPIO_InitStruct);
   /* read pin value */
   uint32_t c = 10;
@@ -37,6 +40,12 @@ void gpio_check_baseboard(void)
     led_on(LED_EVENT);
     while (1);
   }
+
+  /* restore previous pin config */
+  BASEBOARD_ENABLE_GPIO_Port->OTYPER = prev_iotype;
+  BASEBOARD_ENABLE_GPIO_Port->PUPDR  = prev_pull;
+  /* make sure no interrupt is triggered by reconfiguring the pin */
+  __HAL_GPIO_EXTI_CLEAR_IT(BASEBOARD_ENABLE_Pin);
 }
 
 
@@ -49,20 +58,15 @@ void gpio_init(void)
   /* SWO is not used -> configure as output */
  #if BASEBOARD
   /* configure for Baseboard: set as output high */
-  HAL_GPIO_WritePin(SWO_GPIO_Port, SWO_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(SWO_GPIO_Port, SWO_Pin, GPIO_PIN_SET);    // = BASEBOARD_ENABLE_Pin
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
  #else  /* BASEBOARD */
   /* code was compiled without the flags 'BASEBOARD' and 'SWO_ENABLE' */
   #if !FLOCKLAB
   gpio_check_baseboard();
   #endif /* FLOCKLAB */
-  HAL_GPIO_WritePin(SWO_GPIO_Port, SWO_Pin, GPIO_PIN_RESET);
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_WritePin(SWO_GPIO_Port, SWO_Pin, GPIO_PIN_RESET);  // = BASEBOARD_ENABLE_Pin
  #endif /* BASEBOARD */
-  GPIO_InitStruct.Pin   = SWO_Pin;
-  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  HAL_GPIO_Init(SWO_GPIO_Port, &GPIO_InitStruct);
 #endif /* SWO_ENABLE */
 
 #if BASEBOARD
