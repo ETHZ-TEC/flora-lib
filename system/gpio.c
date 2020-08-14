@@ -31,7 +31,9 @@ void gpio_check_baseboard(void)
   if (c == 0) {
     /* comboard is most likely installed on a baseboard! */
     LOG_ERROR("baseboard detected, but compiled without flag 'BASEBOARD'!");
+  #if !LOG_PRINT_IMMEDIATELY
     log_flush();
+  #endif /* LOG_PRINT_IMMEDIATELY */
     led_on(LED_EVENT);
     while (1);
   }
