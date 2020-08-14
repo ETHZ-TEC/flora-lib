@@ -228,9 +228,10 @@ uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation);
  *
  * \param            payload_len: Number of payload Bytes from the upper layer
  *                   (i.e. without overhead added by gloria).
+ * \param            num_slots: number of slots the Gloria flood consists of
  * \return           Duration of the flood (in us)
  */
-uint32_t gloria_get_flood_time(uint8_t payload_len);
+uint32_t gloria_get_flood_time(uint8_t payload_len, uint8_t num_slots);
 
 
 /**
@@ -241,9 +242,10 @@ uint32_t gloria_get_flood_time(uint8_t payload_len);
  * \param            payload_len: Number of payload Bytes from the upper layer
  *                   (i.e. without overhead added by gloria).
  * \param            modulation: flora modulation (see radio_constants.c)
+ * \param            num_slots: number of slots the Gloria flood consists of
  * \return           Duration of the flood (in us)
  */
-uint32_t gloria_get_flood_time_sl(uint8_t payload_len, uint8_t modulation);
+ uint32_t gloria_get_flood_time_sl(uint8_t payload_len, uint8_t modulation, uint8_t num_slots);
 
 /**
  * \brief            Enable the printing of finished (i.e. completely
@@ -276,13 +278,15 @@ int32_t gloria_get_rssi();
 int32_t gloria_get_snr();
 
 
-/**
- * calculates an estimate for the required slot size (duration of one flood with a given N_TX and message size)
- */
-#define GLORIA_INTERFACE_HOP_DURATION(len)                    (((uint64_t)gloria_get_toa_sl(len, GLORIA_INTERFACE_MODULATION))*HS_TIMER_FREQUENCY/1000000UL + gloria_timings[GLORIA_INTERFACE_MODULATION].slotOverhead)
-#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, n_hops, len) (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * 1000UL / HS_TIMER_FREQUENCY)
-#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, n_hops, len)    (uint32_t)((uint64_t)(GLORIA_INTERFACE_HOP_DURATION(len) * (n_tx + n_hops - 1) + gloria_timings[GLORIA_INTERFACE_MODULATION].floodInitOverhead) * LPTIMER_SECOND / HS_TIMER_FREQUENCY)
 
+/**
+ * macros for required flood duration
+ */
+
+// flood duration in ms
+#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, n_hops, len)    (gloria_get_flood_time_sl(len, GLORIA_INTERFACE_MODULATION, n_tx + n_hops - 1) / 1000UL)
+// flood duration in lptimer ticks
+#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, n_hops, len)       (uint32_t)((uint64_t)(gloria_get_flood_time_sl(len, GLORIA_INTERFACE_MODULATION, n_tx + n_hops - 1)) * LPTIMER_SECOND / 1000000UL)
 
 
 #endif /* PROTOCOL_GLORIA_GLORIA_INTERFACE_H_ */

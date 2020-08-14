@@ -308,21 +308,22 @@ uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation)
 }
 
 
-uint32_t gloria_get_flood_time(uint8_t payload_len)
+uint32_t gloria_get_flood_time(uint8_t payload_len, uint8_t num_slots)
 {
-  return gloria_get_flood_time_sl(payload_len, internal_modulation);
+  return gloria_get_flood_time_sl(payload_len, internal_modulation, num_slots);
 }
 
 
-uint32_t gloria_get_flood_time_sl(uint8_t payload_len, uint8_t modulation)
+uint32_t gloria_get_flood_time_sl(uint8_t payload_len, uint8_t modulation, uint8_t num_slots)
 {
-  return gloria_calculate_flood_time(
+  uint32_t ret = gloria_calculate_flood_time(
     payload_len,
     modulation,
-    GLORIA_INTERFACE_MAX_SLOTS,
+    num_slots,
     false,        // sync
     0             // ack_mode
   );
+  return ((uint64_t)ret) * 1000000UL / HS_TIMER_FREQUENCY;
 }
 
 
