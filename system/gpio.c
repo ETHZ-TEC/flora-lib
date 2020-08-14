@@ -51,7 +51,9 @@ void gpio_init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
  #else  /* BASEBOARD */
   /* code was compiled without the flags 'BASEBOARD' and 'SWO_ENABLE' */
+  #if !FLOCKLAB
   gpio_check_baseboard();
+  #endif /* FLOCKLAB */
   HAL_GPIO_WritePin(SWO_GPIO_Port, SWO_Pin, GPIO_PIN_RESET);
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
  #endif /* BASEBOARD */
