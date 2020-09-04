@@ -137,6 +137,21 @@ bool rtc_parse_date_string(RTC_DateTypeDef* rtc_date, RTC_TimeTypeDef* rtc_time,
 }
 
 
+void rtc_get_time(uint32_t* hour, uint32_t* minute, uint32_t* second)
+{
+  HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
+  if (hour) {
+    *hour = rtc_time.Hours;
+  }
+  if (minute) {
+    *minute = rtc_time.Minutes;
+  }
+  if (second) {
+    *second = rtc_time.Seconds;
+  }
+}
+
+
 uint32_t rtc_get_unix_timestamp(void)
 {
   HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
@@ -218,7 +233,7 @@ void rtc_set_alarm(uint64_t timestamp, void* callback)
 }
 
 
-void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, void (*callback)(void))
+void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void (*callback)(void))
 {
   rtc_alarm_callback = callback;
 
@@ -233,7 +248,7 @@ void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, void (*callback)(void
   if (hour < 24 && minute < 60) {
     rtc_time.Hours   = hour;
     rtc_time.Minutes = minute;
-    rtc_time.Seconds = 0;
+    rtc_time.Seconds = second;
     RTC_AlarmTypeDef alarm = {
         .AlarmTime = rtc_time,
         .AlarmMask = RTC_ALARMMASK_DATEWEEKDAY,
