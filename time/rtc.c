@@ -173,6 +173,18 @@ uint32_t rtc_get_unix_timestamp(void)
 }
 
 
+uint64_t rtc_get_unix_timestamp_ms(void)
+{
+  uint64_t seconds = rtc_get_unix_timestamp();
+  /* granularity: 1 Sec / (SecondFraction + 1) => 1 / 256 by default */
+  uint32_t subsecs = (rtc_time.SecondFraction - rtc_time.SubSeconds) * 1000UL / (rtc_time.SecondFraction + 1);
+  if (rtc_time.SubSeconds > rtc_time.SecondFraction) {
+    seconds--;
+  }
+  return seconds * 1000ULL + subsecs;
+}
+
+
 uint64_t rtc_get_timestamp(bool hs_timer)
 {
   HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);

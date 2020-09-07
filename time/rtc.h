@@ -20,6 +20,7 @@ bool rtc_set_unix_timestamp(uint32_t timestamp);
 
 void rtc_get_time(uint32_t* hour, uint32_t* minute, uint32_t* second);
 uint32_t rtc_get_unix_timestamp(void);
+uint64_t rtc_get_unix_timestamp_ms(void);
 uint64_t rtc_get_timestamp(bool hs_timer);
 void rtc_delay(uint32_t delay);
 bool rtc_format_time(char* buffer, uint8_t buffer_size);
