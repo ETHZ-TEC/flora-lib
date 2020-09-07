@@ -33,6 +33,15 @@ void rtc_init()
 }
 
 
+/* local helper function */
+bool rtc_update_datetime(void)
+{
+  /* note: GetDate() must always be called after GetTime()! */
+  return (HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) == HAL_OK &&
+          HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN) == HAL_OK);
+}
+
+
 bool rtc_set_date(uint32_t year, uint32_t month, uint32_t day)
 {
   rtc_date.Year    = year % 100;  // 0..99
@@ -89,8 +98,7 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
 
 bool rtc_format_time(char* buffer, uint8_t buffer_size)
 {
-  if (HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) == HAL_OK &&
-      HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN) == HAL_OK) {
+  if (rtc_update_datetime()) {
     snprintf(buffer, buffer_size, "%d-%02d-%02d %02d:%02d:%02d", (rtc_date.Year + 2000),
                                                                  rtc_date.Month, rtc_date.Date,
                                                                  rtc_time.Hours, rtc_time.Minutes,
@@ -140,8 +148,7 @@ bool rtc_parse_date_string(RTC_DateTypeDef* rtc_date, RTC_TimeTypeDef* rtc_time,
 
 void rtc_get_time(uint32_t* hour, uint32_t* minute, uint32_t* second)
 {
-  HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
-  HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);    /* for some reason, this function MUST be called after GetTime() */
+  rtc_update_datetime();
   if (hour) {
     *hour = rtc_time.Hours;
   }
@@ -156,8 +163,7 @@ void rtc_get_time(uint32_t* hour, uint32_t* minute, uint32_t* second)
 
 uint32_t rtc_get_unix_timestamp(void)
 {
-  HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
-  HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);
+  rtc_update_datetime();
 
   struct tm curr_time;
 
@@ -189,10 +195,9 @@ uint64_t rtc_get_unix_timestamp_ms(void)
 
 uint64_t rtc_get_timestamp(bool hs_timer)
 {
-  HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
-  HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);
-
   struct tm curr_time;
+
+  rtc_update_datetime();
 
   curr_time.tm_year = rtc_date.Year + 100;
   curr_time.tm_mday = rtc_date.Date;
@@ -257,7 +262,7 @@ void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void
     return;
   }
 
-  HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
+  rtc_update_datetime();
 
   if (hour < 24 && minute < 60) {
     rtc_time.Hours   = hour;
