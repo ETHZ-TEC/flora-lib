@@ -59,7 +59,7 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
 {
   struct tm ts;
 
-  time_t t = timestamp + 1;               /* must first be converted to time_t! add 1 second to avoid getting behind */
+  time_t t = timestamp;                   /* must first be converted to time_t! */
   gmtime_r((time_t*)&t, &ts);
 
   rtc_date.Year    = ts.tm_year % 100;    /* ts.tm_year contains year since 1900 */
@@ -70,6 +70,7 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
   rtc_time.Hours   = ts.tm_hour;
   rtc_time.Minutes = ts.tm_min % 59;
   rtc_time.Seconds = ts.tm_sec;
+  rtc_time.SubSeconds     = 0;
   rtc_time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   rtc_time.StoreOperation = RTC_STOREOPERATION_RESET;
   rtc_time.TimeFormat     = 0;
@@ -140,6 +141,7 @@ bool rtc_parse_date_string(RTC_DateTypeDef* rtc_date, RTC_TimeTypeDef* rtc_time,
 void rtc_get_time(uint32_t* hour, uint32_t* minute, uint32_t* second)
 {
   HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);    /* for some reason, this function MUST be called after GetTime() */
   if (hour) {
     *hour = rtc_time.Hours;
   }
