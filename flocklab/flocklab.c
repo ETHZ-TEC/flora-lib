@@ -78,6 +78,8 @@ void flocklab_init(void)
   HAL_NVIC_SetPriority(EXTI4_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 #endif /* FLOCKLAB_SIG_INT */
+  // make sure the time request interrupt on COM_TREQ is disabled
+  HAL_NVIC_DisableIRQ(EXTI3_IRQn);
 }
 
 /*
