@@ -166,7 +166,7 @@ uint8_t gloria_get_rx_started_cnt(void);
 uint8_t gloria_is_t_ref_updated(void);
 
 /**
- * \brief            Get the sync reference time.
+ * \brief            Get the sync reference time in lptimer ticks.
  * \returns          Reference timestamp (flood marker) of last sucessfully
  *                   received flood during a Gloria run with sync_slot set to
  *                   true, in lptimer clock ticks
@@ -175,6 +175,14 @@ uint8_t gloria_is_t_ref_updated(void);
  *                   run without sync_slot set to 0.
  */
 uint64_t gloria_get_t_ref(void);
+
+/**
+ * \brief            Get the sync reference time in hs timer ticks.
+ * \returns          Reference timestamp (flood marker) of last sucessfully
+ *                   received flood during a Gloria run with sync_slot set to
+ *                   true, in hs timer clock ticks
+ */
+uint64_t gloria_get_t_ref_hs(void);
 
 /* Extended Interface *********************************************************/
 

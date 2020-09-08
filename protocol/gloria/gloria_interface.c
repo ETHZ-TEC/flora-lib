@@ -262,6 +262,12 @@ uint64_t gloria_get_t_ref(void)
 }
 
 
+uint64_t gloria_get_t_ref_hs(void)
+{
+  return flood.reconstructed_marker;
+}
+
+
 int32_t gloria_get_rssi(void)
 {
   return lastrun_rssi;
