@@ -25,6 +25,8 @@ static volatile bool              radio_command_scheduled = false;
 static uint64_t                   radio_last_sync_timestamp = 0;
 static uint8_t                    preamble_detected_counter = 0;
 static uint8_t                    sync_detected_counter = 0;
+static uint32_t                   rx_started_counter = 0;       // used to determine the PRR
+static uint32_t                   rx_successful_counter = 0;    // used to determine the PRR
 static dcstat_t                   radio_dc_rx = { 0 };
 static dcstat_t                   radio_dc_tx = { 0 };
 
@@ -354,6 +356,9 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
 {
   RADIO_RX_STOP_IND();
   dcstat_stop(&radio_dc_rx);
+  if (!crc_error) {
+    rx_successful_counter++;
+  }
 
   if (radio_rx_callback) {
     radio_set_timeout_callback(NULL);
@@ -462,6 +467,7 @@ void radio_rx_sync_cb(void)
   if (sync_detected_counter < 255) {
     sync_detected_counter++;
   }
+  rx_started_counter++;
 }
 
 
@@ -741,4 +747,14 @@ void radio_dc_counter_reset(void)
 {
   dcstat_reset(&radio_dc_rx);
   dcstat_reset(&radio_dc_tx);
+}
+
+
+uint32_t radio_get_prr(bool reset)
+{
+  uint32_t prr = 10000 * rx_successful_counter / rx_started_counter;
+  if (reset) {
+    rx_successful_counter = rx_started_counter = 0;
+  }
+  return prr;
 }
