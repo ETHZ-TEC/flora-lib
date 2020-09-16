@@ -64,6 +64,73 @@ bool rtc_set_time(uint32_t hour, uint32_t minute, uint32_t second)
 }
 
 
+/* shift (adjust) the RTC by a fraction of a second (positive offset means the clock will be advanced) */
+void rtc_shift(int32_t offset_ms)
+{
+  if (offset_ms >= 1000 || offset_ms <= -1000) {
+    return;
+  }
+  if (IS_INTERRUPT()) {
+    /* it is not recommended to run this operation from interrupt context since there is a busy wait of up to 1 second involved! */
+    LOG_WARNING("running rtc_shift() from interrupt context!");
+  }
+
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&hrtc);
+
+  /* can only write to the shift register if no shift operation is pending (SHPF == 0) */
+  while (hrtc.Instance->ISR & RTC_ISR_SHPF);
+
+  /* set bit 31 to add one second and set bits 0..14 (SUBFS) to subtract a fraction of a second:
+   *   advance[s] = ((SHIFTR >> 31) ? 1 : 0) - SUBFS / (PREDIV_S + 1)
+   * where PREDIV_S is 0xFF by default
+   */
+  uint32_t shiftval = 0;
+  if (offset_ms > 0) {
+    shiftval  = RTC_SHIFTR_ADD1S;   // add 1s
+    offset_ms = 1000 - offset_ms;
+  }
+  shiftval |= offset_ms * 256 / 1000;
+  hrtc.Instance->SHIFTR = shiftval;
+
+  /* wait until RSF == 1 and SHPF == 0 */
+  while (!(hrtc.Instance->ISR & RTC_ISR_RSF) || (hrtc.Instance->ISR & RTC_ISR_SHPF));
+
+  __HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
+
+  /* bugfix: wait for RTC to settle */
+  delay_us(offset_ms * 1000);
+
+  LOG_VERBOSE("RTC shifted by %dms", offset_ms);
+}
+
+
+/* set the drift compensation in ppm (positive value will add ticks and thus slows down the RTC) */
+bool rtc_compensate_drift(int32_t offset_ppm)
+{
+  if (offset_ppm > 488 || offset_ppm < -488) {
+    return false;
+  }
+  /* use the smooth digital calibration feature to compensate for RTC drift (see RM0394 p.1094 for details) */
+
+  /* calibration register: RTC_CALR
+   * add ticks to slow down or mask (skip) ticks to speed up
+   * set CALM[8:0] to set the #ticks to mask in a 32s cycle (2^20 pulses) or set the CALP bit (0x8000) to increase the frequency by 488.5ppm (16 pulses per second)
+   * calibrated frequency: FCAL = 32768Hz x [1 + (CALP x 512 - CALM) / (2^20 + CALM - CALP x 512)]
+   * extra pulses per second: ((512 * CALP) - CALM) / 32, 0.9537ppm granularity */
+
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&hrtc);
+
+  if (offset_ppm > 0) {
+    offset_ppm = RTC_CALR_CALP | (488 - offset_ppm);
+  }
+  hrtc.Instance->CALR = offset_ppm;   // granularity is approx. 1 ppm
+
+  __HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
+
+  return true;
+}
+
+
 bool rtc_set_unix_timestamp(uint32_t timestamp)
 {
   struct tm ts;
@@ -77,7 +144,7 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
   rtc_date.WeekDay = ts.tm_wday;
 
   rtc_time.Hours   = ts.tm_hour;
-  rtc_time.Minutes = ts.tm_min % 59;
+  rtc_time.Minutes = ts.tm_min % 60;
   rtc_time.Seconds = ts.tm_sec;
   rtc_time.SubSeconds     = 0;
   rtc_time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
@@ -92,6 +159,54 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
                                                         rtc_date.Month, rtc_date.Date,
                                                         rtc_time.Hours, rtc_time.Minutes,
                                                         rtc_time.Seconds);
+  return true;
+}
+
+
+/* note: this function may block for up to 1 second! */
+bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms)
+{
+  struct tm ts;
+  int32_t granularity_ms = (1000UL / (rtc_time.SecondFraction + 1));
+
+  /* calculate offset */
+  int64_t current_ms = rtc_get_unix_timestamp_ms();
+  int64_t offset_ms  = (int64_t)timestamp_ms - current_ms;
+  if (offset_ms <= granularity_ms && offset_ms >= -granularity_ms) {
+    LOG_VERBOSE("current offset (%ldms) is below the threshold, skipping update", (int32_t)offset_ms);
+    return true;      /* don't adjust offset if it is in the order of the RTC granularity */
+  }
+  /* add margin to account for processing overhead */
+  timestamp_ms += 2;
+
+  time_t t = (uint32_t)(timestamp_ms / 1000);                   /* must first be converted to time_t! */
+  gmtime_r((time_t*)&t, &ts);
+
+  rtc_date.Year    = ts.tm_year % 100;    /* ts.tm_year contains year since 1900 */
+  rtc_date.Month   = ts.tm_mon + 1;
+  rtc_date.Date    = ts.tm_mday;
+  rtc_date.WeekDay = ts.tm_wday;
+
+  rtc_time.Hours          = ts.tm_hour;
+  rtc_time.Minutes        = ts.tm_min % 59;
+  rtc_time.Seconds        = ts.tm_sec;
+  rtc_time.SubSeconds     = 0;            /* has no impact */
+  rtc_time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  rtc_time.StoreOperation = RTC_STOREOPERATION_RESET;
+  rtc_time.TimeFormat     = 0;
+
+  if (HAL_RTC_SetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN) != HAL_OK ||
+      HAL_RTC_SetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) != HAL_OK) {
+    return false;
+  }
+
+  /* note: HAL_RTC_SetTime() does not set the subseconds register (it is a read-only register) -> need to use RTC_SHIFTR to compensate down to ms level */
+  rtc_shift(timestamp_ms % 1000);
+
+  LOG_VERBOSE("time set (%d-%02d-%02d %02d:%02d:%02d), offset was %lldms", (rtc_date.Year + 2000),
+                                                                           rtc_date.Month, rtc_date.Date,
+                                                                           rtc_time.Hours, rtc_time.Minutes,
+                                                                           rtc_time.Seconds, offset_ms);
   return true;
 }
 
@@ -220,7 +335,7 @@ uint64_t rtc_get_timestamp(bool hs_timer)
 }
 
 
-void rtc_set_alarm(uint64_t timestamp, void* callback)
+bool rtc_set_alarm(uint64_t timestamp, void* callback)
 {
   rtc_alarm_callback = callback;
 
@@ -248,23 +363,23 @@ void rtc_set_alarm(uint64_t timestamp, void* callback)
       .Alarm = RTC_ALARM_A,
   };
 
-  HAL_RTC_SetAlarm_IT(&hrtc, &alarm, RTC_FORMAT_BIN);
+  return HAL_RTC_SetAlarm_IT(&hrtc, &alarm, RTC_FORMAT_BIN) == HAL_OK;
 }
 
 
-void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void (*callback)(void))
+bool rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void (*callback)(void))
 {
   rtc_alarm_callback = callback;
 
   if (!callback) {
     __HAL_RTC_ALARMA_DISABLE(&hrtc);
     __HAL_RTC_ALARM_CLEAR_FLAG(&hrtc, RTC_FLAG_ALRAF);
-    return;
+    return false;
   }
 
   rtc_update_datetime();
 
-  if (hour < 24 && minute < 60) {
+  if (hour < 24 && minute < 60 && second < 60) {
     rtc_time.Hours   = hour;
     rtc_time.Minutes = minute;
     rtc_time.Seconds = second;
@@ -276,8 +391,15 @@ void rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void
         .AlarmDateWeekDay = 0,
         .Alarm = RTC_ALARM_A,
     };
-    HAL_RTC_SetAlarm_IT(&hrtc, &alarm, RTC_FORMAT_BIN);
+    if (HAL_RTC_SetAlarm_IT(&hrtc, &alarm, RTC_FORMAT_BIN) != HAL_OK) {
+      LOG_ERROR("failed to set alarm");
+      return false;
+    }
+
+    LOG_VERBOSE("alarm set for %02u:%02u:%02u", hour, minute, second);
+    return true;
   }
+  return false;
 }
 
 
