@@ -465,9 +465,9 @@ static void elwb_run(void)
               ELWB_SEND_PACKET();
               if (is_data_round) {
                 stats.pkt_sent++;   /* only count data packets */
+                stats.pkt_cnt++;
                 LOG_VERBOSE("packet sent (%lub)", payload_len);
               }
-              stats.pkt_cnt++;
             }
 
           } else if (is_data_round) {
@@ -505,6 +505,8 @@ static void elwb_run(void)
                   stats.pkt_dropped++;
                   LOG_WARNING("RX queue full, message dropped");
                 }
+              } else {
+                stats.pkt_dropped++;
               }
               stats.pkt_cnt++;
 
