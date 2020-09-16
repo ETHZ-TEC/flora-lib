@@ -24,11 +24,14 @@ void flocklab_init(void)
 
   /* --- OUTPUTS --- */
 
+  HAL_GPIO_DeInit(FLOCKLAB_INT1_GPIO_Port, FLOCKLAB_INT1_Pin);
   HAL_GPIO_WritePin(FLOCKLAB_INT1_GPIO_Port, FLOCKLAB_INT1_Pin, GPIO_PIN_RESET);
 #if FLOCKLAB_SWD
   // SWCLK and SWDIO are connected to INT2 and LED3 -> cannot be used if SWD is enabled
   GPIO_InitStruct.Pin = FLOCKLAB_INT1_Pin;
 #else
+  HAL_GPIO_DeInit(FLOCKLAB_INT2_GPIO_Port, FLOCKLAB_INT2_Pin);
+  HAL_GPIO_DeInit(FLOCKLAB_LED3_GPIO_Port, FLOCKLAB_LED3_Pin);
   HAL_GPIO_WritePin(FLOCKLAB_INT2_GPIO_Port, FLOCKLAB_INT2_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(FLOCKLAB_LED3_GPIO_Port, FLOCKLAB_LED3_Pin, GPIO_PIN_RESET);
   GPIO_InitStruct.Pin = FLOCKLAB_INT1_Pin | FLOCKLAB_INT2_Pin | FLOCKLAB_LED3_Pin;
@@ -39,6 +42,7 @@ void flocklab_init(void)
   HAL_GPIO_Init(FLOCKLAB_INT1_GPIO_Port, &GPIO_InitStruct);
 #if !SWO_ENABLE
   /* SWO pin is shared with LED2 -> if not used as SWO, then use it for tracing */
+  HAL_GPIO_DeInit(FLOCKLAB_LED2_GPIO_Port, FLOCKLAB_LED2_Pin);    /* required, otherwise high current drain in LPM can occur */
   HAL_GPIO_WritePin(FLOCKLAB_LED2_GPIO_Port, FLOCKLAB_LED2_Pin, GPIO_PIN_RESET);
   GPIO_InitStruct.Pin = FLOCKLAB_LED2_Pin;
   HAL_GPIO_Init(FLOCKLAB_LED2_GPIO_Port, &GPIO_InitStruct);
@@ -46,6 +50,8 @@ void flocklab_init(void)
 
   /* --- INPUTS --- */
 
+  HAL_GPIO_DeInit(FLOCKLAB_SIG1_GPIO_Port, FLOCKLAB_SIG1_Pin);
+  HAL_GPIO_DeInit(FLOCKLAB_SIG2_GPIO_Port, FLOCKLAB_SIG2_Pin);
   GPIO_InitStruct.Pin = FLOCKLAB_SIG1_Pin | FLOCKLAB_SIG2_Pin;
 #if FLOCKLAB_SIG_INT
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
@@ -56,20 +62,18 @@ void flocklab_init(void)
   HAL_GPIO_Init(FLOCKLAB_SIG1_GPIO_Port, &GPIO_InitStruct);
 
   // LED1 is connected to RF_DIO1 on COM boards on FlockLab -> configure it as input
+  HAL_GPIO_DeInit(FLOCKLAB_LED1_GPIO_Port, FLOCKLAB_LED1_Pin);
   GPIO_InitStruct.Pin = FLOCKLAB_LED1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(FLOCKLAB_LED1_GPIO_Port, &GPIO_InitStruct);
 
   // BOLT ACK is floating on flocklab, needs a pulldown
+  HAL_GPIO_DeInit(BOLT_ACK_GPIO_Port, BOLT_ACK_Pin);
   GPIO_InitStruct.Pin = BOLT_ACK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(BOLT_ACK_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin = FLOCKLAB_SIG1_Pin;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(FLOCKLAB_SIG1_GPIO_Port, &GPIO_InitStruct);
 
   /* --- INTERRUPTS --- */
 #if FLOCKLAB_SIG_INT
@@ -78,7 +82,7 @@ void flocklab_init(void)
   HAL_NVIC_SetPriority(EXTI4_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 #endif /* FLOCKLAB_SIG_INT */
-  // make sure the time request interrupt on COM_TREQ is disabled
+  // make sure the time request interrupt on COM_TREQ (FLOCKLAB_LED2_Pin) is disabled
   HAL_NVIC_DisableIRQ(EXTI3_IRQn);
 }
 

@@ -18,8 +18,8 @@
 #endif /* MAX */
 
 #ifndef ABS
-#define ABS(a)        ((a) > 0 ? (a) : -(a))
-#endif /* MAX */
+#define ABS(a)        ((a) >= 0 ? (a) : -(a))
+#endif /* ABS */
 
 #define IS_INTERRUPT()        ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0)
 
