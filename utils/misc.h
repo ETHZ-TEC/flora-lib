@@ -9,6 +9,18 @@
 #define UTILS_MISC_H_
 
 
+#ifndef MIN
+#define MIN(a, b)     ((a) < (b) ? (a) : (b))
+#endif /* MIN */
+
+#ifndef MAX
+#define MAX(a, b)     ((a) > (b) ? (a) : (b))
+#endif /* MAX */
+
+#ifndef ABS
+#define ABS(a)        ((a) > 0 ? (a) : -(a))
+#endif /* MAX */
+
 #define IS_INTERRUPT()        ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0)
 
 #define SUSPEND_SYSTICK()     CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk)

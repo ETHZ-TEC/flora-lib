@@ -45,8 +45,8 @@ bool rtc_update_datetime(void)
 bool rtc_set_date(uint32_t year, uint32_t month, uint32_t day)
 {
   rtc_date.Year    = year % 100;  // 0..99
-  rtc_date.Month   = month % 12;  // 1..12
-  rtc_date.Date    = day % 31;    // 1..31
+  rtc_date.Month   = month % 13;  // 1..12
+  rtc_date.Date    = day % 32;    // 1..31
   rtc_date.WeekDay = 0;
 
   return HAL_RTC_SetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN) == HAL_OK;
@@ -56,9 +56,9 @@ bool rtc_set_date(uint32_t year, uint32_t month, uint32_t day)
 bool rtc_set_time(uint32_t hour, uint32_t minute, uint32_t second)
 {
   memset(&rtc_time, 0, sizeof(rtc_time));
-  rtc_time.Hours   = hour % 23;
-  rtc_time.Minutes = minute % 59;
-  rtc_time.Seconds = second % 59;
+  rtc_time.Hours   = hour % 24;
+  rtc_time.Minutes = minute % 60;
+  rtc_time.Seconds = second % 60;
 
   return HAL_RTC_SetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) == HAL_OK;
 }
@@ -88,8 +88,10 @@ void rtc_shift(int32_t offset_ms)
   if (offset_ms > 0) {
     shiftval  = RTC_SHIFTR_ADD1S;   // add 1s
     offset_ms = 1000 - offset_ms;
+  } else {
+    offset_ms = -offset_ms;
   }
-  shiftval |= offset_ms * 256 / 1000;
+  shiftval |= offset_ms * hrtc.Init.SynchPrediv / 1000;
   hrtc.Instance->SHIFTR = shiftval;
 
   /* wait until RSF == 1 and SHPF == 0 */
@@ -114,17 +116,19 @@ bool rtc_compensate_drift(int32_t offset_ppm)
 
   /* calibration register: RTC_CALR
    * add ticks to slow down or mask (skip) ticks to speed up
-   * set CALM[8:0] to set the #ticks to mask in a 32s cycle (2^20 pulses) or set the CALP bit (0x8000) to increase the frequency by 488.5ppm (16 pulses per second)
+   * set CALM[8:0] to set the #ticks to mask in a 32s cycle (2^20 pulses) or set the CALP bit (0x8000) to increase the frequency / slow down by 488.5ppm (16 pulses per second)
    * calibrated frequency: FCAL = 32768Hz x [1 + (CALP x 512 - CALM) / (2^20 + CALM - CALP x 512)]
    * extra pulses per second: ((512 * CALP) - CALM) / 32, 0.9537ppm granularity */
 
-  __HAL_RTC_WRITEPROTECTION_DISABLE(&hrtc);
-
+  offset_ppm = (int32_t)((float)offset_ppm * 1.05f);
   if (offset_ppm > 0) {
     offset_ppm = RTC_CALR_CALP | (488 - offset_ppm);
+  } else {
+    offset_ppm = -offset_ppm;
   }
-  hrtc.Instance->CALR = offset_ppm;   // granularity is approx. 1 ppm
 
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&hrtc);
+  hrtc.Instance->CALR = offset_ppm;
   __HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
 
   return true;
@@ -170,14 +174,11 @@ bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms)
   int32_t granularity_ms = (1000UL / (rtc_time.SecondFraction + 1));
 
   /* calculate offset */
-  int64_t current_ms = rtc_get_unix_timestamp_ms();
-  int64_t offset_ms  = (int64_t)timestamp_ms - current_ms;
+  int64_t offset_ms  = (int64_t)timestamp_ms - (int64_t)rtc_get_unix_timestamp_ms();
   if (offset_ms <= granularity_ms && offset_ms >= -granularity_ms) {
     LOG_VERBOSE("current offset (%ldms) is below the threshold, skipping update", (int32_t)offset_ms);
     return true;      /* don't adjust offset if it is in the order of the RTC granularity */
   }
-  /* add margin to account for processing overhead */
-  timestamp_ms += 2;
 
   time_t t = (uint32_t)(timestamp_ms / 1000);                   /* must first be converted to time_t! */
   gmtime_r((time_t*)&t, &ts);
@@ -188,7 +189,7 @@ bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms)
   rtc_date.WeekDay = ts.tm_wday;
 
   rtc_time.Hours          = ts.tm_hour;
-  rtc_time.Minutes        = ts.tm_min % 59;
+  rtc_time.Minutes        = ts.tm_min % 60;
   rtc_time.Seconds        = ts.tm_sec;
   rtc_time.SubSeconds     = 0;            /* has no impact */
   rtc_time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
