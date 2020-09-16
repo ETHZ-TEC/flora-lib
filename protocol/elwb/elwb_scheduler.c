@@ -94,12 +94,12 @@ static uint32_t            t_round;
 
 
 /* the number of bits for depth and length are stored in the thirds slot;
- * 5 bits are reserved to store the number of bits needed for the depth 
+ * 5 bits are reserved to store the number of bits needed for the depth
  * (i.e. 0 to 31 bits) */
 #define GET_D_BITS()       (compressed_data[2] >> 3)
 /* 3 bits are reserved to store the number of bits needed for the length
  * (i.e. 0 to 7 bits) */
-#define GET_L_BITS()       (compressed_data[2] & 0x07)  
+#define GET_L_BITS()       (compressed_data[2] & 0x07)
 #define SET_D_L_BITS(d, l) (compressed_data[2] = ((d) << 3) | ((l) & 0x07))
 #define COMPR_SLOT(a)      (compressed_data[3 + (a)])
 #ifndef MIN
@@ -150,11 +150,11 @@ uint32_t elwb_sched_compress(uint8_t* compressed_data, uint32_t n_slots)
     } else {
       if (l[n_runs] > l_max) {
         /* keep track of the max. num. of conseq. slots with const. delta */
-        l_max = l[n_runs]; 
+        l_max = l[n_runs];
       }
-      n_runs++; 
+      n_runs++;
       /* calculate the new delta */
-      d[n_runs] = slots_buffer[idx + 1] - slots_buffer[idx]; 
+      d[n_runs] = slots_buffer[idx + 1] - slots_buffer[idx];
       /* make sure the node IDs are in increasing order */
       if (slots_buffer[idx + 1] < slots_buffer[idx]) {
         return 0; /* node IDs are not sorted! */
@@ -178,7 +178,7 @@ uint32_t elwb_sched_compress(uint8_t* compressed_data, uint32_t n_slots)
   for (idx = 0; idx < n_runs; idx++) {
     uint32_t offset_bits = run_bits * idx;
     /* store the current and the following 3 bytes in a 32-bit variable */
-    uint32_t tmp = (uint32_t)COMPR_SLOT(offset_bits / 8) | 
+    uint32_t tmp = (uint32_t)COMPR_SLOT(offset_bits / 8) |
                    ((uint32_t)COMPR_SLOT(offset_bits / 8 + 1) << 8)  |
                    ((uint32_t)COMPR_SLOT(offset_bits / 8 + 2) << 16) |
                    ((uint32_t)COMPR_SLOT(offset_bits / 8 + 3) << 24);
@@ -224,7 +224,7 @@ bool elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots)
     uint32_t offset_bits = run_bits * idx;
     uint32_t tmp = (uint32_t)COMPR_SLOT(offset_bits / 8) |
                    ((uint32_t)COMPR_SLOT(offset_bits / 8 + 1) << 8)  |
-                   ((uint32_t)COMPR_SLOT(offset_bits / 8 + 2) << 16) | 
+                   ((uint32_t)COMPR_SLOT(offset_bits / 8 + 2) << 16) |
                    ((uint32_t)COMPR_SLOT(offset_bits / 8 + 3) << 24);
     uint32_t run_info = ((tmp >> (offset_bits % 8)) & mask);
     uint32_t d = run_info >> l_bits;
@@ -418,7 +418,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
         }
         curr_node = curr_node->next;
       }
-    } else 
+    } else
   #endif /* ELWB_CONF_SCHED_FAIR */
     {
       /* go again through the list of nodes and assign the requested slots */
@@ -485,7 +485,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     /* add slots for the host if requested */
     n_slots_assigned = 0;
     while (reserve_slots_host && n_slots_assigned < ELWB_CONF_MAX_SLOTS_HOST) {
-      sched->slot[n_slots_assigned++] = NODE_ID;
+      sched->slot[n_slots_assigned++] = DPP_DEVICE_ID_SINK;    /* use ID 0 for the HOST */
       reserve_slots_host--;
     }
     sched->n_slots = n_slots_assigned;
@@ -539,7 +539,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   /* make sure the minimal round period is not smaller than the max. round
    * duration! */
   if (((uint32_t)ELWB_CONF_SCHED_PERIOD_MIN * 1000) <=
-     (SCHEDUNITS_TO_MS(ELWB_T_ROUND_MAX) + 
+     (SCHEDUNITS_TO_MS(ELWB_T_ROUND_MAX) +
       ((uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_PREPROCESS)))) {
     LOG_ERROR("invalid parameters");
   }

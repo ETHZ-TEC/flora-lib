@@ -423,7 +423,7 @@ static void elwb_run(void)
       for (slot_idx = 0; slot_idx < ELWB_SCHED_N_SLOTS(&schedule); slot_idx++) {
 
         /* note: slots with node ID 0 belong to the host */
-        bool is_initiator = (schedule.slot[slot_idx] == NODE_ID) || (ELWB_IS_HOST() && schedule.slot[slot_idx] == 0);
+        bool is_initiator = (schedule.slot[slot_idx] == NODE_ID) || (ELWB_IS_HOST() && schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK);
         if (is_initiator) {
           node_registered = true;
           /* send a data packet (if there is any) */
@@ -467,6 +467,7 @@ static void elwb_run(void)
                 stats.pkt_sent++;   /* only count data packets */
                 LOG_VERBOSE("packet sent (%lub)", payload_len);
               }
+              stats.pkt_cnt++;
             }
 
           } else if (is_data_round) {
@@ -676,8 +677,8 @@ end_of_round:
                  ELWB_SCHED_N_SLOTS(&schedule),
                  stats.pkt_rcvd,
                  stats.pkt_sent,
-                 stats.pkt_cnt,
                  stats.pkt_dropped,
+                 stats.pkt_cnt,
                  stats.rssi_avg);
       } else {
         /* print out some stats (note: takes ~2ms to compose this string!) */
@@ -688,9 +689,9 @@ end_of_round:
                  ELWB_SCHED_N_SLOTS(&schedule),
                  stats.pkt_rcvd,
                  stats.pkt_sent,
-                 stats.pkt_cnt,
                  stats.pkt_ack,
                  stats.pkt_dropped,
+                 stats.pkt_cnt,
                  stats.unsynced_cnt,
                  stats.bootstrap_cnt,
                  stats.drift,
