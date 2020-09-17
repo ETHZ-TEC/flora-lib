@@ -314,11 +314,12 @@ typedef struct {
   uint32_t sleep_cnt;     /* #times node went into LPM due to rf silence */
   int32_t  drift;         /* current estimated drift in ppm */
   uint32_t ref_ofs;       /* reference offset in timer ticks */
-  uint32_t pkt_cnt;       /* total number of 'seen' data packets */
   uint32_t pkt_sent;      /* total number of sent data packets */
   uint32_t pkt_ack;       /* total number acknowledged data packets */
   uint32_t pkt_rcvd;      /* total number of received packets (forwarded to the application) */
   uint32_t pkt_dropped;   /* packets dropped due to input buffer full */
+  uint32_t pkt_rx_all;    /* total number of received packets (including schedules, requests, ACK, but without contention) */
+  uint32_t pkt_tx_all;    /* total number of transmitted packets (including schedules, requests, ACK, but without contention) */
   int_fast8_t rssi_avg;   /* average RSSI value */
   int_fast8_t snr_avg;    /* average SNR value */
 } elwb_stats_t;
