@@ -752,7 +752,10 @@ void radio_dc_counter_reset(void)
 
 uint32_t radio_get_prr(bool reset)
 {
-  uint32_t prr = 10000 * rx_successful_counter / rx_started_counter;
+  uint32_t prr = 0;
+  if (rx_started_counter) {
+    prr = 10000 * rx_successful_counter / rx_started_counter;
+  }
   if (reset) {
     rx_successful_counter = rx_started_counter = 0;
   }

@@ -81,7 +81,7 @@ RadioState_t radio_get_status(void);
  * \param [IN] payloadLen   Sets payload length (in Bytes) when fixed length is used
  * \param [IN] crcOn        Enables/Disables the CRC [0: OFF, 1: ON]
  *
- * \retval airTime          Computed airTime (ms) for the given packet payload length
+ * \retval airTime          Computed airTime (us) for the given packet payload length
  */
 uint32_t  radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
                           uint32_t datarate, uint8_t coderate,
@@ -92,7 +92,7 @@ uint32_t  radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
 *
 * \param            payload_len: Number of payload Bytes from the upper layer
 * \param            modulation: flora modulation (see radio_constants.c)
-* \retval           Time-on-air in ms
+* \retval           Time-on-air in us
 */
 uint32_t  radio_get_toa(uint8_t payload_len, uint8_t modulation);
 /**
