@@ -270,6 +270,7 @@ static void elwb_run(void)
 
       /* --- SEND SCHEDULE --- */
       ELWB_SEND_SCHED();
+      stats.pkt_tx_all++;
 
       if (ELWB_SCHED_IS_FIRST(&schedule)) {
         /* sync point */
@@ -360,6 +361,7 @@ static void elwb_run(void)
         }
         /* update stats */
         elwb_update_rssi_snr();
+        stats.pkt_rx_all++;
 
       } else {
         /* update the sync state machine */
@@ -463,9 +465,9 @@ static void elwb_run(void)
               /* wait until the data slot starts */
               ELWB_WAIT_UNTIL(t_slot_ofs);
               ELWB_SEND_PACKET();
+              stats.pkt_tx_all++;
               if (is_data_round) {
                 stats.pkt_sent++;   /* only count data packets */
-                stats.pkt_cnt++;
                 LOG_VERBOSE("packet sent (%lub)", payload_len);
               }
             }
@@ -508,12 +510,13 @@ static void elwb_run(void)
               } else {
                 stats.pkt_dropped++;
               }
-              stats.pkt_cnt++;
 
             } else if (ELWB_IS_HOST()) {
               /* this is a request packet */
               elwb_sched_process_req(schedule.slot[slot_idx], *payload);
             }
+            stats.pkt_rx_all++;
+
           } else if (is_data_round) {
             LOG_VERBOSE("no data received from node %u", schedule.slot[slot_idx]);
           }
@@ -534,6 +537,7 @@ static void elwb_run(void)
           memcpy((uint8_t*)payload, data_ack, payload_len);
           ELWB_WAIT_UNTIL(t_slot_ofs);
           ELWB_SEND_PACKET();
+          stats.pkt_tx_all++;
           LOG_INFO("D-ACK sent (%u bytes)", payload_len);
         }
         memset(data_ack, 0, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8);
@@ -568,6 +572,7 @@ static void elwb_run(void)
                 break;
               }
             }
+            stats.pkt_rx_all++;
           } else {
             /* requeue all packets */
             while (ELWB_QUEUE_POP(re_tx_queue, payload)) {
@@ -579,6 +584,9 @@ static void elwb_run(void)
             LOG_WARNING("D-ACK pkt missed, %u pkt requeued", num_slots);
           }
           my_slots = 0xffff;
+
+        } else if (ELWB_GLOSSY_RX_CNT()) {
+          stats.pkt_rx_all++;
         }
         ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
       }
@@ -653,6 +661,7 @@ static void elwb_run(void)
       if (ELWB_IS_HOST()) {
         ELWB_WAIT_UNTIL(t_slot_ofs);
         ELWB_SEND_PACKET();    /* send as normal packet without sync */
+        stats.pkt_tx_all++;
       } else {
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
@@ -661,6 +670,7 @@ static void elwb_run(void)
             schedule.period  = payload[0];  /* extract updated period */
             schedule.n_slots = 0;
           } /* else: all good, no need to change anything */
+          stats.pkt_rx_all++;
         } else {
           LOG_WARNING("2nd schedule missed");
         }
@@ -673,18 +683,19 @@ end_of_round:
 
     if (ELWB_SCHED_IS_STATE_IDLE(&schedule)) {
       if (ELWB_IS_HOST()) {
-        LOG_INFO("%llu | period: %lus, slots: %u, pkt cnt (rx/tx/drop/all): %lu/%lu/%lu/%lu, rssi: %ddBm",
+        LOG_INFO("%llu | T: %lus, slots: %u, rx/tx/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu, rssi: %ddBm",
                  network_time,
                  elwb_sched_get_period(),
                  ELWB_SCHED_N_SLOTS(&schedule),
                  stats.pkt_rcvd,
                  stats.pkt_sent,
                  stats.pkt_dropped,
-                 stats.pkt_cnt,
+                 stats.pkt_rx_all,
+                 stats.pkt_tx_all,
                  stats.rssi_avg);
       } else {
         /* print out some stats (note: takes ~2ms to compose this string!) */
-        LOG_INFO("%s %llu | period: %us, slots: %u, pkt cnt (rx/tx/ack/drop/all): %lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
+        LOG_INFO("%s %llu | T: %us, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
                  elwb_syncstate_to_string[sync_state],
                  schedule.time,
                  schedule.period / ELWB_PERIOD_SCALE,
@@ -693,7 +704,8 @@ end_of_round:
                  stats.pkt_sent,
                  stats.pkt_ack,
                  stats.pkt_dropped,
-                 stats.pkt_cnt,
+                 stats.pkt_rx_all,
+                 stats.pkt_tx_all,
                  stats.unsynced_cnt,
                  stats.bootstrap_cnt,
                  stats.drift,
