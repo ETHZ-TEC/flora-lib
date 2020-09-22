@@ -1343,7 +1343,7 @@ command_return_t radio_payload_command_handler(command_execution_t execution) {
   }
   else {
     if (command_get_parameter(&execution, 'i')) {
-      radio_set_payload_while_transmit((uint8_t*) data->value, 0, (uint8_t) strlen(data->value) + 1);
+      radio_set_payload_while_transmit((uint8_t*) data->value, (uint8_t) strlen(data->value) + 1);
       return CMD_RET_SUCCESS;
     }
     else {

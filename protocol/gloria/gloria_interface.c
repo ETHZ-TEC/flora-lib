@@ -110,8 +110,7 @@ void gloria_start(uint16_t initiator_id,
 
   if (initiator_id == NODE_ID) {
     // send flood
-    uint64_t marker     = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
-    flood.marker        = marker;     // marker (timestamp when flood shall start) must be set on the initiator
+    flood.marker        = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;     // marker (timestamp when flood shall start) must be set on the initiator
     flood.initial       = true;       // this node is the initator
     flood.payload       = gloria_payload;
     flood.payload_size  = arg_payload_len;

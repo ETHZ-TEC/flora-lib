@@ -179,10 +179,8 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size)
   gloria_header_t* header = (gloria_header_t*) payload;
 
   if (!current_flood->msg_received) {
-    uint32_t header_len = GLORIA_HEADER_LENGTH_MIN;
-    if (current_flood->ack_mode) {
-      header_len = GLORIA_HEADER_LENGTH;
-    }
+    uint32_t header_len = (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN);
+
     // get message
     current_flood->message_size = size;
     current_flood->msg_received = true;
