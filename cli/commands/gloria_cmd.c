@@ -838,7 +838,7 @@ void gloria_print_flood(gloria_flood_t *print_flood) {
     goto end;
   }
 
-  if (cJSON_AddNumberToObject(flood_result, "last_active_idx", print_flood->slot_index-1) == NULL) {
+  if (cJSON_AddNumberToObject(flood_result, "last_active_idx", print_flood->header.slot_index-1) == NULL) {
     goto end;
   }
 

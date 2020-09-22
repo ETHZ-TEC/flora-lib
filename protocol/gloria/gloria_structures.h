@@ -53,7 +53,6 @@ typedef struct {
   uint8_t ack_counter;          // number of acks sent
 
   int8_t first_rx_index;          // used to save slot number of first receive
-  uint8_t slot_index;            // index of the current slot
   uint8_t last_active_slot;        // last slot the node should send / receive (different for nodes)
 
   uint64_t received_marker;        // flood marker that was received during the flood; equal to marker for the initiator

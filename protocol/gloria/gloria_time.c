@@ -43,10 +43,10 @@ uint64_t gloria_calculate_tx_marker(gloria_flood_t* flood)
 
   if (flood->ack_mode) {
     uint32_t slot_time_ack = gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH);
-    offset += (flood->slot_index + 1) / 2 * slot_time_data + (flood->slot_index) / 2 * slot_time_ack;
+    offset += (flood->header.slot_index + 1) / 2 * slot_time_data + (flood->header.slot_index) / 2 * slot_time_ack;
   }
   else {
-    offset += flood->slot_index * slot_time_data;
+    offset += flood->header.slot_index * slot_time_data;
   }
 
   flood->current_tx_marker = offset;
@@ -156,9 +156,9 @@ void gloria_reconstruct_flood_marker(gloria_flood_t* flood)
 
   uint32_t slot_time_sum;
   if (flood->ack_mode) {
-    slot_time_sum = (flood->slot_index / 2 * (gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size) + gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH)));
+    slot_time_sum = (flood->header.slot_index / 2 * (gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size) + gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH)));
   } else {
-    slot_time_sum = (flood->slot_index * gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size));
+    slot_time_sum = (flood->header.slot_index * gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size));
   }
   flood->reconstructed_marker = radio_get_last_sync_timestamp() -
                                 timings->txSync -
