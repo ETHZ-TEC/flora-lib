@@ -175,6 +175,8 @@ static uint64_t gloria_try_to_sleep(uint64_t future_timestamp) {
  */
 static void gloria_radio_setup_callback() {
 
+  uint32_t header_len = (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN);
+
   if (!current_flood->radio_no_sleep) {
     radio_wakeup();
   }
@@ -183,7 +185,8 @@ static void gloria_radio_setup_callback() {
   case GLORIA_RADIO_TX:
     radio_set_irq_mode(IRQ_MODE_TX);
     radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
-    radio_set_payload((uint8_t*) current_flood->message, 0, current_flood->message_size);
+    radio_set_payload((uint8_t*)&current_flood->header, 0, header_len);
+    radio_set_payload((uint8_t*)current_flood->payload, header_len, current_flood->payload_size);
     radio_set_tx_callback(&gloria_radio_tx_callback);
     radio_set_tx(current_flood->current_tx_marker);
     break;

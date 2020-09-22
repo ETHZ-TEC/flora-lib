@@ -1363,7 +1363,7 @@ command_return_t radio_cad_command_handler(command_execution_t execution) {
   else {
     radio_set_irq_mode(IRQ_MODE_CAD);
     radio_set_cad_params(false, false);
-    radio_set_cad();
+    radio_set_cad();  // FIXME
   }
 
   return CMD_RET_PENDING;
@@ -1371,7 +1371,7 @@ command_return_t radio_cad_command_handler(command_execution_t execution) {
 
 
 command_return_t radio_free_command_handler(command_execution_t execution) {
-  bool free = Radio.IsChannelFree(MODEM_LORA, 869400000, -20, 100);
+  bool free = Radio.IsChannelFree(MODEM_LORA, 869400000, -20, 100);   // FIXME
 
   /*
   int8_t rssi = SX126xGetRssiInst();
@@ -1480,7 +1480,7 @@ command_return_t radio_cw_command_handler(command_execution_t execution) {
     cli_println((char*) buf);
 
     if (duration < 0) {
-      Radio.SetTxContinuousWave(frequency, power, 0);
+      Radio.SetTxContinuousWave(frequency, power, 0);  // FIXME
     }
     else {
       uint64_t endTs = 0;
@@ -1495,7 +1495,7 @@ command_return_t radio_cw_command_handler(command_execution_t execution) {
 
       for (int i=0; i<repetitions; i++) {
           // start cw pulse
-          Radio.SetTxContinuousWave(frequency, power, 0);
+          Radio.SetTxContinuousWave(frequency, power, 0);  // FIXME
 
           if (duration != 0) {
             // delay for Tx (busy wait)
@@ -1504,7 +1504,7 @@ command_return_t radio_cw_command_handler(command_execution_t execution) {
           }
 
           // stop cw pulse
-          Radio.Standby();
+          radio_standby();
 
           if (i+1 == repetitions) {
             break;
@@ -1711,7 +1711,7 @@ command_return_t radio_syncword_command_handler(command_execution_t execution) {
 }
 
 command_return_t radio_standby_command_handler(command_execution_t execution) {
-  Radio.Standby();
+  radio_standby();
   return CMD_RET_SUCCESS;
 }
 

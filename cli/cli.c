@@ -57,7 +57,6 @@ void cli_init() {
   rtc_register_commands();
 #endif /* HAL_RTC_MODULE_ENABLED */
 #if CLI_ENABLE
-  config_register_commands();
   led_register_commands();
   radio_register_commands();
   system_register_commands();
@@ -68,8 +67,6 @@ void cli_init() {
   slwb_register_commands();
 #endif /* CLI_ENABLE */
 
-  cli_interactive_mode = (bool) config_get()->cli_mode;
-
   cli_set_vt100_modes();
   if (cli_interactive_mode) {
       cli_print((char*) cli_splash_text);
@@ -79,7 +76,7 @@ void cli_init() {
   cli_log("Initialized CLI", "cli", CLI_LOG_LEVEL_INFO);
 
 	char buf[32];
-  snprintf((char*) buf, 32, "HOST_ID: %i", (int) HOST_ID);
+  snprintf((char*) buf, 32, "HOST_ID: %i", (int) HOST_ID);    // FIXME
 	cli_log(buf, "cli", CLI_LOG_LEVEL_INFO);
 	snprintf((char*) buf, 32, "NODE_ID: %i", (int) NODE_ID);
 	cli_log(buf, "cli", CLI_LOG_LEVEL_INFO);

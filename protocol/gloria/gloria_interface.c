@@ -17,7 +17,7 @@
 
 /* internal state */
 static gloria_flood_t   flood;                                           // flood struct which (serves as input, state, and output to/from gloria_run_flood)
-static gloria_message_t message;                                         // buffer for the message (static to avoid allocation on the stack)
+static uint8_t          gloria_payload[GLORIA_INTERFACE_MAX_PAYLOAD_LEN];  // buffer for the message
 static bool             flood_running;                                   // indicates whether flood is onging or not
 static bool             flood_completed;                                 // indicates whether the flood completed (N_TX reached)
 static int8_t           lastrun_rssi = 0;
@@ -112,9 +112,9 @@ void gloria_start(uint16_t initiator_id,
   flood.radio_no_sleep      = true;
   flood.node_id             = NODE_ID;
 
-  message.header.type       = 0;
-  message.header.sync       = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
-  message.header.slot_index = 0;
+  flood.header.type       = 0;
+  flood.header.sync       = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
+  flood.header.slot_index = 0;
   // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
 
   if (initiator_id == NODE_ID) {
@@ -122,15 +122,13 @@ void gloria_start(uint16_t initiator_id,
     uint64_t marker     = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
     flood.marker        = marker;     // marker (timestamp when flood shall start) must be set on the initiator
     flood.initial       = true;       // this node is the initator
-    flood.message       = &message;
+    flood.payload       = gloria_payload;
     flood.payload_size  = arg_payload_len;
-    // set the destination and copy the payload
-    message.header.dst  = 0;          // 0 means broadcast
-    memcpy(message.payload, payload, arg_payload_len);
+    memcpy(gloria_payload, payload, arg_payload_len);
   }
   else {
     // receive flood
-    flood.message     = &message;
+    flood.payload     = gloria_payload;
     flood.marker      = 0;
     flood.rx_timeout  = 0;
     flood.guard_time  = 0;
@@ -182,7 +180,7 @@ uint8_t gloria_stop(void)
     if (flood.msg_received && !flood.initial) {
       // node received at least one message => update received values
       lastrun_msg_received = flood.msg_received;
-      lastrun_payload_len  = flood.message_size - GLORIA_HEADER_LENGTH;
+      lastrun_payload_len  = flood.payload_size;
       lastrun_rx_index     = flood.first_rx_index;
       copy_payload();
     }
@@ -310,7 +308,7 @@ uint32_t gloria_get_toa(uint8_t payload_len)
 
 uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation)
 {
-  return radio_get_toa(payload_len + GLORIA_HEADER_LENGTH, modulation);
+  return radio_get_toa(payload_len + GLORIA_HEADER_LENGTH_MIN, modulation);
 }
 
 
@@ -370,11 +368,11 @@ static void copy_payload(void)
 {
   // copy payload to provided memory space
   if (lastrun_payload_len <= GLORIA_INTERFACE_MAX_PAYLOAD_LEN) {
-    memcpy(arg_payload_ptr, flood.message->payload, lastrun_payload_len);
+    memcpy(arg_payload_ptr, flood.payload, lastrun_payload_len);
   }
   else {
     LOG_WARNING("Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
-    memcpy(arg_payload_ptr, flood.message->payload, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
+    memcpy(arg_payload_ptr, flood.payload, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
     lastrun_payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
   }
 }

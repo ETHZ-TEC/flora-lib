@@ -101,7 +101,7 @@ uint32_t gloria_calculate_flood_time(uint8_t payload_len, uint8_t modulation, ui
   uint32_t offset = timings->floodInitOverhead + GLORIA_FLOOD_FINISH_OVERHEAD;
 
   uint8_t slot_count = data_slots;
-  uint8_t msg_size = payload_len + GLORIA_HEADER_LENGTH + (sync ? GLORIA_TIMESTAMP_LENGTH : 0);
+  uint8_t msg_size = payload_len + (ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN) + (sync ? GLORIA_TIMESTAMP_LENGTH : 0);
   uint32_t slot_time_data = gloria_calculate_slot_time(modulation, ack_mode, 0, msg_size);
 
   if (ack_mode) {
@@ -141,7 +141,7 @@ inline uint16_t gloria_calculate_rx_timeout(gloria_flood_t* flood)
 inline uint64_t gloria_get_message_timestamp(gloria_flood_t* flood)
 {
   uint64_t payload_timestamp = 0;
-  memcpy(&payload_timestamp, flood->message->payload + flood->payload_size, GLORIA_TIMESTAMP_LENGTH);
+  memcpy(&payload_timestamp, flood->payload + flood->payload_size, GLORIA_TIMESTAMP_LENGTH);
   uint64_t message_timestamp = payload_timestamp * GLORIA_SCHEDULE_GRANULARITY;
   return message_timestamp;
 }
@@ -165,7 +165,7 @@ void gloria_reconstruct_flood_marker(gloria_flood_t* flood)
                                 slot_time_sum -
                                 timings->floodInitOverhead;
 
-  if (flood->message->header.sync) {
+  if (flood->header.sync) {
     flood->received_marker = gloria_get_message_timestamp(flood);
   }
 }

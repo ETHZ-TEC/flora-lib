@@ -15,10 +15,10 @@ uint32_t tx_period;
 uint32_t guard_time;
 uint32_t iterations;
 
-gloria_message_t message;
+static uint8_t message[GLORIA_MAX_PAYLOAD_LENGTH];
 gloria_flood_t flood;
 
-gloria_message_t print_message;
+static uint8_t print_message[GLORIA_MAX_PAYLOAD_LENGTH];
 gloria_flood_t print_flood;
 
 bool gloria_flood_to_be_printed = false;
@@ -546,7 +546,7 @@ static command_return_t gloria_rx_command_handler(command_execution_t execution)
   set_radio_log(false);
 #endif
 
-  message.header.sync = sync;
+  flood.header.sync = sync;
 
   flood.marker = marker;
   flood.modulation = mod;
@@ -557,7 +557,7 @@ static command_return_t gloria_rx_command_handler(command_execution_t execution)
   flood.ack_mode = ack_mode;
   flood.max_acks = macks;
   flood.data_slots = slots;
-  flood.message = &message;
+  flood.payload = message;
   flood.initial = false;
   flood.rx_timeout = cad * HS_TIMER_FREQUENCY_MS;
   flood.sync_timer = (bool) sync;
@@ -677,11 +677,11 @@ static command_return_t gloria_tx_command_handler(command_execution_t execution)
   set_radio_log(false);
 #endif
 
-  message.header.type = GLORIA_MESSAGE;
-  message.header.dst = dst;
-  message.header.sync = sync;
+  flood.header.type = GLORIA_MESSAGE;
+  flood.header.dst = dst;
+  flood.header.sync = sync;
 
-  memcpy(message.payload, payload, payload_size);
+  memcpy(message, payload, payload_size);
 
   flood.marker = marker;
   flood.modulation = mod;
@@ -693,7 +693,7 @@ static command_return_t gloria_tx_command_handler(command_execution_t execution)
   flood.max_retransmissions = retr;
   flood.max_acks = macks;
   flood.data_slots = slots;
-  flood.message = &message;
+  flood.payload = message;
   flood.initial = true;
 
   if (cont) {
@@ -718,12 +718,12 @@ static void gloria_cont_callback() {
     gloria_last_sync = flood.marker;
   }
   if (flood.msg_received) {
-    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(flood.payload_size, flood.modulation, flood.data_slots, flood.message->header.sync, flood.ack_mode) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
+    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(flood.payload_size, flood.modulation, flood.data_slots, flood.header.sync, flood.ack_mode) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
   }
 
-  memcpy(&print_message, &message, sizeof(gloria_message_t));
+  memcpy(print_message, message, GLORIA_MAX_PAYLOAD_LENGTH);
   memcpy(&print_flood, &flood, sizeof(gloria_flood_t));
-  print_flood.message = &print_message;
+  print_flood.payload = print_message;
   gloria_print_flood(&print_flood);
 
   flood.marker = flood.reconstructed_marker + tx_period*HS_TIMER_FREQUENCY_MS;
@@ -737,7 +737,7 @@ static void gloria_cont_callback() {
 
 static void gloria_finish_callback() {
   if (flood.msg_received) {
-    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(flood.payload_size, flood.modulation, flood.data_slots, flood.message->header.sync, flood.ack_mode) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
+    hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(flood.payload_size, flood.modulation, flood.data_slots, flood.header.sync, flood.ack_mode) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
   }
   if (flood.initial) {
     gloria_last_sync = flood.marker;
@@ -745,8 +745,8 @@ static void gloria_finish_callback() {
 
   radio_sleep(true);
 
-  memcpy(&print_message, &message, sizeof(gloria_message_t));
-  flood.message = &print_message;
+  memcpy(print_message, message, GLORIA_MAX_PAYLOAD_LENGTH);
+  flood.payload = print_message;
   memcpy(&print_flood, &flood, sizeof(gloria_flood_t));
   gloria_flood_to_be_printed = true;
   //set_radio_log(true);
@@ -870,18 +870,18 @@ void gloria_print_flood(gloria_flood_t *print_flood) {
       }
     }
 
-    if (print_flood->message_size > GLORIA_HEADER_LENGTH && cli_string_is_printable((char*) print_flood->message->payload, print_flood->message_size - GLORIA_HEADER_LENGTH))
+    if (print_flood->message_size > GLORIA_HEADER_LENGTH && cli_string_is_printable((char*) print_flood->payload, print_flood->message_size - GLORIA_HEADER_LENGTH))
     {
-      if (cJSON_AddStringToObject(flood_result, "msg", (char*) print_flood->message->payload) == NULL) {
+      if (cJSON_AddStringToObject(flood_result, "msg", (char*) print_flood->payload) == NULL) {
         goto end;
       }
     }
 
-    if (cJSON_AddNumberToObject(flood_result, "msg_type", print_flood->message->header.type) == NULL) {
+    if (cJSON_AddNumberToObject(flood_result, "msg_type", print_flood->header.type) == NULL) {
       goto end;
     }
 
-    if (cJSON_AddBoolToObject(flood_result, "msg_sync", print_flood->message->header.sync) == NULL) {
+    if (cJSON_AddBoolToObject(flood_result, "msg_sync", print_flood->header.sync) == NULL) {
       goto end;
     }
 
@@ -889,11 +889,11 @@ void gloria_print_flood(gloria_flood_t *print_flood) {
 //        goto end;
 //      }
 
-    if (cJSON_AddNumberToObject(flood_result, "msg_dst", print_flood->message->header.dst) == NULL) {
+    if (cJSON_AddNumberToObject(flood_result, "msg_dst", print_flood->header.dst) == NULL) {
       goto end;
     }
 
-    if (cJSON_AddNumberToObject(flood_result, "msg_src", print_flood->message->header.src) == NULL) {
+    if (cJSON_AddNumberToObject(flood_result, "msg_src", print_flood->header.src) == NULL) {
       goto end;
     }
 

@@ -18,23 +18,16 @@ typedef struct __attribute__((__packed__)) {
 typedef struct __attribute__((__packed__, __aligned__(1))) {
   uint8_t type: 7;        // msg type
   uint8_t sync: 1;        // 1: message includes ts for sync, 0: no ts
+  uint8_t slot_index;        // current slot index
   uint8_t src;          // msg source
   uint8_t dst;          // msg destination
-  uint8_t slot_index;        // current slot index
 } gloria_header_t;
-
-typedef struct __attribute__((__packed__)) {
-  gloria_header_t header;
-  uint8_t payload[255-GLORIA_HEADER_LENGTH];  // max payload = 255 - GLORIA_HEADER_LENGTH (- GLORIA_TIMESTAMP_LENGTH (if sync flood))
-} gloria_message_t;
-
-_Static_assert(sizeof(gloria_message_t) == 255, "gloria_raw_message_t not 255 Bytes in size! Check for padding and alignment.");
 
 typedef struct {
   // parameters to specify before flood start
   void (*callback);            // callback function after flood finished
-  gloria_message_t* message;        // contains the message to send / that was received
-
+  gloria_header_t header;    // header of the gloria message
+  void* payload;             // pointer to the payload to send
   uint64_t marker;            // set flood start timestamp; has to be a multiple of GLORIA_SCHEDULE_GRANULARITY for the initiator;
                       // can be set to determine start of rx;
   uint32_t rx_timeout;          // specific time (in hs_timer_ticks) to listen before returning if no flood was received
