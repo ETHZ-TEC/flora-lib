@@ -39,6 +39,10 @@
 
 /* --------------- START OF CONFIG (default values) ------------------------ */
 
+#ifndef ELWB_CONF_NETWORK_ID
+#define ELWB_CONF_NETWORK_ID      0x1111      /* custom 15-bit network ID */
+#endif /* ELWB_CONF_NETWORK_ID */
+
 /* max. packet length */
 #ifndef ELWB_CONF_MAX_PKT_LEN
 #define ELWB_CONF_MAX_PKT_LEN     DPP_MSG_PKT_LEN
@@ -177,10 +181,13 @@
 
 
 #define ELWB_PERIOD_SCALE         100     // 1/scale = granularity (10ms -> allows for periods between 10 and 655350ms)
-#define ELWB_REQ_PKT_LEN          2
-#define ELWB_2ND_SCHED_LEN        2
+#define ELWB_PKT_HDR_LEN          2       // packet header length
+#define ELWB_REQ_PKT_LEN          2       // request packet length without header
+#define ELWB_2ND_SCHED_LEN        2       // schedule length without header
 #define ELWB_SCHED_CRC_LEN        (ELWB_CONF_SCHED_CRC ? 2 : 0)
 #define ELWB_SCHED_PERIOD_MAX     (65535 / ELWB_PERIOD_SCALE)
+#define ELWB_NETWORK_ID_BITMASK   0x7fff
+#define ELWB_PKT_TYPE_BITMASK     0x8000
 
 #ifndef RF_CONF_MAX_PKT_LEN
 #define RF_CONF_MAX_PKT_LEN       (ELWB_CONF_MAX_PKT_LEN + \
@@ -254,6 +261,10 @@
 #define ELWB_SCHED_SET_DATA_SLOTS(s)    ((s)->n_slots |= 0x8000)
 #define ELWB_SCHED_SET_STATE_IDLE(s)    ((s)->n_slots |= 0x2000)
 
+#define ELWB_IS_SCHEDULE_PACKET(s)      (((elwb_schedule_t*)(s))->net_id == (ELWB_CONF_NETWORK_ID | ELWB_PKT_TYPE_BITMASK))
+#define ELWB_IS_PKT_HEADER_VALID(p)     (((p).header.net_id & ELWB_NETWORK_ID_BITMASK) == (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))   // checks whether the packet header is valid
+#define ELWB_SET_PKT_HEADER(p)          ((p).header.net_id = (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))    // set the header of a regular packet (all except schedule packets)
+
 /* timer */
 #define ELWB_TIMER_SECOND               LPTIMER_SECOND
 #define ELWB_TIMER_NOW()                lptimer_now()
@@ -267,8 +278,8 @@
                                         gloria_start(initiator, data, data_len, n_tx, is_schedule)
 #define ELWB_GLOSSY_STOP()              gloria_stop()
 #define ELWB_GLOSSY_GET_PAYLOAD_LEN()   gloria_get_payload_len()
-#define ELWB_GLOSSY_SIGNAL_DETECTED()   gloria_get_rx_started_cnt()
-#define ELWB_GLOSSY_RX_CNT()            gloria_get_rx_cnt()
+#define ELWB_GLOSSY_CONT_DETECTED()     gloria_get_rx_started_cnt()
+#define ELWB_GLOSSY_DATA_RCVD()         gloria_get_rx_cnt()
 #define ELWB_GLOSSY_GET_T_REF()         gloria_get_t_ref()
 #define ELWB_GLOSSY_GET_T_REF_HF()      0  //TODO
 #define ELWB_GLOSSY_IS_T_REF_UPDATED()  gloria_is_t_ref_updated()
@@ -324,20 +335,31 @@ typedef struct {
   int_fast8_t snr_avg;    /* average SNR value */
 } elwb_stats_t;
 
-#define ELWB_SCHED_HDR_LEN   12
+#define ELWB_SCHED_HDR_LEN   14
 #define ELWB_SCHED_MAX_SLOTS ((ELWB_CONF_MAX_PKT_LEN - ELWB_SCHED_HDR_LEN - \
                                ELWB_SCHED_CRC_LEN) / 2)
 /* note: ELWB_SCHED_MAX_SLOTS != ELWB_CONF_MAX_DATA_SLOTS */
-typedef struct {
-  uint64_t time;        /* current time in microseconds */
+typedef struct __attribute__((__packed__)) {
+  uint16_t net_id;        /* 15-bit network ID and 1-bit for schedule packet indicator */
+  uint16_t n_slots;
+  uint64_t time;          /* current time in microseconds */
   uint16_t period;
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
-  uint16_t n_slots;
   uint16_t slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN];
 } elwb_schedule_t;
 
 typedef uint64_t elwb_time_t;
+
+typedef struct __attribute__((__packed__)) {
+  struct {
+    uint16_t net_id;      /* network ID and packet type indicator */
+  } header;
+  union {
+    uint8_t   payload[ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN];
+    uint16_t  payload16[(ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN + 1) / 2];
+  };
+} elwb_packet_t;
 
 
 /*---------------------------------------------------------------------------*/

@@ -63,25 +63,25 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 
 #define ELWB_SEND_SCHED() \
 {\
-  ELWB_GLOSSY_START(NODE_ID, (uint8_t *)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
+  ELWB_GLOSSY_START(NODE_ID, (uint8_t*)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_RCV_SCHED() \
 {\
-  ELWB_GLOSSY_START(0, (uint8_t *)&schedule, payload_len, ELWB_CONF_N_TX, 1);\
+  ELWB_GLOSSY_START(0, (uint8_t*)&schedule, packet_len, ELWB_CONF_N_TX, 1);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_SEND_PACKET() \
 {\
-  ELWB_GLOSSY_START(NODE_ID, (uint8_t*)payload, payload_len, ELWB_CONF_N_TX, 0);\
+  ELWB_GLOSSY_START(NODE_ID, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot);\
   ELWB_GLOSSY_STOP();\
 }
 #define ELWB_RCV_PACKET() \
 {\
-  ELWB_GLOSSY_START(0, (uint8_t*)payload, payload_len, ELWB_CONF_N_TX, 0);\
+  ELWB_GLOSSY_START(0, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
   ELWB_GLOSSY_STOP();\
 }
@@ -210,8 +210,8 @@ static void elwb_run(void)
   static uint64_t         t_slot_ofs;
   static uint32_t         drift_counter = 0;
   static uint32_t         drift_comp = 0;
-  static uint32_t         payload_len = 0;
-  static uint16_t         payload[(ELWB_CONF_MAX_PKT_LEN + 1) / 2];
+  static uint32_t         packet_len = 0;
+  static elwb_packet_t    packet;
   static bool             call_preprocess = false;
 
   /* variables specific to the host node */
@@ -284,7 +284,7 @@ static void elwb_run(void)
     } else {
 
       /* --- RECEIVE SCHEDULE --- */
-      payload_len = 0;
+      packet_len = 0;
       if (sync_state == BOOTSTRAP) {
         ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_T_GUARD_ROUND);    /* this is required, otherwise we get "wakeup time in the past" warnings */
         while (elwb_running) {
@@ -298,9 +298,9 @@ static void elwb_run(void)
             if ((ELWB_TIMER_NOW() - bootstrap_started) >= ELWB_CONF_BOOTSTRAP_TIMEOUT) {
               break;
             }
-          } while (elwb_running && (!ELWB_GLOSSY_IS_T_REF_UPDATED() || !ELWB_SCHED_IS_FIRST(&schedule)));
+          } while (elwb_running && (!ELWB_GLOSSY_IS_T_REF_UPDATED() || !ELWB_IS_SCHEDULE_PACKET(&schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
           /* exit bootstrap mode if schedule received, exit bootstrap state */
-          if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_SCHED_IS_FIRST(&schedule)) {
+          if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(&schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
             break;
           }
           /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
@@ -319,13 +319,13 @@ static void elwb_run(void)
         ELWB_RCV_SCHED();
       }
 
-      if (ELWB_GLOSSY_IS_T_REF_UPDATED()) {      /* schedule received? */
+      if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(&schedule)) {      /* schedule received? */
     #if ELWB_CONF_SCHED_CRC
         /* check the CRC */
-        payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
-        uint16_t pkt_crc = ((uint16_t)*((uint8_t*)&schedule + payload_len - 1)) << 8 |
-                           *((uint8_t*)&schedule + payload_len - 2);
-        if (crc16((uint8_t*)&schedule, payload_len - 2, 0) != pkt_crc) {
+        packet_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
+        uint16_t pkt_crc = ((uint16_t)*((uint8_t*)&schedule + packet_len - 1)) << 8 |
+                           *((uint8_t*)&schedule + packet_len - 2);
+        if (crc16((uint8_t*)&schedule, packet_len - 2, 0) != pkt_crc) {
           /* not supposed to happen => go back to bootstrap */
           LOG_ERROR("invalid CRC for eLWB schedule");
           sync_state = BOOTSTRAP;
@@ -432,23 +432,25 @@ static void elwb_run(void)
           if (ELWB_QUEUE_SIZE(tx_queue) > 0) {
             /* request round? -> only relevant for the source node */
             if (!ELWB_IS_HOST() && !is_data_round) {
-              payload_len = ELWB_REQ_PKT_LEN;
+              packet_len = ELWB_REQ_PKT_LEN;
               /* request as many data slots as there are packets in the queue */
-              payload[0] = ELWB_QUEUE_SIZE(tx_queue);
+              packet.payload16[0] = ELWB_QUEUE_SIZE(tx_queue);
             } else {
               /* prepare a data packet for dissemination */
-              payload_len = 0;
-              if (ELWB_QUEUE_POP(tx_queue, payload)) {
-                payload_len = ELWB_PAYLOAD_LEN(payload);
+              packet_len = 0;
+              if (ELWB_QUEUE_POP(tx_queue, packet.payload)) {
+                packet_len = ELWB_PAYLOAD_LEN(packet.payload);
                 /* sanity check for packet size */
-                if (payload_len > ELWB_CONF_MAX_PKT_LEN) {
-                  LOG_ERROR("invalid payload length detected");
-                  payload_len = 0;
+                if (packet_len > ELWB_CONF_MAX_PKT_LEN) {
+                  LOG_ERROR("invalid packet length detected");
+                  packet_len = 0;
                 }
               }
             }
             /* send the packet */
-            if (payload_len) {
+            if (packet_len) {
+              ELWB_SET_PKT_HEADER(packet);
+              packet_len += ELWB_PKT_HDR_LEN;
     #if ELWB_CONF_DATA_ACK
               /* only source nodes receive a D-ACK */
               if (!ELWB_IS_HOST() && is_data_round) {
@@ -457,7 +459,7 @@ static void elwb_run(void)
                 }
                 my_slots++;
                 /* copy the packet into the queue for retransmission (in case we don't receive a D-ACK for this packet) */
-                if (!ELWB_QUEUE_PUSH(re_tx_queue, payload)) {
+                if (!ELWB_QUEUE_PUSH(re_tx_queue, packet.payload)) {
                   LOG_ERROR("failed to insert packet into retransmit queue");
                 }
               }
@@ -468,7 +470,7 @@ static void elwb_run(void)
               stats.pkt_tx_all++;
               if (is_data_round) {
                 stats.pkt_sent++;   /* only count data packets */
-                LOG_VERBOSE("packet sent (%lub)", payload_len);
+                LOG_VERBOSE("packet sent (%lub)", packet_len);
               }
             }
 
@@ -478,16 +480,16 @@ static void elwb_run(void)
 
         } else {
           /* not the initiator -> receive / relay packets */
-          payload_len = 0;
+          packet_len = 0;
           if (!is_data_round) {
-            /* the payload length is known in the request round */
-            payload_len = ELWB_REQ_PKT_LEN;
+            /* the packet length is known in the request round */
+            packet_len = ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN;
           }
-          memset(payload, 0, sizeof(payload));    /* clear payload before receiving the packet */
+          memset(&packet, 0, sizeof(packet));    /* clear packet before receiving the packet */
           ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
           ELWB_RCV_PACKET();
-          payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
-          if (ELWB_GLOSSY_RX_CNT()) {                   /* data received? */
+          packet_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
+          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {                   /* data received? */
             if (is_data_round) {
               /* check whether to keep this packet */
               bool keep_packet = ELWB_IS_SINK() || ELWB_RCV_PKT_FILTER();
@@ -496,8 +498,8 @@ static void elwb_run(void)
                 keep_packet |= (schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK) || (schedule.slot[slot_idx] == host_id);
               }
               if (keep_packet) {
-                LOG_VERBOSE("data received from node %u (%lub)", schedule.slot[slot_idx], payload_len);
-                if (ELWB_QUEUE_PUSH(rx_queue, payload)) {
+                LOG_VERBOSE("data received from node %u (%lub)", schedule.slot[slot_idx], packet_len);
+                if (ELWB_QUEUE_PUSH(rx_queue, packet.payload)) {
                   stats.pkt_rcvd++;
         #if ELWB_CONF_DATA_ACK
                   /* set the corresponding bit in the data ack packet */
@@ -513,7 +515,7 @@ static void elwb_run(void)
 
             } else if (ELWB_IS_HOST()) {
               /* this is a request packet */
-              elwb_sched_process_req(schedule.slot[slot_idx], *payload);
+              elwb_sched_process_req(schedule.slot[slot_idx], packet.payload16[0]);
             }
             stats.pkt_rx_all++;
 
@@ -532,34 +534,36 @@ static void elwb_run(void)
       t_slot = ELWB_CONF_T_DACK;
       if (ELWB_IS_HOST()) {
         /* acknowledge each received packet of the last round */
-        payload_len = (ELWB_SCHED_N_SLOTS(&schedule) + 7) / 8;
-        if (payload_len) {
-          memcpy((uint8_t*)payload, data_ack, payload_len);
+        packet_len = (ELWB_SCHED_N_SLOTS(&schedule) + 7) / 8;
+        if (packet_len) {
+          memcpy(packet.payload, data_ack, packet_len);
+          ELWB_SET_PKT_HEADER(packet);
+          packet_len += ELWB_PKT_HDR_LEN;
           ELWB_WAIT_UNTIL(t_slot_ofs);
           ELWB_SEND_PACKET();
           stats.pkt_tx_all++;
-          LOG_INFO("D-ACK sent (%u bytes)", payload_len);
+          LOG_INFO("D-ACK sent (%u bytes)", packet_len);
         }
         memset(data_ack, 0, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8);
 
       } else {
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();                 /* receive data ack */
-        payload_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
+        packet_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
         /* only look into the D-ACK packet if we actually sent some data in the previous round */
         if (my_slots != 0xffff) {
           uint32_t first_slot = my_slots >> 8;
           uint32_t num_slots  = my_slots & 0xff;
-          if (ELWB_GLOSSY_RX_CNT()) {
+          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {
             LOG_VERBOSE("D-ACK received");
-            memcpy(data_ack, payload, payload_len);
+            memcpy(data_ack, packet.payload, packet_len);
             uint32_t i;
             for (i = 0; i < num_slots; i++) {
-              if (ELWB_QUEUE_POP(re_tx_queue, payload)) {
+              if (ELWB_QUEUE_POP(re_tx_queue, packet.payload)) {
                 /* bit not set? => not acknowledged */
                 if (!(data_ack[(first_slot + i) >> 3] & (1 << ((first_slot + i) & 0x07)))) {
                   /* resend the packet (re-insert it into the output FIFO) */
-                  if (ELWB_QUEUE_PUSH(tx_queue, payload)) {
+                  if (ELWB_QUEUE_PUSH(tx_queue, packet.payload)) {
                     LOG_VERBOSE("packet queued for retransmission");
                   } else {
                     LOG_ERROR("failed to requeue packet");
@@ -575,8 +579,8 @@ static void elwb_run(void)
             stats.pkt_rx_all++;
           } else {
             /* requeue all packets */
-            while (ELWB_QUEUE_POP(re_tx_queue, payload)) {
-              if (!ELWB_QUEUE_PUSH(tx_queue, payload)) {
+            while (ELWB_QUEUE_POP(re_tx_queue, packet.payload)) {
+              if (!ELWB_QUEUE_PUSH(tx_queue, packet.payload)) {
                 LOG_ERROR("failed to requeue packet");
                 break;
               }
@@ -585,7 +589,7 @@ static void elwb_run(void)
           }
           my_slots = 0xffff;
 
-        } else if (ELWB_GLOSSY_RX_CNT()) {
+        } else if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {
           stats.pkt_rx_all++;
         }
         ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
@@ -598,9 +602,9 @@ static void elwb_run(void)
 
     /* is there a contention slot in this round? */
     if (ELWB_SCHED_HAS_CONT_SLOT(&schedule)) {
-      t_slot      = ELWB_CONF_T_CONT;
-      payload_len = ELWB_REQ_PKT_LEN;
-      payload[0]  = 0;
+      t_slot              = ELWB_CONF_T_CONT;
+      packet_len          = ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN;
+      packet.payload16[0] = 0;
 
       /* if there is data in the output buffer, then request a slot */
       if (!ELWB_IS_HOST() &&
@@ -608,9 +612,10 @@ static void elwb_run(void)
           rand_backoff == 0) {
         /* node not yet registered? -> include node ID in the request */
         if (!node_registered) {
-          payload[0] = NODE_ID;
+          packet.payload16[0] = NODE_ID;
           LOG_INFO("transmitting node ID");
         }
+        ELWB_SET_PKT_HEADER(packet);
   #if ELWB_CONF_CONT_USE_HFTIMER
         /* contention slot requires precise timing: better to use HF timer for this wake-up! */
         ELWB_HFTIMER_SCHEDULE(t_ref_hf + (t_slot_ofs - t_start) * RTIMER_HF_LF_RATIO, elwb_notify);
@@ -634,21 +639,21 @@ static void elwb_run(void)
           rand_backoff--;
         }
         if (ELWB_IS_HOST()) {
-          uint16_t req_id = payload[0];
-          if (ELWB_GLOSSY_RX_CNT() && req_id != 0) {
+          uint16_t req_id = packet.payload16[0];
+          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet) &&  req_id != 0) {
             /* process the request only if there is a valid node ID */
             elwb_sched_process_req(req_id, 0);
           }
-          if (ELWB_GLOSSY_SIGNAL_DETECTED()) {
+          if (ELWB_GLOSSY_CONT_DETECTED()) {      /* contention detected? */
             /* set the period to 0 to notify the scheduler that at least one nodes has data to send */
             schedule.period = 0;
             LOG_VERBOSE("contention detected");
             /* compute 2nd schedule */
             elwb_sched_compute(&schedule, 0);  /* do not allocate slots for host */
-            payload[0] = schedule.period;
+            packet.payload16[0] = schedule.period;
           } else {
             /* else: no update to schedule needed; set period to 0 to indicate 'no change in period' */
-            payload[0] = 0;
+            packet.payload16[0] = 0;
           }
           elwb_update_rssi_snr();
         }
@@ -657,17 +662,19 @@ static void elwb_run(void)
 
       /* --- 2ND SCHEDULE (only in case of a contention slot) --- */
 
-      payload_len = ELWB_2ND_SCHED_LEN;
+      packet_len = ELWB_2ND_SCHED_LEN + ELWB_PKT_HDR_LEN;
       if (ELWB_IS_HOST()) {
+        /* note: packet content is set above during the contention slot */
+        ELWB_SET_PKT_HEADER(packet);
         ELWB_WAIT_UNTIL(t_slot_ofs);
         ELWB_SEND_PACKET();    /* send as normal packet without sync */
         stats.pkt_tx_all++;
       } else {
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
-        if (ELWB_GLOSSY_RX_CNT()) {         /* packet received? */
-          if (payload[0] != 0) {            /* zero means no change */
-            schedule.period  = payload[0];  /* extract updated period */
+        if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {     /* packet received? */
+          if (packet.payload16[0] != 0) {             /* zero means no change */
+            schedule.period  = packet.payload16[0];   /* extract updated period */
             schedule.n_slots = 0;
           } /* else: all good, no need to change anything */
           stats.pkt_rx_all++;

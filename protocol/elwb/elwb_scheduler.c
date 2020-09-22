@@ -514,6 +514,9 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
 
   compressed_size += ELWB_SCHED_HDR_LEN;  /* add header length */
 
+  /* set the network ID */
+  sched->net_id = (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK) | ELWB_PKT_TYPE_BITMASK;
+
 #if ELWB_CONF_SCHED_CRC
   uint16_t crc = crc16((uint8_t*)sched, compressed_size, 0);
   memcpy((uint8_t*)sched + compressed_size, &crc, 2);
@@ -553,7 +556,8 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   sched->n_slots = 0;
   sched->time    = elwb_time + elwb_time_ofs;
   sched->period  = base_period;
-  ELWB_SCHED_SET_CONT_SLOT(sched);              /* include a contention slot */
+  sched->net_id  = (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK) | ELWB_PKT_TYPE_BITMASK;
+  ELWB_SCHED_SET_CONT_SLOT(sched);                  /* include a contention slot */
   ELWB_SCHED_SET_STATE_IDLE(sched);
 
 #ifdef ELWB_CONF_SCHED_NODE_LIST
