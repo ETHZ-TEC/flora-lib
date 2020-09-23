@@ -809,9 +809,9 @@ void elwb_start(uint32_t _host_id)
 {
   host_id = _host_id;
   if (ELWB_IS_HOST()) {
-    LOG_INFO("host node");
+    LOG_INFO("host node, network ID 0x%04x", (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK));
   } else {
-    LOG_INFO("source node");
+    LOG_INFO("source node, network ID 0x%04x", (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK));
   }
 
   LOG_INFO("pkt_len: %u, slots: %u, n_tx: %u, t_sched: %lu, t_data: %lu, t_cont: %lu",
