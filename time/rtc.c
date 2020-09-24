@@ -384,10 +384,11 @@ bool rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void
     rtc_time.Hours   = hour;
     rtc_time.Minutes = minute;
     rtc_time.Seconds = second;
+    rtc_time.SubSeconds = rtc_time.SecondFraction;              /* 0ms */
     RTC_AlarmTypeDef alarm = {
         .AlarmTime = rtc_time,
         .AlarmMask = RTC_ALARMMASK_DATEWEEKDAY,
-        .AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_NONE,
+        .AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_NONE,      /* sub seconds must match */
         .AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE,
         .AlarmDateWeekDay = 0,
         .Alarm = RTC_ALARM_A,
