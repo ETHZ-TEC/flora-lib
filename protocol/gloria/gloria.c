@@ -165,7 +165,7 @@ static void gloria_rx_callback(uint8_t* payload, uint8_t size)
     }
     gloria_finish_slot();
   }
-  else if (size >= (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN)) {
+  else if (size >= current_flood->header_size) {
     gloria_process_rx(payload, size);
   }
   else {
