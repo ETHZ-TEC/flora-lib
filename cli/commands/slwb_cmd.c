@@ -131,7 +131,7 @@ static command_return_t slwb_start_command_handler(command_execution_t execution
 #ifdef RADIO_LOG
   set_radio_log(true);
 #else
-  set_radio_log(false);
+  //set_radio_log(false);  FIXME
 #endif
   value_t* param = NULL;
 
@@ -174,7 +174,7 @@ static command_return_t slwb_start_command_handler(command_execution_t execution
     return CMD_RET_FAILURE;
   }
 
-  slwb_start(lr_mod, mod, lr_pwr, pwr, rnd);
+  slwb_start(lr_mod, mod, lr_pwr, pwr, rnd);    // FIXME
 
   return CMD_RET_SUCCESS;
 }

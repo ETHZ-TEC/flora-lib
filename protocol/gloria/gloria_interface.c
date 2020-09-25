@@ -17,14 +17,9 @@
 
 /* internal state */
 static gloria_flood_t   flood;                                           // flood struct which (serves as input, state, and output to/from gloria_run_flood)
-static gloria_message_t message;                                         // buffer for the message (static to avoid allocation on the stack)
+static uint8_t          gloria_payload[GLORIA_INTERFACE_MAX_PAYLOAD_LEN];  // buffer for the message
 static bool             flood_running;                                   // indicates whether flood is onging or not
 static bool             flood_completed;                                 // indicates whether the flood completed (N_TX reached)
-static int8_t           lastrun_rssi = 0;
-static int8_t           lastrun_snr = 0;
-static uint8_t          lastrun_msg_received = 0;                        // number of times a message has been received during the last gloria run
-static uint8_t          lastrun_payload_len = 0;                         // length of the payload received during the last gloria run (0 if no payload has been received)
-static uint8_t          lastrun_rx_index = 0;                            // slot index (slot in which the message was received (corresponds to relay counter in Glossy terminology)
 static uint8_t          lastrun_n_rx_started = 0;                        // number of rx started events during the last Gloria run
 static bool             lastrun_t_ref_updated = false;                   // indicates whether last_t_ref has been updated during the last flood
 static uint64_t         last_t_ref = 0;                                  // reference time (updated if gloria_start is called with sync_slot=true)
@@ -88,16 +83,12 @@ void gloria_start(uint16_t initiator_id,
   /* initialize internal state */
   flood_running         = true;  // keep ordering: first internal state variable to update here
   flood_completed       = false;
-  lastrun_msg_received  = 0;
-  lastrun_payload_len   = 0;
-  lastrun_rx_index      = 0;
   lastrun_n_rx_started  = 0;
   lastrun_t_ref_updated = false;
-  lastrun_rssi          = 0;
-  lastrun_snr           = 0;
   // last_t_ref: not initialized here since old values of previous floods are still valid and useful if current flood does not update the value
 
   /* prepare flood struct */
+  memset(&flood, 0, sizeof(gloria_flood_t));    // reset struct
   flood.marker              = 0;
   flood.modulation          = internal_modulation;
   flood.power               = internal_power;
@@ -112,25 +103,22 @@ void gloria_start(uint16_t initiator_id,
   flood.radio_no_sleep      = true;
   flood.node_id             = NODE_ID;
 
-  message.header.type       = 0;
-  message.header.sync       = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
-  message.header.slot_index = 0;
+  flood.header.type       = 0;
+  flood.header.sync       = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
+  flood.header.slot_index = 0;
   // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
 
   if (initiator_id == NODE_ID) {
     // send flood
-    uint64_t marker     = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
-    flood.marker        = marker;     // marker (timestamp when flood shall start) must be set on the initiator
+    flood.marker        = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;     // marker (timestamp when flood shall start) must be set on the initiator
     flood.initial       = true;       // this node is the initator
-    flood.message       = &message;
+    flood.payload       = gloria_payload;
     flood.payload_size  = arg_payload_len;
-    // set the destination and copy the payload
-    message.header.dst  = 0;          // 0 means broadcast
-    memcpy(message.payload, payload, arg_payload_len);
+    memcpy(gloria_payload, payload, arg_payload_len);
   }
   else {
     // receive flood
-    flood.message     = &message;
+    flood.payload     = gloria_payload;
     flood.marker      = 0;
     flood.rx_timeout  = 0;
     flood.guard_time  = 0;
@@ -171,19 +159,11 @@ uint8_t gloria_stop(void)
     radio_standby();
 
     /* Set internal state for the case nothing has been received */
-    lastrun_msg_received  = 0;
-    lastrun_payload_len   = 0;
-    lastrun_rx_index      = 0;
     lastrun_t_ref_updated = false;
-    lastrun_rssi          = flood.rssi;
-    lastrun_snr           = flood.snr;
 
     /* Overwrite defaults if at least parts of the flood have been received */
     if (flood.msg_received && !flood.initial) {
       // node received at least one message => update received values
-      lastrun_msg_received = flood.msg_received;
-      lastrun_payload_len  = flood.message_size - GLORIA_HEADER_LENGTH;
-      lastrun_rx_index     = flood.first_rx_index;
       copy_payload();
     }
     if (flood.msg_received && arg_sync_slot) {
@@ -222,25 +202,25 @@ uint8_t gloria_stop(void)
     flood_running = false; // keep ordering: last internal state variable updated here
   }
 
-  return lastrun_msg_received;
+  return flood.msg_received;
 }
 
 
 uint8_t gloria_get_rx_cnt(void)
 {
-  return lastrun_msg_received;
+  return flood.msg_received;
 }
 
 
 uint8_t gloria_get_payload_len(void)
 {
-  return lastrun_payload_len;
+  return flood.payload_size;
 }
 
 
 uint8_t gloria_get_rx_index(void)
 {
-  return lastrun_rx_index;
+  return flood.first_rx_index;
 }
 
 
@@ -270,13 +250,13 @@ uint64_t gloria_get_t_ref_hs(void)
 
 int32_t gloria_get_rssi(void)
 {
-  return lastrun_rssi;
+  return flood.rssi;
 }
 
 
 int32_t gloria_get_snr(void)
 {
-  return lastrun_snr;
+  return flood.snr;
 }
 
 
@@ -310,7 +290,7 @@ uint32_t gloria_get_toa(uint8_t payload_len)
 
 uint32_t gloria_get_toa_sl(uint8_t payload_len, uint8_t modulation)
 {
-  return radio_get_toa(payload_len + GLORIA_HEADER_LENGTH, modulation);
+  return radio_get_toa(payload_len + GLORIA_HEADER_LENGTH_MIN, modulation);
 }
 
 
@@ -362,20 +342,21 @@ static void gloria_flood_callback(void)
 
 
 /*
- * Updates lastrun_msg_received, lastrun_payload_len, lastrun_rx_index, and the
- * buffer to which arg_payload_ptr points with the values from the global flood
+ * Updates the buffer to which arg_payload_ptr points with the values from the global flood
  * struct.
  */
 static void copy_payload(void)
 {
-  // copy payload to provided memory space
-  if (lastrun_payload_len <= GLORIA_INTERFACE_MAX_PAYLOAD_LEN) {
-    memcpy(arg_payload_ptr, flood.message->payload, lastrun_payload_len);
-  }
-  else {
-    LOG_WARNING("Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
-    memcpy(arg_payload_ptr, flood.message->payload, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
-    lastrun_payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
+  if (arg_payload_ptr) {
+    // copy payload to provided memory space
+    if (flood.payload_size <= GLORIA_INTERFACE_MAX_PAYLOAD_LEN) {
+      memcpy(arg_payload_ptr, flood.payload, flood.payload_size);
+    }
+    else {
+      LOG_WARNING("Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
+      memcpy(arg_payload_ptr, flood.payload, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
+      flood.payload_size = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
+    }
   }
 }
 

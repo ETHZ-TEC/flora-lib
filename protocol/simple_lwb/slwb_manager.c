@@ -17,8 +17,8 @@ uint8_t data_slot_idx;
 uint8_t base_id = 0;
 
 // flood
-static gloria_message_t message = {0};
-static gloria_flood_t slwb_flood = {.message = &message};
+static uint8_t        message[GLORIA_MAX_PAYLOAD_LENGTH];
+static gloria_flood_t slwb_flood = {.payload = message};
 
 bool outstanding_ack = false;
 bool node_synced = false;
@@ -85,8 +85,8 @@ void slwb_schedule_slot() {
   print(1, "ss");
 
   if (slwb_is_base()) {
-    message.header.dst = 0;
-    message.header.sync = 1;
+    slwb_flood.header.dst = 0;
+    slwb_flood.header.sync = 1;
 
     // always copy the general schedule plus the normal data slots
     uint8_t copy_size = sizeof(slwb_gen_schedule_t) + current_schedule->gen_schedule.n_data_slots;
@@ -94,12 +94,12 @@ void slwb_schedule_slot() {
     uint8_t* start_addr = (uint8_t*) current_schedule;
 
     if (current_round->type == NORMAL) {
-      message.header.type = SLWB_ROUND_SCHEDULE;
+      slwb_flood.header.type = SLWB_ROUND_SCHEDULE;
       // increase start address to general schedule
       start_addr += sizeof(slwb_lr_schedule_t);
     }
     else if (current_round->type == LONG_RANGE){
-      message.header.type = SLWB_LR_ROUND_SCHEDULE;
+      slwb_flood.header.type = SLWB_LR_ROUND_SCHEDULE;
       // also copy the long range schedule and the long range slots
       copy_size += sizeof(slwb_lr_schedule_t) + current_schedule->lr_schedule.n_lr_data;
     }
@@ -107,14 +107,14 @@ void slwb_schedule_slot() {
       cli_log("Wrong round type in schedule!", "slwb_manager", CLI_LOG_LEVEL_ERROR);
     }
 
-    memcpy(message.payload, start_addr, copy_size);
+    memcpy(message, start_addr, copy_size);
     slwb_flood.payload_size = copy_size;
 
     // get number of stream acks to send
     uint8_t n_acks = current_schedule->lr_schedule.lr_ack + current_schedule->gen_schedule.n_acks;
     if (n_acks) {
       // add stream acks to payload
-      start_addr = message.payload + copy_size;
+      start_addr = message + copy_size;
       copy_size = n_acks * sizeof(slwb_stream_ack_t);
       memcpy(start_addr, &(current_schedule->stream_acks), copy_size);
       slwb_flood.payload_size += copy_size;
@@ -156,20 +156,20 @@ void slwb_schedule_slot() {
 void slwb_lr_schedule_slot() {
   print(1, "lrs");
   if (slwb_is_lr_base()) {
-    message.header.type = SLWB_LR_SCHEDULE;
-    message.header.dst = 0;
-    message.header.sync = 1;
+    slwb_flood.header.type = SLWB_LR_SCHEDULE;
+    slwb_flood.header.dst = 0;
+    slwb_flood.header.sync = 1;
 
     // copy lr schedule
-    memcpy(message.payload, &(current_schedule->lr_schedule), sizeof(slwb_lr_schedule_t));
+    memcpy(message, &(current_schedule->lr_schedule), sizeof(slwb_lr_schedule_t));
     slwb_flood.payload_size = sizeof(slwb_lr_schedule_t);
 
     // copy lr data slots
-    memcpy(message.payload + slwb_flood.payload_size, &current_schedule->slots, current_schedule->lr_schedule.n_lr_data);
+    memcpy(message + slwb_flood.payload_size, &current_schedule->slots, current_schedule->lr_schedule.n_lr_data);
     slwb_flood.payload_size += current_schedule->lr_schedule.n_lr_data;
 
     if (current_schedule->lr_schedule.lr_ack) {
-      memcpy(message.payload + slwb_flood.payload_size, current_schedule->stream_acks, sizeof(slwb_stream_ack_t));
+      memcpy(message + slwb_flood.payload_size, current_schedule->stream_acks, sizeof(slwb_stream_ack_t));
       slwb_flood.payload_size += sizeof(slwb_stream_ack_t);
     }
 
@@ -211,7 +211,7 @@ void slwb_lr_contention_slot() {
     slwb_flood.lp_listening = true;
     slwb_flood.guard_time = 0;
     slwb_flood.payload_size = sizeof(slwb_stream_request_t);
-    message.header.sync = 0;
+    slwb_flood.header.sync = 0;
     slwb_set_flood_rx_defaults();
   }
   else {
@@ -219,11 +219,11 @@ void slwb_lr_contention_slot() {
     if (current_stream) {
       outstanding_ack = true;
 
-      message.header.type = SLWB_STREAM_REQUEST;
-      message.header.dst = base_id;
-      message.header.sync = 0;
+      slwb_flood.header.type = SLWB_STREAM_REQUEST;
+      slwb_flood.header.dst = base_id;
+      slwb_flood.header.sync = 0;
 
-      memcpy(&message.payload, &current_stream->stream_req, sizeof(slwb_stream_request_t));
+      memcpy(message, &current_stream->stream_req, sizeof(slwb_stream_request_t));
       slwb_flood.payload_size = sizeof(slwb_stream_request_t);
 
       slwb_print_stream(1, &(current_stream->stream_req));
@@ -254,11 +254,11 @@ void slwb_contention_slot() {
     if (current_stream && !slwb_is_base() && !allocated_stream) {
       outstanding_ack = true;
 
-      message.header.type = SLWB_STREAM_REQUEST;
-      message.header.dst = base_id;
-      message.header.sync = 0;
+      slwb_flood.header.type = SLWB_STREAM_REQUEST;
+      slwb_flood.header.dst = base_id;
+      slwb_flood.header.sync = 0;
 
-      memcpy(&message.payload, &current_stream->stream_req, sizeof(slwb_stream_request_t));
+      memcpy(message, &current_stream->stream_req, sizeof(slwb_stream_request_t));
       slwb_flood.payload_size = sizeof(slwb_stream_request_t);
 
       slwb_print_stream(1, &(current_stream->stream_req));
@@ -274,7 +274,7 @@ void slwb_contention_slot() {
       slwb_flood.lp_listening = true;
       slwb_flood.guard_time = 0;
       slwb_flood.payload_size = sizeof(slwb_stream_request_t);
-      message.header.sync = 0;
+      slwb_flood.header.sync = 0;
       slwb_set_flood_rx_defaults();
     }
 
@@ -311,22 +311,22 @@ void slwb_lr_data_slot() {
         sprintf(slwb_print_buffer, "lr_send: %d, %d", msg->node_id, msg->packet_id);
         print(10, slwb_print_buffer);
 
-        message.header.dst = base_id;
-        message.header.sync = 0;
+        slwb_flood.header.dst = base_id;
+        slwb_flood.header.sync = 0;
 
-        memcpy(&message.payload, msg, sizeof(slwb_data_message_t));
+        memcpy(message, msg, sizeof(slwb_data_message_t));
         slwb_flood.payload_size = sizeof(slwb_data_message_t);
 
         // check for stream requests to piggy-back
         current_stream = slwb_data_generator_get_data_stream();
         if (current_stream) {
-          message.header.type = SLWB_DATA_PLUS_SR;
-          memcpy(message.payload + slwb_flood.payload_size, &current_stream->stream_req, sizeof(slwb_stream_request_t));
+          slwb_flood.header.type = SLWB_DATA_PLUS_SR;
+          memcpy(message + slwb_flood.payload_size, &current_stream->stream_req, sizeof(slwb_stream_request_t));
           slwb_flood.payload_size += sizeof(slwb_stream_request_t);
           current_stream->backoff = rand() % SLWB_LR_BACKOFF + 1;
         }
         else {
-          message.header.type = SLWB_DATA_MESSAGE;
+          slwb_flood.header.type = SLWB_DATA_MESSAGE;
         }
 
         slwb_set_flood_tx_defaults();
@@ -342,7 +342,7 @@ void slwb_lr_data_slot() {
       slwb_flood.lp_listening = true;
       slwb_flood.guard_time = 0;
       slwb_flood.payload_size = sizeof(slwb_data_message_t) + sizeof(slwb_stream_request_t);
-      message.header.sync = 0;
+      slwb_flood.header.sync = 0;
       slwb_set_flood_rx_defaults();
     }
     else {
@@ -373,17 +373,17 @@ void slwb_data_slot() {
         sprintf(slwb_print_buffer, "data_send: %d, %d", msg->node_id, msg->packet_id);
         print(10, slwb_print_buffer);
 
-        message.header.dst = base_id;
-        message.header.sync = 0;
+        slwb_flood.header.dst = base_id;
+        slwb_flood.header.sync = 0;
 
-        memcpy(&message.payload, msg, sizeof(slwb_data_message_t));
+        memcpy(message, msg, sizeof(slwb_data_message_t));
         slwb_flood.payload_size = sizeof(slwb_data_message_t);
 
         // check for stream requests to piggy-back
         current_stream = slwb_data_generator_get_data_stream();
         if (current_stream) {
-          message.header.type = SLWB_DATA_PLUS_SR;
-          memcpy(message.payload + slwb_flood.payload_size, &current_stream->stream_req, sizeof(slwb_stream_request_t));
+          slwb_flood.header.type = SLWB_DATA_PLUS_SR;
+          memcpy(message + slwb_flood.payload_size, &current_stream->stream_req, sizeof(slwb_stream_request_t));
           slwb_flood.payload_size += sizeof(slwb_stream_request_t);
           current_stream->backoff = rand() % SLWB_BACKOFF + 1;
 
@@ -393,7 +393,7 @@ void slwb_data_slot() {
           }
         }
         else {
-          message.header.type = SLWB_DATA_MESSAGE;
+          slwb_flood.header.type = SLWB_DATA_MESSAGE;
         }
 
         slwb_set_flood_tx_defaults();
@@ -411,7 +411,7 @@ void slwb_data_slot() {
       slwb_flood.lp_listening = false;
       slwb_flood.guard_time = 0;
       slwb_flood.payload_size = sizeof(slwb_data_message_t);
-      message.header.sync = 0;
+      slwb_flood.header.sync = 0;
       slwb_set_flood_rx_defaults();
     }
 
@@ -446,7 +446,7 @@ void slwb_schedule_slot_callback() {
       uint8_t copy_size = sizeof(slwb_gen_schedule_t);
       uint8_t* start_addr = (uint8_t*) current_schedule;
 
-      switch (message.header.type) {
+      switch (slwb_flood.header.type) {
         case SLWB_ROUND_SCHEDULE:
           current_round->type = NORMAL;
           // only copy the general schedule -> set start addr to schedule->gen_schedule
@@ -464,10 +464,10 @@ void slwb_schedule_slot_callback() {
       }
 
       // get the parameters from the general schedule and the long range schedule if available
-      memcpy(start_addr, message.payload, copy_size);
+      memcpy(start_addr, message, copy_size);
 
       // get the slots
-      start_addr = message.payload + copy_size;
+      start_addr = message + copy_size;
       copy_size = current_schedule->gen_schedule.n_data_slots + current_schedule->lr_schedule.n_lr_data;
       memcpy(&(current_schedule->slots), start_addr, copy_size);
 
@@ -485,7 +485,7 @@ void slwb_schedule_slot_callback() {
         }
       }
 
-      base_id = message.header.src;
+      base_id = slwb_flood.header.src;
       current_round->round_start = slwb_flood.received_marker;
 
       // save the markers for synchronization
@@ -535,19 +535,19 @@ void slwb_schedule_slot_callback() {
 void slwb_lr_schedule_slot_callback() {
   print(1, "lrsc");
   if (!slwb_is_lr_base()) {
-    if (slwb_flood.msg_received && slwb_flood.message->header.type == SLWB_LR_SCHEDULE) {
+    if (slwb_flood.msg_received && slwb_flood.header.type == SLWB_LR_SCHEDULE) {
       current_round->type = LONG_RANGE;
 
       // copy lr schedule
-      memcpy(&(current_schedule->lr_schedule), message.payload, sizeof(slwb_lr_schedule_t));
+      memcpy(&(current_schedule->lr_schedule), message, sizeof(slwb_lr_schedule_t));
 
       // copy lr data slots
-      memcpy(&current_schedule->slots, message.payload + sizeof(slwb_lr_schedule_t), current_schedule->lr_schedule.n_lr_data);
+      memcpy(&current_schedule->slots, message + sizeof(slwb_lr_schedule_t), current_schedule->lr_schedule.n_lr_data);
 
 
       if (current_schedule->lr_schedule.lr_ack) {
         // if schedule contains a stream ack
-        slwb_stream_ack_t* ack = (slwb_stream_ack_t*) (message.payload + sizeof(slwb_lr_schedule_t) + current_schedule->lr_schedule.n_lr_data);
+        slwb_stream_ack_t* ack = (slwb_stream_ack_t*) (message + sizeof(slwb_lr_schedule_t) + current_schedule->lr_schedule.n_lr_data);
 
         if (ack->node_id == slwb_get_id()) {
           // if ack is for this node mark stream as acked
@@ -600,8 +600,8 @@ void slwb_lr_schedule_slot_callback() {
 void slwb_lr_contention_slot_callback() {
   print(1, "lrcc");
   if (slwb_is_lr_base()) {
-    if (slwb_flood.msg_received && message.header.type == SLWB_STREAM_REQUEST) {
-      slwb_data_generator_add_stream((slwb_stream_request_t*) message.payload);
+    if (slwb_flood.msg_received && slwb_flood.header.type == SLWB_STREAM_REQUEST) {
+      slwb_data_generator_add_stream((slwb_stream_request_t*) message);
     }
   }
 
@@ -624,9 +624,9 @@ void slwb_lr_contention_slot_callback() {
  */
 void slwb_contention_slot_callback() {
   if (slwb_is_base()) {
-    if (slwb_flood.msg_received && message.header.type == SLWB_STREAM_REQUEST) {
-      slwb_stream_request_t* sr = (slwb_stream_request_t*) message.payload;
-      slwb_scheduler_add_stream_req(sr, message.header.src, true);
+    if (slwb_flood.msg_received && slwb_flood.header.type == SLWB_STREAM_REQUEST) {
+      slwb_stream_request_t* sr = (slwb_stream_request_t*) message;
+      slwb_scheduler_add_stream_req(sr, slwb_flood.header.src, true);
     }
   }
   else {
@@ -670,13 +670,13 @@ void slwb_lr_data_slot_callback() {
   print(1, "lrdc");
   if (slwb_is_lr_base()) {
     if (slwb_flood.msg_received) {
-      switch (message.header.type) {
+      switch (slwb_flood.header.type) {
         case SLWB_DATA_MESSAGE:
-          slwb_data_generator_add_data((slwb_data_message_t*) message.payload);
+          slwb_data_generator_add_data((slwb_data_message_t*) message);
           break;
         case SLWB_DATA_PLUS_SR:
-          slwb_data_generator_add_data((slwb_data_message_t*) message.payload);
-          slwb_data_generator_add_stream((slwb_stream_request_t*) (message.payload + sizeof(slwb_data_message_t)));
+          slwb_data_generator_add_data((slwb_data_message_t*) message);
+          slwb_data_generator_add_stream((slwb_stream_request_t*) (message + sizeof(slwb_data_message_t)));
           break;
         default:
           break;
@@ -700,14 +700,14 @@ void slwb_data_slot_callback() {
   print(1, "dsc");
   if (slwb_is_base()) {
     if (slwb_flood.msg_received) {
-      switch (message.header.type) {
+      switch (slwb_flood.header.type) {
         case SLWB_DATA_MESSAGE:
-          slwb_data_generator_add_data((slwb_data_message_t*) message.payload);
+          slwb_data_generator_add_data((slwb_data_message_t*) message);
           break;
         case SLWB_DATA_PLUS_SR:
-          slwb_data_generator_add_data((slwb_data_message_t*) message.payload);
+          slwb_data_generator_add_data((slwb_data_message_t*) message);
           print(2, "pb");
-          slwb_scheduler_add_stream_req((slwb_stream_request_t*) (message.payload + sizeof(slwb_data_message_t)), message.header.src, false);
+          slwb_scheduler_add_stream_req((slwb_stream_request_t*) (message + sizeof(slwb_data_message_t)), slwb_flood.header.src, false);
           break;
         default:
           break;

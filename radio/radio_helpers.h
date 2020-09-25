@@ -27,7 +27,7 @@ uint32_t  radio_calculate_timeout(bool preamble);
 void      radio_get_payload(uint8_t* buffer, uint8_t* offset, uint8_t* size);
 uint8_t   radio_get_payload_size(void);
 void      radio_set_payload(uint8_t* buffer, uint8_t offset, uint8_t size);
-void      radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint8_t size);
+void      radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size);
 
 
 /*!

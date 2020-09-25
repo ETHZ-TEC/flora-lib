@@ -63,7 +63,7 @@ inline uint8_t gloria_calculate_last_active_slot(gloria_flood_t* flood) {
  *     (!ack_mode || ack_counter < MAX_ACKS)
  */
 inline bool gloria_is_not_finished(gloria_flood_t* flood) {
-  if (flood->slot_index <= flood->last_active_slot
+  if (flood->header.slot_index <= flood->last_active_slot
       && (!flood->ack_mode || flood->ack_counter < flood->max_acks)) {
     return true;
   }
@@ -94,7 +94,7 @@ inline bool gloria_valid_to_send(gloria_flood_t* flood) {
 
 
 inline bool gloria_is_ack_slot(gloria_flood_t* flood) {
-  return (flood->ack_mode && flood->slot_index % 2);
+  return (flood->ack_mode && flood->header.slot_index % 2);
 }
 
 

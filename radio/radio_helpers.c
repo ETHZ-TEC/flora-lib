@@ -89,12 +89,12 @@ uint8_t radio_get_payload_size()
 
 void radio_set_payload(uint8_t* buffer, uint8_t offset, uint8_t size)
 {
-  radio_set_packet_params_and_size(size);
-  SX126xSetPayload(buffer, size);
+  radio_set_packet_params_and_size(offset + size);
+  SX126xWriteBuffer(offset, buffer, size);
 }
 
 
-void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t offset, uint8_t size)
+void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size)
 {
   if (size > 0) {
     uint8_t margin = 16;
@@ -362,7 +362,7 @@ uint32_t radio_get_preamble_toa(uint16_t length, uint8_t modulation)
 }
 
 
-inline void radio_set_packet_params_and_size(uint8_t size)
+void radio_set_packet_params_and_size(uint8_t size)
 {
   lora_last_payload_size = size;
 
