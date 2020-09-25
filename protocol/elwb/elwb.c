@@ -298,9 +298,9 @@ static void elwb_run(void)
             if ((ELWB_TIMER_NOW() - bootstrap_started) >= ELWB_CONF_BOOTSTRAP_TIMEOUT) {
               break;
             }
-          } while (elwb_running && (!ELWB_GLOSSY_IS_T_REF_UPDATED() || !ELWB_IS_SCHEDULE_PACKET(&schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
+          } while (elwb_running && (!ELWB_GLOSSY_IS_T_REF_UPDATED() || !ELWB_IS_SCHEDULE_PACKET(schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
           /* exit bootstrap mode if schedule received, exit bootstrap state */
-          if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(&schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
+          if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
             break;
           }
           /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
@@ -319,7 +319,7 @@ static void elwb_run(void)
         ELWB_RCV_SCHED();
       }
 
-      if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(&schedule)) {      /* schedule received? */
+      if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(schedule)) {      /* schedule received? */
     #if ELWB_CONF_SCHED_CRC
         /* check the CRC */
         packet_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
@@ -434,7 +434,7 @@ static void elwb_run(void)
             if (!ELWB_IS_HOST() && !is_data_round) {
               packet_len = ELWB_REQ_PKT_LEN;
               /* request as many data slots as there are packets in the queue */
-              packet.payload16[0] = ELWB_QUEUE_SIZE(tx_queue);
+              packet.req.num_slots = ELWB_QUEUE_SIZE(tx_queue);
             } else {
               /* prepare a data packet for dissemination */
               packet_len = 0;
@@ -515,7 +515,7 @@ static void elwb_run(void)
 
             } else if (ELWB_IS_HOST()) {
               /* this is a request packet */
-              elwb_sched_process_req(schedule.slot[slot_idx], packet.payload16[0]);
+              elwb_sched_process_req(schedule.slot[slot_idx], packet.req.num_slots);
             }
             stats.pkt_rx_all++;
 
@@ -602,9 +602,9 @@ static void elwb_run(void)
 
     /* is there a contention slot in this round? */
     if (ELWB_SCHED_HAS_CONT_SLOT(&schedule)) {
-      t_slot              = ELWB_CONF_T_CONT;
-      packet_len          = ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN;
-      packet.payload16[0] = 0;
+      t_slot        = ELWB_CONF_T_CONT;
+      packet_len    = ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN;
+      packet.cont.node_id = 0;
 
       /* if there is data in the output buffer, then request a slot */
       if (!ELWB_IS_HOST() &&
@@ -612,7 +612,7 @@ static void elwb_run(void)
           rand_backoff == 0) {
         /* node not yet registered? -> include node ID in the request */
         if (!node_registered) {
-          packet.payload16[0] = NODE_ID;
+          packet.cont.node_id = NODE_ID;
           LOG_INFO("transmitting node ID");
         }
         ELWB_SET_PKT_HEADER(packet);
@@ -639,10 +639,9 @@ static void elwb_run(void)
           rand_backoff--;
         }
         if (ELWB_IS_HOST()) {
-          uint16_t req_id = packet.payload16[0];
-          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet) &&  req_id != 0) {
+          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet) && packet.cont.node_id != 0) {
             /* process the request only if there is a valid node ID */
-            elwb_sched_process_req(req_id, 0);
+            elwb_sched_process_req(packet.cont.node_id, 0);
           }
           if (ELWB_GLOSSY_CONT_DETECTED()) {      /* contention detected? */
             /* set the period to 0 to notify the scheduler that at least one nodes has data to send */
@@ -650,10 +649,10 @@ static void elwb_run(void)
             LOG_VERBOSE("contention detected");
             /* compute 2nd schedule */
             elwb_sched_compute(&schedule, 0);  /* do not allocate slots for host */
-            packet.payload16[0] = schedule.period;
+            packet.sched2.period = schedule.period;
           } else {
             /* else: no update to schedule needed; set period to 0 to indicate 'no change in period' */
-            packet.payload16[0] = 0;
+            packet.sched2.period = 0;
           }
           elwb_update_rssi_snr();
         }
@@ -673,8 +672,8 @@ static void elwb_run(void)
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
         if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {     /* packet received? */
-          if (packet.payload16[0] != 0) {             /* zero means no change */
-            schedule.period  = packet.payload16[0];   /* extract updated period */
+          if (packet.sched2.period != 0) {             /* zero means no change */
+            schedule.period  = packet.sched2.period;   /* extract updated period */
             schedule.n_slots = 0;
           } /* else: all good, no need to change anything */
           stats.pkt_rx_all++;
