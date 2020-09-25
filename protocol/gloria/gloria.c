@@ -45,7 +45,7 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
   current_flood->acked = 0;
 
   // calculate the message size; always needed for the initiator; other nodes need it for low power listening
-  current_flood->message_size = (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN) + current_flood->payload_size + (current_flood->header.sync? GLORIA_TIMESTAMP_LENGTH:0);
+  current_flood->header_size = (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN);
 
   // calculate the message size for the initiator, initialize markers
   if (current_flood->initial) {
@@ -70,7 +70,7 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
         slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 1, GLORIA_ACK_LENGTH);
       }
       else {
-        slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 0, current_flood->message_size);
+        slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 0, current_flood->payload_size + current_flood->header_size + current_flood->header.sync * GLORIA_TIMESTAMP_LENGTH);
       }
 
       if (slot_time < rx2rx_trans + gloria_calculate_rx_timeout(current_flood)) {
@@ -179,15 +179,11 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size)
   gloria_header_t* header = (gloria_header_t*) payload;
 
   if (!current_flood->msg_received) {
-    uint32_t header_len = (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN);
-
-    // get message
-    current_flood->message_size = size;
-    current_flood->msg_received = true;
-    memcpy(current_flood->payload, payload + header_len, size);
 
     // the size of the actual payload is the message size minus the header length and for sync floods minus the timestamp length
-    current_flood->payload_size = current_flood->message_size - header_len - (header->sync ? GLORIA_TIMESTAMP_LENGTH : 0);
+    current_flood->payload_size = size - current_flood->header_size - current_flood->header.sync * GLORIA_TIMESTAMP_LENGTH;
+    current_flood->msg_received = true;
+    memcpy(current_flood->payload, payload + current_flood->header_size, size - current_flood->header_size);
 
     current_flood->header.slot_index = header->slot_index;
     gloria_reconstruct_flood_marker(current_flood);

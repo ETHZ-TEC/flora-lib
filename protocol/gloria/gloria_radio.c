@@ -185,8 +185,8 @@ static void gloria_radio_setup_callback() {
   case GLORIA_RADIO_TX:
     radio_set_irq_mode(IRQ_MODE_TX);
     radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
-    radio_set_payload((uint8_t*)&current_flood->header, 0, header_len);
-    radio_set_payload((uint8_t*)current_flood->payload, header_len, current_flood->payload_size);
+    radio_set_payload_chunk((uint8_t*)&current_flood->header, 0, header_len, false);
+    radio_set_payload_chunk((uint8_t*)current_flood->payload, header_len, current_flood->payload_size, true);
     radio_set_tx_callback(&gloria_radio_tx_callback);
     radio_set_tx(current_flood->current_tx_marker);
     break;
@@ -194,7 +194,7 @@ static void gloria_radio_setup_callback() {
   case GLORIA_RADIO_ACK_TX:
     radio_set_irq_mode(IRQ_MODE_TX);
     radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
-    radio_set_payload((uint8_t*) &current_flood->ack_message, 0, GLORIA_ACK_LENGTH);
+    radio_set_payload((uint8_t*) &current_flood->ack_message, GLORIA_ACK_LENGTH);
     radio_set_tx_callback(&gloria_radio_tx_ack_callback);
     radio_set_tx(current_flood->current_tx_marker);
     break;

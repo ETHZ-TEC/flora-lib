@@ -538,7 +538,7 @@ static void radio_execute(void)
 
 void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
 {
-  radio_set_payload(buffer, 0, size);
+  radio_set_payload(buffer, size);
   if (schedule) {
     radio_command_scheduled = true;
     SX126xSetTxWithoutExecute(0);
@@ -555,7 +555,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
 void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t time)
 {
   radio_command_scheduled = true;
-  radio_set_payload(buffer, 0, size);
+  radio_set_payload(buffer, size);
   SX126xSetTxWithoutExecute(0);
 
   hs_timer_schedule(time, &radio_execute);

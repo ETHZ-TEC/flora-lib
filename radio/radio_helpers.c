@@ -87,9 +87,19 @@ uint8_t radio_get_payload_size()
 }
 
 
-void radio_set_payload(uint8_t* buffer, uint8_t offset, uint8_t size)
+void radio_set_payload(uint8_t* buffer, uint8_t size)
 {
-  radio_set_packet_params_and_size(offset + size);
+  radio_set_packet_params_and_size(size);
+  SX126xWriteBuffer(0, buffer, size);
+}
+
+
+// the last chunk of the payload must be the one with the largest offset
+void radio_set_payload_chunk(uint8_t* buffer, uint8_t offset, uint8_t size, bool last_chunk)
+{
+  if (last_chunk) {
+    radio_set_packet_params_and_size(offset + size);
+  }
   SX126xWriteBuffer(offset, buffer, size);
 }
 
