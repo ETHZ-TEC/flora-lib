@@ -39,7 +39,7 @@ uint64_t gloria_calculate_tx_marker(gloria_flood_t* flood)
 
   offset += timings->floodInitOverhead - GLORIA_HSTIMER_TRIGGER_DELAY;
 
-  uint32_t slot_time_data = gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size);
+  uint32_t slot_time_data = gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->payload_size + flood->header_size + (flood->header.sync ? GLORIA_TIMESTAMP_LENGTH : 0));
 
   if (flood->ack_mode) {
     uint32_t slot_time_ack = gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH);
@@ -156,9 +156,10 @@ void gloria_reconstruct_flood_marker(gloria_flood_t* flood)
 
   uint32_t slot_time_sum;
   if (flood->ack_mode) {
-    slot_time_sum = (flood->header.slot_index / 2 * (gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size) + gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH)));
+    slot_time_sum = (flood->header.slot_index / 2 * ( gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->payload_size + flood->header_size + flood->header.sync * GLORIA_TIMESTAMP_LENGTH)
+                      + gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 1, GLORIA_ACK_LENGTH) ));
   } else {
-    slot_time_sum = (flood->header.slot_index * gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->message_size));
+    slot_time_sum = (flood->header.slot_index * gloria_calculate_slot_time(flood->modulation, flood->ack_mode, 0, flood->payload_size + flood->header_size + flood->header.sync * GLORIA_TIMESTAMP_LENGTH));
   }
   flood->reconstructed_marker = radio_get_last_sync_timestamp() -
                                 timings->txSync -

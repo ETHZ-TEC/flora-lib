@@ -60,7 +60,7 @@ typedef struct {
 
   uint64_t current_tx_marker;        // save ts of current transmission
 
-  uint8_t message_size;          // actual size of the transmitted message /(header + payload + (timestamp for sync floods))
+  uint8_t header_size;          // size of the message header (GLORIA_HEADER_LENGTH or GLORIA_HEADER_LENGTH_MIN)
   gloria_ack_message_t ack_message;    // contains the ack_message to send / that was received
 
   // parameters that contain additional information
