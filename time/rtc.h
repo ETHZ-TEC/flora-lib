@@ -17,7 +17,7 @@ void rtc_init();
 bool rtc_set_date(uint32_t year, uint32_t month, uint32_t day);
 bool rtc_set_time(uint32_t hour, uint32_t minute, uint32_t second);
 bool rtc_set_unix_timestamp(uint32_t timestamp);
-bool rtc_set_unix_timestamp_ms(uint64_t timestamp);
+bool rtc_set_unix_timestamp_ms(uint64_t timestamp, uint32_t* out_wait_time_ms);
 bool rtc_compensate_drift(int32_t offset_ppm);
 
 void rtc_get_time(uint32_t* hour, uint32_t* minute, uint32_t* second);

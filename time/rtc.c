@@ -65,7 +65,7 @@ bool rtc_set_time(uint32_t hour, uint32_t minute, uint32_t second)
 
 
 /* shift (adjust) the RTC by a fraction of a second (positive offset means the clock will be advanced) */
-void rtc_shift(int32_t offset_ms)
+void rtc_shift(int32_t offset_ms, bool block_until_rtc_updated)
 {
   if (offset_ms >= 1000 || offset_ms <= -1000) {
     return;
@@ -100,7 +100,9 @@ void rtc_shift(int32_t offset_ms)
   __HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
 
   /* bugfix: wait for RTC to settle */
-  delay_us(offset_ms * 1000);
+  if (block_until_rtc_updated) {
+    delay_us(offset_ms * 1000);
+  }
 
   LOG_VERBOSE("RTC shifted by %dms", offset_ms);
 }
@@ -167,8 +169,8 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
 }
 
 
-/* note: this function may block for up to 1 second! */
-bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms)
+/* note: this function may block for up to 1 second if no 2nd argument is provided. otherwise the required amount of wait time is written to the 2nd argument. */
+bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms, uint32_t* out_wait_time_ms)
 {
   struct tm ts;
   int32_t granularity_ms = (1000UL / (rtc_time.SecondFraction + 1));
@@ -177,6 +179,9 @@ bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms)
   int64_t offset_ms  = (int64_t)timestamp_ms - (int64_t)rtc_get_unix_timestamp_ms();
   if (offset_ms <= granularity_ms && offset_ms >= -granularity_ms) {
     LOG_VERBOSE("current offset (%ldms) is below the threshold, skipping update", (int32_t)offset_ms);
+    if (out_wait_time_ms) {
+      *out_wait_time_ms = 0;
+    }
     return true;      /* don't adjust offset if it is in the order of the RTC granularity */
   }
 
@@ -202,7 +207,11 @@ bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms)
   }
 
   /* note: HAL_RTC_SetTime() does not set the subseconds register (it is a read-only register) -> need to use RTC_SHIFTR to compensate down to ms level */
-  rtc_shift(timestamp_ms % 1000);
+  uint32_t shift_ms = timestamp_ms % 1000;
+  rtc_shift(shift_ms, out_wait_time_ms == 0);
+  if (out_wait_time_ms) {
+    *out_wait_time_ms = shift_ms;
+  }
 
   LOG_VERBOSE("time set (%d-%02d-%02d %02d:%02d:%02d), offset was %lldms", (rtc_date.Year + 2000),
                                                                            rtc_date.Month, rtc_date.Date,
