@@ -65,10 +65,10 @@ bool rtc_set_time(uint32_t hour, uint32_t minute, uint32_t second)
 
 
 /* shift (adjust) the RTC by a fraction of a second (positive offset means the clock will be advanced) */
-void rtc_shift(int32_t offset_ms, bool block_until_rtc_updated)
+uint32_t rtc_shift(int32_t offset_ms, bool block_until_rtc_updated)
 {
   if (offset_ms >= 1000 || offset_ms <= -1000) {
-    return;
+    return 0;
   }
   if (IS_INTERRUPT()) {
     /* it is not recommended to run this operation from interrupt context since there is a busy wait of up to 1 second involved! */
@@ -105,6 +105,8 @@ void rtc_shift(int32_t offset_ms, bool block_until_rtc_updated)
   }
 
   LOG_VERBOSE("RTC shifted by %dms", offset_ms);
+
+  return offset_ms;
 }
 
 
@@ -207,8 +209,7 @@ bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms, uint32_t* out_wait_time_ms
   }
 
   /* note: HAL_RTC_SetTime() does not set the subseconds register (it is a read-only register) -> need to use RTC_SHIFTR to compensate down to ms level */
-  uint32_t shift_ms = timestamp_ms % 1000;
-  rtc_shift(shift_ms, out_wait_time_ms == 0);
+  uint32_t shift_ms = rtc_shift(timestamp_ms % 1000, out_wait_time_ms == 0);
   if (out_wait_time_ms) {
     *out_wait_time_ms = shift_ms;
   }

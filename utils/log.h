@@ -132,7 +132,7 @@ typedef enum {
 
 /* --- MACROS --- */
 
-#if LOG_LEVEL > LOG_LEVEL_QUIET
+#if LOG_ENABLE && LOG_LEVEL > LOG_LEVEL_QUIET
   #define LOG_ERROR(...)          log_printfln(LOG_LEVEL_ERROR, LOG_MODULE_NAME, __VA_ARGS__)
   #define LOG_ERROR_CONST(str)    log_println(LOG_LEVEL_ERROR, LOG_MODULE_NAME, str)
   #define LOG_ERROR_MARKER()      log_marker(LOG_LEVEL_ERROR, LOG_MODULE_NAME, __LINE__)
@@ -142,7 +142,7 @@ typedef enum {
   #define LOG_ERROR_MARKER()
 #endif
 
-#if LOG_LEVEL > LOG_LEVEL_ERROR
+#if LOG_ENABLE && LOG_LEVEL > LOG_LEVEL_ERROR
   #define LOG_WARNING(...)        log_printfln(LOG_LEVEL_WARNING, LOG_MODULE_NAME, __VA_ARGS__)
   #define LOG_WARNING_CONST(str)  log_println(LOG_LEVEL_WARNING, LOG_MODULE_NAME, str)
   #define LOG_WARNING_MARKER()    log_marker(LOG_LEVEL_WARNING, LOG_MODULE_NAME, __LINE__)
@@ -152,7 +152,7 @@ typedef enum {
   #define LOG_WARNING_MARKER()
 #endif
 
-#if LOG_LEVEL > LOG_LEVEL_WARNING
+#if LOG_ENABLE && LOG_LEVEL > LOG_LEVEL_WARNING
   #define LOG_INFO(...)           log_printfln(LOG_LEVEL_INFO, LOG_MODULE_NAME, __VA_ARGS__)
   #define LOG_INFO_CONST(str)     log_println(LOG_LEVEL_INFO, LOG_MODULE_NAME, str)
   #define LOG_INFO_MARKER()       log_marker(LOG_LEVEL_INFO, LOG_MODULE_NAME, __LINE__)
@@ -162,7 +162,7 @@ typedef enum {
   #define LOG_INFO_MARKER()
 #endif
 
-#if LOG_LEVEL > LOG_LEVEL_INFO
+#if LOG_ENABLE && LOG_LEVEL > LOG_LEVEL_INFO
   #define LOG_VERBOSE(...)        log_printfln(LOG_LEVEL_VERBOSE, LOG_MODULE_NAME, __VA_ARGS__)
   #define LOG_VERBOSE_CONST(str)  log_println(LOG_LEVEL_VERBOSE, LOG_MODULE_NAME, str)
   #define LOG_VERBOSE_MARKER()    log_marker(LOG_LEVEL_VERBOSE, LOG_MODULE_NAME, __LINE__)
@@ -173,7 +173,11 @@ typedef enum {
 #endif
 
 /* print a string without any additional formatting by the log module (independent of log level) */
-#define LOG_RAW(str)              log_print(str)
+#if LOG_ENABLE
+  #define LOG_RAW(str)            log_print(str)
+#else
+  #define LOG_RAW(str)
+#endif
 
 
 /* --- FUNCTIONS --- */
