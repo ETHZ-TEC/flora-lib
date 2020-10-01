@@ -32,7 +32,6 @@ static gloria_cb_func_t flood_cb = 0;                                    // user
 /* variables to store gloria_start arguments */
 static uint16_t         arg_initiator_id = 0;               // ID of the inititator
 static uint8_t*         arg_payload_ptr = NULL;             // pointer to payload of currently ongoing flood
-static uint8_t          arg_payload_len = 0;                // length of the memory of the payload variable provided as arg to gloria_start (can be truncated if provided payload_len exceeds GLORIA_MAX_PAYLOAD_LENGTH)
 static bool             arg_sync_slot;                      // holds state whether current flood is used to update last_t_ref or not
 
 
@@ -66,10 +65,7 @@ void gloria_start(uint16_t initiator_id,
     } else {
       LOG_WARNING("payload_len passed to gloria_start as receiver exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before returning!");
     }
-    arg_payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
-  }
-  else {
-    arg_payload_len = payload_len;
+    payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
   }
 
   GLORIA_START_IND();
@@ -113,8 +109,8 @@ void gloria_start(uint16_t initiator_id,
     flood.marker        = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;     // marker (timestamp when flood shall start) must be set on the initiator
     flood.initial       = true;       // this node is the initator
     flood.payload       = gloria_payload;
-    flood.payload_size  = arg_payload_len;
-    memcpy(gloria_payload, payload, arg_payload_len);
+    flood.payload_size  = payload_len;
+    memcpy(gloria_payload, payload, payload_len);
   }
   else {
     // receive flood
@@ -186,7 +182,6 @@ uint8_t gloria_stop(void)
     /* clear arg variables */
     arg_initiator_id = 0;
     arg_payload_ptr = NULL;
-    arg_payload_len = 0;
     arg_sync_slot = false;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
