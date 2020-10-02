@@ -183,6 +183,7 @@ uint8_t gloria_stop(void)
     arg_initiator_id = 0;
     arg_payload_ptr = NULL;
     arg_sync_slot = false;
+    flood_cb = NULL;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
     /* re-enable other interrupts */
@@ -325,13 +326,15 @@ void gloria_register_flood_callback(gloria_cb_func_t cb)
 
 static void gloria_flood_callback(void)
 {
+  gloria_cb_func_t cb = flood_cb;
+
   // flood completed
   flood_completed = true;
   gloria_stop();
 
   // call callback function registered via the gloria_interface
-  if (flood_cb) {
-    flood_cb();
+  if (cb) {
+    cb();
   }
 }
 
