@@ -13,6 +13,7 @@
  * - LPTIM1 is sourced by LSE and runs at 32kHz
  * - there are 3 known limitations of LPTIM1 (see errata sheet: https://www.st.com/resource/en/errata_sheet/dm00218216-stm32l433xx443xx-device-errata-stmicroelectronics.pdf)
  * - do not disable the overflow interrupt in LPM (stop mode)
+ * - LPTIM_IT_CMPM interrupt can only be enabled/disabled when the peripheral is disabled -> simplest is to enable interrupt before starting the timer
  */
 
 #include "flora_lib.h"
@@ -28,8 +29,6 @@ static uint64_t            lptimer_exp = 0;           /* next expiration time */
 
 void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 {
-  /* disable interrupt (do not clear the flag here) */
-  __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
   lptimer_cb  = cb;
   lptimer_exp = t_exp;
 
@@ -49,7 +48,6 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
     __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)lptimer_exp);
-    __HAL_LPTIM_ENABLE_IT(&hlptim1, LPTIM_IT_CMPM);
   }
 }
 
@@ -85,14 +83,15 @@ void lptimer_update(void)
 /* this function must be called when an lptimer has expired (CCR match) */
 void lptimer_expired(void)
 {
-  uint32_t curr_ext = lptimer_ext;
-  if (__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_ARRM)) {
-    curr_ext++;
-  }
-  if ((uint32_t)(lptimer_exp >> 16) <= curr_ext) {
-    __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
-    if (lptimer_cb) {
-      lptimer_cb();                            /* execute callback function */
+  if (lptimer_exp) {
+    uint32_t curr_ext = lptimer_ext;
+    if (__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_ARRM)) {
+      curr_ext++;
+    }
+    if ((uint32_t)(lptimer_exp >> 16) <= curr_ext) {
+      if (lptimer_cb) {
+        lptimer_cb();                            /* execute callback function */
+      }
     }
   }
 
