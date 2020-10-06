@@ -44,9 +44,13 @@ void dcstat_reset(dcstat_t* dc)
 uint32_t dcstat_get_dc(const dcstat_t* const dc)
 {
   if (dc) {
-    uint64_t delta = lptimer_now() - dc->reset_time;
+    uint64_t delta  = lptimer_now() - dc->reset_time;
+    uint64_t active = dc->active_time;
+    if (dc->start_time) {
+      active += (lptimer_now() - dc->start_time);
+    }
     if (delta) {
-      return dc->active_time * 1000000 / delta;
+      return active * 1000000 / delta;
     }
   }
   return 1000000;
