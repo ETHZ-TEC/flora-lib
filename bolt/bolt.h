@@ -27,8 +27,8 @@
 #define BOLT_SPI_READ(data, len)        HAL_SPI_Receive(&hspi1, data, len, pdMS_TO_TICKS(10))
 #endif /* BOLT_SPI_WRITE */
 
-#define BOLT_DATA_AVAILABLE             (PIN_GET(BOLT_IND) > 0)
-#define BOLT_DATA_IN_OUTPUT_QUEUE       (PIN_GET(APP_IND) > 0)
+#define BOLT_DATA_AVAILABLE             (PIN_GET(BOLT_IND) != 0)
+#define BOLT_DATA_IN_OUTPUT_QUEUE       (PIN_GET(APP_IND) != 0)
 
 
 bool bolt_init(void);
@@ -44,12 +44,17 @@ bool bolt_status(void);
 void bolt_flush(void);
 
 /*
- * read a message from BOLT (max. length: BOLT_MAX_MSG_LEN)
+ * read a message from BOLT
+ * @param   out_data: pointer to a buffer to hold the read data, must be at least BOLT_MAX_MSG_LEN bytes long
+ * @return  the number of read bytes
  */
 uint32_t bolt_read(uint8_t* out_data);
 
 /*
- * write a message to BOLT (max. length: BOLT_MAX_MSG_LEN)
+ * write a message to BOLT
+ * @param   data: pointer to a buffer containing the data to write
+ * @param   len:  the number of bytes to write (max. length: BOLT_MAX_MSG_LEN)
+ * @return  true if the operation was successful, false otherwise
  */
 bool bolt_write(uint8_t* data, uint32_t len);
 

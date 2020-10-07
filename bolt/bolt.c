@@ -10,36 +10,23 @@
 #if BOLT_ENABLE
 
 /* private typedefs */
-typedef enum {
-  BOLT_STATE_IDLE = 0,
-  BOLT_STATE_READ,
-  BOLT_STATE_WRITE,
-  BOLT_STATE_INVALID,
-  NUM_OF_STATES
-} bolt_state_t;
 
-typedef enum {
-  BOLT_OP_READ = 0,
-  BOLT_OP_WRITE,
-  NUM_OF_OPS
-} bolt_op_mode_t;
 
 /* private helper macros */
-#define BOLT_ACK_STATUS                 PIN_GET(BOLT_ACK)
-#define BOLT_REQ_STATUS                 PIN_STATE(BOLT_REQ)
+#define BOLT_ACK_STATUS                 (PIN_GET(BOLT_ACK) != 0)
+#define BOLT_REQ_STATUS                 (PIN_STATE(BOLT_REQ) != 0)
 
 
 /* private variables */
-static volatile bolt_state_t bolt_state = BOLT_STATE_INVALID;
 
+
+/* functions */
 
 bool bolt_init(void)
 {
   /* note: control signals and SPI must be initialized before calling bolt_init! */
-  bolt_state = BOLT_STATE_IDLE;   /* must be set to IDLE before calling bolt_status() */
   if (!bolt_status()) {
     LOG_ERROR("not accessible, init failed");
-    bolt_state = BOLT_STATE_INVALID;
     return false;
   }
   LOG_VERBOSE("initialized");
@@ -50,35 +37,39 @@ bool bolt_init(void)
 
 void bolt_release(void)
 {
-  PIN_CLR(BOLT_REQ);
-  while (PIN_GET(BOLT_ACK));
-  bolt_state = BOLT_STATE_IDLE;
+  uint32_t count = 100;
+  PIN_CLR(BOLT_REQ);                  /* set REQ low */
+  while (BOLT_ACK_STATUS && count) {  /* wait until ACK is low or timeout */
+    delay_us(10);
+    count--;
+  }
+  if (count == 0) {
+    LOG_ERROR("release timeout");
+  }
 }
 
 
-bool bolt_acquire(bolt_op_mode_t mode)
+bool bolt_acquire(bool mode_write)
 {
+  /* check status */
   if (BOLT_ACK_STATUS || BOLT_REQ_STATUS) {
     LOG_ERROR("request failed (REQ or ACK still high)");
     return false;
   }
-  if (BOLT_STATE_IDLE != bolt_state) {
-    LOG_WARNING("not in idle state, operation skipped");
-    return false;
-  }
-  if (BOLT_OP_READ == mode) {
+  /* set MODE */
+  if (!mode_write) {
     if (!BOLT_DATA_AVAILABLE) {
       LOG_WARNING("no data available");
       return false;
     }
     PIN_CLR(BOLT_MODE); /* 0 = READ */
-
   } else {
     PIN_SET(BOLT_MODE); /* 1 = WRITE */
   }
 
+  /* set REQ high */
   PIN_SET(BOLT_REQ);
-  /* now wait for a rising edge on the ACK line */
+  /* wait for a rising edge on the ACK line */
   uint8_t cnt = 10;
   while (!BOLT_ACK_STATUS && cnt) {
     delay_us(10);
@@ -89,9 +80,6 @@ bool bolt_acquire(bolt_op_mode_t mode)
     PIN_CLR(BOLT_REQ);
     return false;
   }
-
-  /* update state */
-  bolt_state = (mode == BOLT_OP_READ) ? BOLT_STATE_READ : BOLT_STATE_WRITE;
 
   return true;
 }
@@ -105,7 +93,7 @@ uint32_t bolt_read(uint8_t* out_data)
   if (!out_data) {
     return 0;
   }
-  if (!bolt_acquire(BOLT_OP_READ)) {
+  if (!bolt_acquire(false)) {
     return 0;
   }
 
@@ -133,7 +121,7 @@ bool bolt_write(uint8_t* data, uint32_t len)
   if (!data || !len || len > BOLT_MAX_MSG_LEN) {
     return false;
   }
-  if (!bolt_acquire(BOLT_OP_WRITE)) {
+  if (!bolt_acquire(true)) {
     return false;
   }
   BOLT_SPI_WRITE(data, len);
@@ -145,7 +133,7 @@ bool bolt_write(uint8_t* data, uint32_t len)
 
 bool bolt_status(void)
 {
-  if (bolt_acquire(BOLT_OP_WRITE)) {
+  if (bolt_acquire(true)) {
     bolt_release();
     return true;
   }
@@ -160,8 +148,19 @@ bool bolt_status(void)
 
 void bolt_flush(void)
 {
-  uint8_t buffer[BOLT_MAX_MSG_LEN];
-  while (BOLT_DATA_AVAILABLE && bolt_read(buffer));
+  uint32_t cnt = 0;
+  while (BOLT_DATA_AVAILABLE) {
+    if (!bolt_acquire(false)) {
+      break;
+    }
+    uint8_t read_byte;
+    while (BOLT_ACK_STATUS) {
+      BOLT_SPI_READ(&read_byte, 1);
+    }
+    bolt_release();
+    cnt++;
+  }
+  LOG_VERBOSE("queue cleared (%lu messages removed)", cnt);
 }
 
 #endif /* BOLT_CONF_ON */
