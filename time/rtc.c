@@ -163,10 +163,10 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
       HAL_RTC_SetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) != HAL_OK) {
     return false;
   }
-  LOG_VERBOSE("time set (%d-%02d-%02d %02d:%02d:%02d)", (rtc_date.Year + 2000),
-                                                        rtc_date.Month, rtc_date.Date,
-                                                        rtc_time.Hours, rtc_time.Minutes,
-                                                        rtc_time.Seconds);
+  LOG_VERBOSE("time set to %d-%02d-%02d %02d:%02d:%02d", (rtc_date.Year + 2000),
+                                                          rtc_date.Month, rtc_date.Date,
+                                                          rtc_time.Hours, rtc_time.Minutes,
+                                                          rtc_time.Seconds);
   return true;
 }
 
@@ -180,7 +180,7 @@ bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms, uint32_t* out_wait_time_ms
   /* calculate offset */
   int64_t offset_ms  = (int64_t)timestamp_ms - (int64_t)rtc_get_unix_timestamp_ms();
   if (offset_ms <= granularity_ms && offset_ms >= -granularity_ms) {
-    LOG_VERBOSE("current offset (%ldms) is below the threshold, skipping update", (int32_t)offset_ms);
+    LOG_VERBOSE("current offset (%ldms) is below the threshold", (int32_t)offset_ms);
     if (out_wait_time_ms) {
       *out_wait_time_ms = 0;
     }
@@ -214,10 +214,10 @@ bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms, uint32_t* out_wait_time_ms
     *out_wait_time_ms = shift_ms;
   }
 
-  LOG_VERBOSE("time set (%d-%02d-%02d %02d:%02d:%02d), offset was %lldms", (rtc_date.Year + 2000),
-                                                                           rtc_date.Month, rtc_date.Date,
-                                                                           rtc_time.Hours, rtc_time.Minutes,
-                                                                           rtc_time.Seconds, offset_ms);
+  LOG_VERBOSE("time set to %d-%02d-%02d %02d:%02d:%02d (offset was %lldms)", (rtc_date.Year + 2000),
+                                                                             rtc_date.Month, rtc_date.Date,
+                                                                             rtc_time.Hours, rtc_time.Minutes,
+                                                                             rtc_time.Seconds, offset_ms);
   return true;
 }
 

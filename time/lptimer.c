@@ -47,7 +47,10 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
     }
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
+    ENTER_CRITICAL_SECTION();
     __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)lptimer_exp);
+    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_CMPM);          /* make sure the interrupt does not fire right away */
+    LEAVE_CRITICAL_SECTION();
   }
 }
 
@@ -89,8 +92,16 @@ void lptimer_expired(void)
       curr_ext++;
     }
     if ((uint32_t)(lptimer_exp >> 16) <= curr_ext) {
-      if (lptimer_cb) {
-        lptimer_cb();                            /* execute callback function */
+      lptimer_cb_func_t cb = lptimer_cb;
+      lptimer_cb  = 0;    /* must be reset before entering the callback since the timer could be reset within the callback */
+      lptimer_exp = 0;
+      if (cb) {
+        uint16_t tick = __HAL_TIM_GET_COUNTER(&hlptim1);
+        uint16_t cap  = (uint16_t)lptimer_exp;
+        if ((tick - cap) > 50) {
+          LOG_WARNING("tick count and match register differ: %u vs %u", tick, cap);
+        }
+        cb();                            /* execute callback function */
       }
     }
   }
