@@ -25,12 +25,14 @@ extern TIM_HandleTypeDef   htim2;
 static uint32_t            lptimer_ext = 0;           /* software extension */
 static lptimer_cb_func_t   lptimer_cb  = 0;           /* callback function */
 static uint64_t            lptimer_exp = 0;           /* next expiration time */
+static uint32_t            lptimer_cmp = 0;           /* how many more times the compare interrupt must fire until the callback can be executed */
 
 
 void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 {
   lptimer_cb  = cb;
   lptimer_exp = t_exp;
+  lptimer_cmp = 0;
 
   if (t_exp != 0 && cb) {
 
@@ -38,8 +40,6 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
     uint64_t curr_timestamp = lptimer_now();
     if (t_exp <= curr_timestamp) {
       LOG_WARNING("expiration time is in the past (now: %llu, scheduled: %llu)", curr_timestamp, t_exp);
-      /* schedule expiration in a few ticks */
-      lptimer_exp = curr_timestamp + 3;
       /* remark: do not execute the callback here */
 
     } else if (t_exp > (curr_timestamp + LPTIMER_SECOND * 86400)) {
@@ -47,9 +47,12 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
     }
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
+    lptimer_cmp = ((t_exp - curr_timestamp) >> 16) + 1;
+
     ENTER_CRITICAL_SECTION();
-    __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)lptimer_exp);
-    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_CMPM);          /* make sure the interrupt does not fire right away */
+    __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)t_exp & 0xffff);
+    while (!__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_CMPOK));    /* wait until compare register set */
+    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_CMPM);
     LEAVE_CRITICAL_SECTION();
   }
 }
@@ -63,9 +66,16 @@ uint64_t lptimer_get(void)
 
 void lptimer_clear(void)
 {
-  /* clear the timer value */
-  __HAL_TIM_SET_COUNTER(&hlptim1, 0);
+#define LPTIM_CR_COUNTRST       (1UL << 3)
+
+  /* clear the timer counter value by setting a bit in the control register */
+  if ((hlptim1.Instance->CR & LPTIM_CR_COUNTRST) == 0) {    /* must be zero */
+    hlptim1.Instance->CR |= LPTIM_CR_COUNTRST;
+  }
   lptimer_ext = 0;
+  lptimer_cb  = 0;
+  lptimer_exp = 0;
+  lptimer_cmp = 0;
 }
 
 
@@ -86,15 +96,11 @@ void lptimer_update(void)
 /* this function must be called when an lptimer has expired (CCR match) */
 void lptimer_expired(void)
 {
-  if (lptimer_exp) {
-    uint32_t curr_ext = lptimer_ext;
-    if (__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_ARRM)) {
-      curr_ext++;
-    }
-    if ((uint32_t)(lptimer_exp >> 16) <= curr_ext) {
+  if (lptimer_cmp) {
+    lptimer_cmp--;
+    if (lptimer_cmp == 0) {
       lptimer_cb_func_t cb = lptimer_cb;
       lptimer_cb  = 0;    /* must be reset before entering the callback since the timer could be reset within the callback */
-      lptimer_exp = 0;
       if (cb) {
         uint16_t tick = __HAL_TIM_GET_COUNTER(&hlptim1);
         uint16_t cap  = (uint16_t)lptimer_exp;
