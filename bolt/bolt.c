@@ -26,8 +26,13 @@ bool bolt_init(void)
 {
   /* note: control signals and SPI must be initialized before calling bolt_init! */
   if (!bolt_status()) {
-    LOG_ERROR("not accessible, init failed");
-    return false;
+    /* wait 50ms, then try again (maybe BOLT is still starting up) */
+    LOG_VERBOSE("not ready, will try again in 50ms...");
+    delay_us(50000);
+    if (!bolt_status()) {
+      LOG_ERROR("not accessible, init failed");
+      return false;
+    }
   }
   LOG_VERBOSE("initialized");
 
