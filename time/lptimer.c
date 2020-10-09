@@ -14,9 +14,13 @@
  * - there are 3 known limitations of LPTIM1 (see errata sheet: https://www.st.com/resource/en/errata_sheet/dm00218216-stm32l433xx443xx-device-errata-stmicroelectronics.pdf)
  * - do not disable the overflow interrupt in LPM (stop mode)
  * - LPTIM_IT_CMPM interrupt can only be enabled/disabled when the peripheral is disabled -> simplest is to enable interrupt before starting the timer
+ * - there is a number of known quirks with the LPTIM peripheral (see e.g. https://gist.github.com/jefftenney/02b313fe649a14b4c75237f925872d72#file-lptimtick-c-L72)
  */
 
 #include "flora_lib.h"
+
+
+#define LPTIM_UPDATE_PENDING()    __HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_ARRM)
 
 
 extern LPTIM_HandleTypeDef hlptim1;
@@ -25,14 +29,36 @@ extern TIM_HandleTypeDef   htim2;
 static uint32_t            lptimer_ext = 0;           /* software extension */
 static lptimer_cb_func_t   lptimer_cb  = 0;           /* callback function */
 static uint64_t            lptimer_exp = 0;           /* next expiration time */
-static uint32_t            lptimer_cmp = 0;           /* how many more times the compare interrupt must fire until the callback can be executed */
+
+
+void lptimer_update(void);
+
+
+uint16_t lptimer_count(void)
+{
+  uint16_t count;
+  do {
+    /* since timer and CPU clock are asynchronous: sample until we have a consistent counter value */
+    count = __HAL_TIM_GET_COUNTER(&hlptim1);
+  } while (count != __HAL_TIM_GET_COUNTER(&hlptim1));
+  return count;
+}
+
+
+uint32_t lptimer_seconds(void)
+{
+  uint32_t secs = lptimer_ext * 2 + lptimer_count() / LPTIMER_SECOND;
+  if (LPTIM_UPDATE_PENDING()) {
+    secs += 2;
+  }
+  return secs;
+}
 
 
 void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 {
   lptimer_cb  = cb;
   lptimer_exp = t_exp;
-  lptimer_cmp = 0;
 
   if (t_exp != 0 && cb) {
 
@@ -47,13 +73,15 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
     }
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
-    lptimer_cmp = ((t_exp - curr_timestamp) >> 16) + 1;
-
-    ENTER_CRITICAL_SECTION();
-    __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)t_exp & 0xffff);
+    /* first, make sure no overflow interrupt is pending (causes false triggers when updating the compare register) */
+    /*if (IS_INTERRUPT() && LPTIM_UPDATE_PENDING()) {
+      __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_ARRM);
+      lptimer_update();
+    }*/
+    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_CMPOK);
+    __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)t_exp);
     while (!__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_CMPOK));    /* wait until compare register set */
-    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_CMPM);
-    LEAVE_CRITICAL_SECTION();
+    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_CMPOK);
   }
 }
 
@@ -75,7 +103,6 @@ void lptimer_clear(void)
   lptimer_ext = 0;
   lptimer_cb  = 0;
   lptimer_exp = 0;
-  lptimer_cmp = 0;
 }
 
 
@@ -96,18 +123,21 @@ void lptimer_update(void)
 /* this function must be called when an lptimer has expired (CCR match) */
 void lptimer_expired(void)
 {
-  if (lptimer_cmp) {
-    lptimer_cmp--;
-    if (lptimer_cmp == 0) {
+  if (lptimer_cb) {
+    uint32_t ext = lptimer_ext;
+    if (LPTIM_UPDATE_PENDING()) {
+      ext++;
+    }
+    if (ext >= (uint32_t)(lptimer_exp >> 16)) {
       lptimer_cb_func_t cb = lptimer_cb;
-      lptimer_cb  = 0;    /* must be reset before entering the callback since the timer could be reset within the callback */
+      lptimer_cb = 0;                     /* must be reset before entering the callback since the timer could be reset within the callback */
       if (cb) {
-        uint16_t tick = __HAL_TIM_GET_COUNTER(&hlptim1);
-        uint16_t cap  = (uint16_t)lptimer_exp;
-        if ((tick - cap) > 50) {
-          LOG_WARNING("tick count and match register differ: %u vs %u", tick, cap);
+        uint16_t cnt = lptimer_count();
+        uint16_t cmp = hlptim1.Instance->CMP;
+        if ((cnt - cmp) > 50) {
+          LOG_WARNING("tick count and match register differ: %u vs %u", cnt, cmp);
         }
-        cb();                            /* execute callback function */
+        cb();                             /* execute callback function */
       }
     }
   }
@@ -123,26 +153,17 @@ void lptimer_expired(void)
 
 uint64_t lptimer_now(void)
 {
-  uint64_t timestamp;
-  uint16_t hw, hw2;
-
   /* make sure this routine runs atomically */
   ENTER_CRITICAL_SECTION();
 
-  timestamp = lptimer_ext;
-  do {
-    hw  = __HAL_TIM_GET_COUNTER(&hlptim1);
-    hw2 = __HAL_TIM_GET_COUNTER(&hlptim1);
-  } while (hw != hw2);
-  if (__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_ARRM)) {
+  uint64_t timestamp = lptimer_ext;
+  uint16_t count     = lptimer_count();
+  if (LPTIM_UPDATE_PENDING()) {    /* overflow occurred? */
     timestamp++;
-    do {
-      hw  = __HAL_TIM_GET_COUNTER(&hlptim1);
-      hw2 = __HAL_TIM_GET_COUNTER(&hlptim1);
-    } while (hw != hw2);
+    count = lptimer_count();;
   }
   timestamp <<= 16;
-  timestamp |= hw;
+  timestamp |= count;
 
   LEAVE_CRITICAL_SECTION();
 
@@ -169,7 +190,7 @@ bool lptimer_now_synced(uint64_t* lp_timestamp, uint64_t* hs_timestamp)
   hs_ext = hs_timer_get_counter_extension();
   lp_ext = lptimer_ext;
   /* is there a pending timer overflow/update interrupt? */
-  if (__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_ARRM)) {
+  if (LPTIM_UPDATE_PENDING()) {
     lp_ext++;
   }
   if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE)) {

@@ -74,5 +74,15 @@ void lptimer_clear(void);
  */
 void lptimer_enable_ovf_int(bool enable);
 
+/*
+ * Get the number of elapsed seconds since the timer start
+ */
+uint32_t lptimer_seconds(void);
+
+/*
+ * Get the current counter value
+ */
+uint16_t lptimer_count(void);
+
 
 #endif /* TIME_LPTIMER_H_ */
