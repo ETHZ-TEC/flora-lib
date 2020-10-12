@@ -125,20 +125,23 @@ void lptimer_expired(void)
 {
   if (lptimer_cb) {
     uint32_t ext = lptimer_ext;
+    uint16_t cnt = lptimer_count();
     if (LPTIM_UPDATE_PENDING()) {
       ext++;
+      cnt = lptimer_count();
     }
-    if (ext >= (uint32_t)(lptimer_exp >> 16)) {
+    uint64_t now = ((uint64_t)ext << 16) | cnt;
+    if (now >= lptimer_exp) {
       lptimer_cb_func_t cb = lptimer_cb;
       lptimer_cb = 0;                     /* must be reset before entering the callback since the timer could be reset within the callback */
       if (cb) {
-        uint16_t cnt = lptimer_count();
-        uint16_t cmp = hlptim1.Instance->CMP;
-        if ((cnt - cmp) > 50) {
-          LOG_WARNING("tick count and match register differ: %u vs %u", cnt, cmp);
-        }
         cb();                             /* execute callback function */
       }
+      if (now > (lptimer_exp + LPTIMER_MS_TO_TICKS(LPTIMER_EXP_TIME_TH_MS))) {
+        LOG_WARNING("timer fired %lums too late", (uint32_t)LPTIMER_TICKS_TO_MS(now - lptimer_exp));
+      }
+    } else if (ext == (uint32_t)(lptimer_exp >> 16)) {
+      LOG_WARNING("tick count (%u) and compare register (%u) differ", cnt, (uint16_t)hlptim1.Instance->CMP);
     }
   }
 
@@ -160,7 +163,7 @@ uint64_t lptimer_now(void)
   uint16_t count     = lptimer_count();
   if (LPTIM_UPDATE_PENDING()) {    /* overflow occurred? */
     timestamp++;
-    count = lptimer_count();;
+    count = lptimer_count();
   }
   timestamp <<= 16;
   timestamp |= count;

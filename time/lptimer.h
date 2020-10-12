@@ -23,6 +23,10 @@
 #define LPTIMER_CHECK_EXP_TIME    1     /* check expiration time inside lptimer_set() and issue a warning if it is in the past or far in the future */
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
+#ifndef LPTIMER_EXP_TIME_TH_MS
+#define LPTIMER_EXP_TIME_TH_MS    10    /* if expiration time is late by LPTIMER_EXP_TIME_TH_MS ms, a warning will be issued */
+#endif /* LPTIMER_EXP_TIME_TH_MS */
+
 /* returns relative time (elapsed time since MCU start) in milliseconds */
 #define LPTIMER_NOW_MS()          (uint32_t)(lptimer_now() * 1000UL / LPTIMER_SECOND)
 
