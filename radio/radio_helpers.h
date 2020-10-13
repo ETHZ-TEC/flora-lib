@@ -53,6 +53,7 @@ void      radio_print_message(radio_message_t* message);
 
 void      radio_set_cad(uint8_t modulation, bool rx, bool use_timeout);
 void      radio_set_continuous_preamble(void);
+bool      radio_is_channel_free(uint8_t modulation, uint32_t timeout_ms);
 
 uint32_t  radio_get_last_pkt_snr(void);
 int32_t   radio_get_rssi(void);

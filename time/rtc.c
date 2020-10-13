@@ -175,11 +175,11 @@ bool rtc_set_unix_timestamp(uint32_t timestamp)
 bool rtc_set_unix_timestamp_ms(uint64_t timestamp_ms, uint32_t* out_wait_time_ms)
 {
   struct tm ts;
-  int32_t granularity_ms = (1000UL / (rtc_time.SecondFraction + 1));
+  int32_t granularity_ms = (1000UL / (rtc_time.SecondFraction + 1)) + 1;
 
   /* calculate offset */
   int64_t offset_ms  = (int64_t)timestamp_ms - (int64_t)rtc_get_unix_timestamp_ms();
-  if (offset_ms <= granularity_ms && offset_ms >= -granularity_ms) {
+  if ((offset_ms <= granularity_ms) && (offset_ms >= -granularity_ms)) {
     LOG_VERBOSE("current offset (%ldms) is below the threshold", (int32_t)offset_ms);
     if (out_wait_time_ms) {
       *out_wait_time_ms = 0;
