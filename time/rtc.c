@@ -124,9 +124,9 @@ bool rtc_compensate_drift(int32_t offset_ppm)
    * calibrated frequency: FCAL = 32768Hz x [1 + (CALP x 512 - CALM) / (2^20 + CALM - CALP x 512)]
    * extra pulses per second: ((512 * CALP) - CALM) / 32, 0.9537ppm granularity */
 
-  offset_ppm = (int32_t)((float)offset_ppm * 1.05f);
+  offset_ppm = (int32_t)((float)offset_ppm * 1.049f);
   if (offset_ppm > 0) {
-    offset_ppm = RTC_CALR_CALP | (488 - offset_ppm);
+    offset_ppm = RTC_CALR_CALP | (511 - offset_ppm);
   } else {
     offset_ppm = -offset_ppm;
   }
