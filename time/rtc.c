@@ -126,7 +126,7 @@ bool rtc_compensate_drift(int32_t offset_ppm)
 
   offset_ppm = (int32_t)((float)offset_ppm * 1.049f);
   if (offset_ppm > 0) {
-    offset_ppm = RTC_CALR_CALP | (511 - offset_ppm);
+    offset_ppm = RTC_CALR_CALP | (512 - offset_ppm);
   } else {
     offset_ppm = -offset_ppm;
   }
