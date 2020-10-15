@@ -20,6 +20,9 @@ void gpio_check_baseboard(void)
   /* to check whether the comboard is indeed not on a baseboard: read state of enable pin (has external pullup) */
   GPIO_InitStruct.Pin   = BASEBOARD_ENABLE_Pin;
   GPIO_InitStruct.Mode  = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull  = GPIO_PULLDOWN;      // first init with pull to remove potential charge on the pin
+  HAL_GPIO_Init(BASEBOARD_ENABLE_GPIO_Port, &GPIO_InitStruct);
+  delay_us(100);
   GPIO_InitStruct.Pull  = GPIO_NOPULL;
   HAL_GPIO_Init(BASEBOARD_ENABLE_GPIO_Port, &GPIO_InitStruct);
   /* read pin value */
@@ -33,12 +36,11 @@ void gpio_check_baseboard(void)
   }
   if (c == 0) {
     /* comboard is most likely installed on a baseboard! */
-    LOG_ERROR("baseboard detected, but compiled without flag 'BASEBOARD'!");
-  #if !LOG_PRINT_IMMEDIATELY
-    log_flush();
-  #endif /* LOG_PRINT_IMMEDIATELY */
+    const char* error_msg = "baseboard detected, but compiled without flag 'BASEBOARD'!\n";
+    LOG_PRINT_FUNC((char*)error_msg, strlen(error_msg));
     led_on(LED_EVENT);
-    while (1);
+    delay_us(10000000);
+    NVIC_SystemReset();
   }
 
   /* restore previous pin config */
