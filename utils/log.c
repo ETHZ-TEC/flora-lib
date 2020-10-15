@@ -30,7 +30,10 @@ static void log_unlock(void)
 {
   log_semaphore--;
   if (log_semaphore < 0) {              /* just for debugging */
-    while(1);                           /* not supposed to happen */
+    /* not supposed to happen */
+    const char* error_msg = "ERROR: log printing semaphore is invalid!\n";
+    LOG_PRINT_FUNC((char*)error_msg, strlen(error_msg));
+    log_semaphore = 0;
   }
 }
 
