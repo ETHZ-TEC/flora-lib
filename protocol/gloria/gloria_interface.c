@@ -119,7 +119,7 @@ void gloria_start(uint16_t initiator_id,
     flood.rx_timeout  = 0;
     flood.guard_time  = 0;
     flood.initial     = false;
-    // clear the receive buffer if length is given
+    // clear the receive buffer
     memset(payload, 0, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
   }
 
