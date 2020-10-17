@@ -507,30 +507,27 @@ void radio_set_cad(uint8_t modulation, bool rx, bool use_timeout)
 }
 
 
-static void radio_channel_free_done_cb(bool detected)
+static void radio_channel_free_cb(bool detected)
 {
   channel_free = !detected;
-}
-
-static void radio_channel_free_timeout_cb(bool crc_error)
-{
-  channel_free = false;
 }
 
 /* do LoRa CAD */
 bool radio_is_channel_free(uint8_t modulation, uint32_t timeout_ms)
 {
-  if ((modulation <= RADIO_NUM_CAD_PARAMS) && timeout_ms) {
+  if ((modulation <= RADIO_NUM_CAD_PARAMS)) {
     radio_cad_params_t params = radio_cad_params[modulation];
-    uint32_t timeout = ((uint64_t) radio_get_toa(0, modulation) * 1000U / RADIO_TIMER_PERIOD_NS);
-    SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, false, timeout);
-    radio_set_cad_callback(radio_channel_free_done_cb);
-    radio_set_timeout_callback(radio_channel_free_timeout_cb);
+    SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, LORA_CAD_ONLY, 0);   // no timeout needed since we do not want to receive the packet
+    radio_set_cad_callback(radio_channel_free_cb);
     channel_free = 0xff;
     SX126xSetCad();
-    while ((channel_free == 0xff) && timeout_ms) {
-      delay_us(1000);
-      timeout_ms--;
+    if (timeout_ms) {
+      while ((channel_free == 0xff) && timeout_ms) {     // variable will be updated in the CAD done ISR
+        delay_us(1000);
+        timeout_ms--;
+      }
+    } else {
+      while (channel_free == 0xff);   // variable will be updated in the CAD done ISR
     }
     radio_standby();
     return (channel_free == 1);
