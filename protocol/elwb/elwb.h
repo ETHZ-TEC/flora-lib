@@ -346,7 +346,7 @@ typedef struct __attribute__((__packed__)) {
   uint16_t      period;
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
-  uint16_t      slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN];
+  uint16_t      slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2];
 } elwb_schedule_t;
 
 typedef uint64_t elwb_time_t;
@@ -367,6 +367,10 @@ typedef struct __attribute__((__packed__, __aligned__(1))) {
     uint16_t    payload16[(ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN + 1) / 2];
   };
 } elwb_packet_t;
+
+
+_Static_assert(sizeof(elwb_schedule_t) == (ELWB_SCHED_HDR_LEN + 2 * (ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2)), "elwb_schedule_t size does not match with ELWB_SCHED_HDR_LEN!");
+_Static_assert(sizeof(elwb_packet_t) == ELWB_CONF_MAX_PKT_LEN, "elwb_packet_t size is invalid!");
 
 
 /*---------------------------------------------------------------------------*/

@@ -513,7 +513,7 @@ static void elwb_run(void)
                 stats.pkt_dropped++;
               }
 
-            } else if (ELWB_IS_HOST()) {
+            } else if (ELWB_IS_HOST() && (packet_len == (ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN))) {
               /* this is a request packet */
               elwb_sched_process_req(schedule.slot[slot_idx], packet.req.num_slots);
             }
@@ -639,7 +639,7 @@ static void elwb_run(void)
           rand_backoff--;
         }
         if (ELWB_IS_HOST()) {
-          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet) && packet.cont.node_id != 0) {
+          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet) && (packet.cont.node_id != 0)) {
             /* process the request only if there is a valid node ID */
             elwb_sched_process_req(packet.cont.node_id, 0);
           }
