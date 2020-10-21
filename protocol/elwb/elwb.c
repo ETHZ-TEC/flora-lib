@@ -32,7 +32,6 @@
 
 #if ELWB_ENABLE
 
-
 /* internal sync state of the eLWB */
 typedef enum {
   BOOTSTRAP = 0,
@@ -63,27 +62,27 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 
 #define ELWB_SEND_SCHED() \
 {\
-  ELWB_GLOSSY_START(NODE_ID, (uint8_t*)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
+  gloria_start(NODE_ID, (uint8_t*)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED);\
-  ELWB_GLOSSY_STOP();\
+  gloria_stop();\
 }
 #define ELWB_RCV_SCHED() \
 {\
-  ELWB_GLOSSY_START(0, (uint8_t*)&schedule, packet_len, ELWB_CONF_N_TX, 1);\
+  gloria_start(0, (uint8_t*)&schedule, packet_len, ELWB_CONF_N_TX, 1);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);\
-  ELWB_GLOSSY_STOP();\
+  gloria_stop();\
 }
 #define ELWB_SEND_PACKET() \
 {\
-  ELWB_GLOSSY_START(NODE_ID, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
+  gloria_start(NODE_ID, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot);\
-  ELWB_GLOSSY_STOP();\
+  gloria_stop();\
 }
 #define ELWB_RCV_PACKET() \
 {\
-  ELWB_GLOSSY_START(0, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
+  gloria_start(0, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
-  ELWB_GLOSSY_STOP();\
+  gloria_stop();\
 }
 
 
@@ -182,7 +181,7 @@ void elwb_set_drift(int32_t drift_ppm)
 
 static void elwb_update_rssi_snr(void)
 {
-  int32_t rssi_curr = ELWB_GLOSSY_GET_RSSI();
+  int32_t rssi_curr = gloria_get_rssi();
   if (rssi_curr != 0) {
     if (stats.rssi_avg != 0) {
       stats.rssi_avg = (stats.rssi_avg + rssi_curr) / 2;  /* update the average RSSI value */
@@ -190,7 +189,7 @@ static void elwb_update_rssi_snr(void)
       stats.rssi_avg = rssi_curr;
     }
   }
-  int32_t snr_curr = ELWB_GLOSSY_GET_SNR();
+  int32_t snr_curr = gloria_get_snr();
   if (snr_curr != 0) {
     if (stats.snr_avg != 0) {
       stats.snr_avg = (stats.snr_avg + snr_curr) / 2;     /* update the average SNR value */
@@ -277,7 +276,7 @@ static void elwb_run(void)
         network_time = schedule.time;
         last_synced  = t_start;
         /* calculate the reference offset for the source nodes (time between t_start and the tx marker) */
-        stats.ref_ofs = (stats.ref_ofs + (ELWB_GLOSSY_GET_T_REF() - t_start)) / 2;
+        stats.ref_ofs = (stats.ref_ofs + (gloria_get_t_ref() - t_start)) / 2;
         elwb_sched_set_time_offset(stats.ref_ofs);
       }
 
@@ -298,9 +297,9 @@ static void elwb_run(void)
             if ((ELWB_TIMER_NOW() - bootstrap_started) >= ELWB_CONF_BOOTSTRAP_TIMEOUT) {
               break;
             }
-          } while (elwb_running && (!ELWB_GLOSSY_IS_T_REF_UPDATED() || !ELWB_IS_SCHEDULE_PACKET(schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
+          } while (elwb_running && (!gloria_is_t_ref_updated() || !ELWB_IS_SCHEDULE_PACKET(schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
           /* exit bootstrap mode if schedule received, exit bootstrap state */
-          if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
+          if (gloria_is_t_ref_updated() && ELWB_IS_SCHEDULE_PACKET(schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
             break;
           }
           /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
@@ -319,10 +318,10 @@ static void elwb_run(void)
         ELWB_RCV_SCHED();
       }
 
-      if (ELWB_GLOSSY_IS_T_REF_UPDATED() && ELWB_IS_SCHEDULE_PACKET(schedule)) {      /* schedule received? */
+      if (gloria_is_t_ref_updated() && ELWB_IS_SCHEDULE_PACKET(schedule)) {      /* schedule received? */
     #if ELWB_CONF_SCHED_CRC
         /* check the CRC */
-        packet_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
+        packet_len = gloria_get_payload_len();
         uint16_t pkt_crc = ((uint16_t)*((uint8_t*)&schedule + packet_len - 1)) << 8 |
                            *((uint8_t*)&schedule + packet_len - 2);
         if (crc16((uint8_t*)&schedule, packet_len - 2, 0) != pkt_crc) {
@@ -336,10 +335,10 @@ static void elwb_run(void)
         sync_state = next_state[EVT_SCHED_RCVD][sync_state];
     #if ELWB_CONF_CONT_USE_HFTIMER
         /* also store the HF timestamp in case LF is used for slot wakeups */
-        t_ref_hf = ELWB_GLOSSY_GET_T_REF_HF();
+        t_ref_hf = gloria_get_t_ref_hs();
     #endif /* ELWB_CONF_CONT_USE_HFTIMER */
         if (ELWB_SCHED_IS_FIRST(&schedule)) {
-          t_start = ELWB_GLOSSY_GET_T_REF();
+          t_start = gloria_get_t_ref();
           /* do some basic drift estimation:
            * measured elapsed time minus effective elapsed time (given by host) */
           int32_t elapsed_network_us = (schedule.time - network_time);   // NOTE: max. difference is ~2100s
@@ -488,8 +487,8 @@ static void elwb_run(void)
           memset(&packet, 0, sizeof(packet));    /* clear packet before receiving the packet */
           ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
           ELWB_RCV_PACKET();
-          packet_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
-          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {                   /* data received? */
+          packet_len = gloria_get_payload_len();
+          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {                   /* data received? */
             if (is_data_round) {
               /* check whether to keep this packet */
               bool keep_packet = ELWB_IS_SINK() || ELWB_RCV_PKT_FILTER();
@@ -549,12 +548,12 @@ static void elwb_run(void)
       } else {
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();                 /* receive data ack */
-        packet_len = ELWB_GLOSSY_GET_PAYLOAD_LEN();
+        packet_len = gloria_get_payload_len();
         /* only look into the D-ACK packet if we actually sent some data in the previous round */
         if (my_slots != 0xffff) {
           uint32_t first_slot = my_slots >> 8;
           uint32_t num_slots  = my_slots & 0xff;
-          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {
+          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {
             LOG_VERBOSE("D-ACK received");
             memcpy(data_ack, packet.payload, packet_len);
             uint32_t i;
@@ -589,7 +588,7 @@ static void elwb_run(void)
           }
           my_slots = 0xffff;
 
-        } else if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {
+        } else if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {
           stats.pkt_rx_all++;
         }
         ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
@@ -639,11 +638,11 @@ static void elwb_run(void)
           rand_backoff--;
         }
         if (ELWB_IS_HOST()) {
-          if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet) && (packet.cont.node_id != 0)) {
+          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet) && (packet.cont.node_id != 0)) {
             /* process the request only if there is a valid node ID */
             elwb_sched_process_req(packet.cont.node_id, 0);
           }
-          if (ELWB_GLOSSY_CONT_DETECTED()) {      /* contention detected? */
+          if (gloria_get_rx_started_cnt()) {      /* contention detected? */
             /* set the period to 0 to notify the scheduler that at least one nodes has data to send */
             schedule.period = 0;
             LOG_VERBOSE("contention detected");
@@ -671,7 +670,7 @@ static void elwb_run(void)
       } else {
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
-        if (ELWB_GLOSSY_DATA_RCVD() && ELWB_IS_PKT_HEADER_VALID(packet)) {     /* packet received? */
+        if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {     /* packet received? */
           if (packet.sched2.period != 0) {             /* zero means no change */
             schedule.period  = packet.sched2.period;   /* extract updated period */
             schedule.n_slots = 0;

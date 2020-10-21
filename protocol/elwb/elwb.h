@@ -45,7 +45,7 @@
 
 /* max. packet length */
 #ifndef ELWB_CONF_MAX_PKT_LEN
-#define ELWB_CONF_MAX_PKT_LEN     DPP_MSG_PKT_LEN
+#define ELWB_CONF_MAX_PKT_LEN     GLORIA_INTERFACE_MAX_PAYLOAD_LEN
 #endif /* ELWB_CONF_MAX_PKT_LEN */
 
 #ifndef ELWB_CONF_N_TX
@@ -171,7 +171,7 @@
 #endif /* ELWB_CONF_STARTUP_DELAY */
 
 /* use more accurate high frequency reference clock to schedule the contention slot
- * (requires an implementation of ELWB_GLOSSY_GET_T_REF_HF()) */
+ * (requires an implementation of ELWB_GLORIA_GET_T_REF_HF()) */
 #ifndef ELWB_CONF_CONT_USE_HFTIMER
 #define ELWB_CONF_CONT_USE_HFTIMER  0
 #endif /* ELWB_CONF_CONT_USE_HFTIMER */
@@ -195,10 +195,6 @@
 /*---------------------------------------------------------------------------*/
 
 /* parameter sanity checks */
-
-#if RF_CONF_MAX_PKT_LEN < (LWB_CONF_MAX_PKT_LEN + GLOSSY_MAX_HEADER_LEN)
-#error "LWB_CONF_MAX_PKT_LEN is too big"
-#endif
 
 #if ELWB_PERIOD_SCALE == 0 || ELWB_PERIOD_SCALE > 1000
 #error "invalid ELWB_PERIOD_SCALE"
@@ -267,19 +263,6 @@
 #define ELWB_TIMER_STOP()               lptimer_set(0, 0)
 #define ELWB_HFTIMER_SCHEDULE           //TODO
 
-/* glossy-style communication primitive */
-#define ELWB_GLOSSY_START(initiator, data, data_len, n_tx, is_schedule) \
-                                        gloria_start(initiator, data, data_len, n_tx, is_schedule)
-#define ELWB_GLOSSY_STOP()              gloria_stop()
-#define ELWB_GLOSSY_GET_PAYLOAD_LEN()   gloria_get_payload_len()
-#define ELWB_GLOSSY_CONT_DETECTED()     gloria_get_rx_started_cnt()
-#define ELWB_GLOSSY_DATA_RCVD()         gloria_get_rx_cnt()
-#define ELWB_GLOSSY_GET_T_REF()         gloria_get_t_ref()
-#define ELWB_GLOSSY_GET_T_REF_HF()      0  //TODO
-#define ELWB_GLOSSY_IS_T_REF_UPDATED()  gloria_is_t_ref_updated()
-#define ELWB_GLOSSY_GET_RSSI()          gloria_get_rssi()
-#define ELWB_GLOSSY_GET_SNR()           gloria_get_snr()
-
 /* message passing */
 #define ELWB_QUEUE_SIZE(handle)         uxQueueMessagesWaiting(handle)          /* polls the queue size (# elements in queue) */
 #define ELWB_QUEUE_SPACE(handle)        uxQueueSpacesAvailable(handle)          /* polls the empty queue space */
@@ -329,29 +312,30 @@ typedef struct {
   int_fast8_t snr_avg;    /* average SNR value */
 } elwb_stats_t;
 
+#pragma pack(1)           /* force alignment to 1 byte for the following structs */
+
 #define ELWB_PKT_HDR_LEN  2   // packet header length
-typedef struct __attribute__((__packed__, __aligned__(1))) {
+typedef struct {
   uint16_t type   : 1;    /* MSB indicates the packet type (1 = schedule packet) */
   uint16_t net_id : 15;   /* network ID and packet type indicator */
 } elwb_header_t;
 
 #define ELWB_SCHED_HDR_LEN   14
-#define ELWB_SCHED_MAX_SLOTS ((ELWB_CONF_MAX_PKT_LEN - ELWB_SCHED_HDR_LEN - \
-                               ELWB_SCHED_CRC_LEN) / 2)
+#define ELWB_SCHED_MAX_SLOTS ((ELWB_CONF_MAX_PKT_LEN - ELWB_SCHED_HDR_LEN - ELWB_SCHED_CRC_LEN) / 2)
 /* note: ELWB_SCHED_MAX_SLOTS != ELWB_CONF_MAX_DATA_SLOTS */
-typedef struct __attribute__((__packed__)) {
+typedef struct {
   elwb_header_t header;
   uint16_t      n_slots;
   uint64_t      time;          /* current time in microseconds */
   uint16_t      period;
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
-  uint16_t      slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2];
+  uint16_t      slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2 + 1];
 } elwb_schedule_t;
 
 typedef uint64_t elwb_time_t;
 
-typedef struct __attribute__((__packed__, __aligned__(1))) {
+typedef struct {
   elwb_header_t header;
   union {
     struct {
@@ -364,13 +348,19 @@ typedef struct __attribute__((__packed__, __aligned__(1))) {
       uint16_t    num_slots;
     } req;      // request packet
     uint8_t     payload[ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN];
-    uint16_t    payload16[(ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN + 1) / 2];
+    uint16_t    payload16[(ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN) / 2];
   };
 } elwb_packet_t;
 
+#pragma pack()
 
-_Static_assert(sizeof(elwb_schedule_t) == (ELWB_SCHED_HDR_LEN + 2 * (ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2)), "elwb_schedule_t size does not match with ELWB_SCHED_HDR_LEN!");
-_Static_assert(sizeof(elwb_packet_t) == ELWB_CONF_MAX_PKT_LEN, "elwb_packet_t size is invalid!");
+
+_Static_assert(sizeof(elwb_packet_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_packet_t size is invalid!");
+_Static_assert(sizeof(elwb_schedule_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_schedule_t size is invalid!");
+
+#if ELWB_CONF_MAX_PKT_LEN < GLORIA_INTERFACE_MAX_PAYLOAD_LEN
+#error "ELWB_CONF_MAX_PKT_LEN must be larger than or equal to GLORIA_INTERFACE_MAX_PAYLOAD_LEN"
+#endif
 
 
 /*---------------------------------------------------------------------------*/
