@@ -200,6 +200,15 @@ static void elwb_update_rssi_snr(void)
 }
 
 
+static bool elwb_is_schedule_valid(elwb_schedule_t* schedule)
+{
+  if (!gloria_is_t_ref_updated() || !ELWB_IS_PKT_HEADER_VALID(schedule) || !ELWB_IS_SCHEDULE_PACKET(schedule) || (gloria_get_payload_len() < (ELWB_SCHED_HDR_LEN + ELWB_SCHED_CRC_LEN))) {
+    return false;
+  }
+  return true;
+}
+
+
 static void elwb_run(void)
 {
   static elwb_schedule_t  schedule;
@@ -297,9 +306,9 @@ static void elwb_run(void)
             if ((ELWB_TIMER_NOW() - bootstrap_started) >= ELWB_CONF_BOOTSTRAP_TIMEOUT) {
               break;
             }
-          } while (elwb_running && (!gloria_is_t_ref_updated() || !ELWB_IS_SCHEDULE_PACKET(schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
+          } while (elwb_running && (!elwb_is_schedule_valid(&schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
           /* exit bootstrap mode if schedule received, exit bootstrap state */
-          if (gloria_is_t_ref_updated() && ELWB_IS_SCHEDULE_PACKET(schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
+          if (elwb_is_schedule_valid(&schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
             break;
           }
           /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
@@ -318,10 +327,11 @@ static void elwb_run(void)
         ELWB_RCV_SCHED();
       }
 
-      if (gloria_is_t_ref_updated() && ELWB_IS_SCHEDULE_PACKET(schedule)) {      /* schedule received? */
+      /* valid schedule received? */
+      if (elwb_is_schedule_valid(&schedule)) {
     #if ELWB_CONF_SCHED_CRC
-        /* check the CRC */
         packet_len = gloria_get_payload_len();
+        /* check the CRC */
         uint16_t pkt_crc = ((uint16_t)*((uint8_t*)&schedule + packet_len - 1)) << 8 |
                            *((uint8_t*)&schedule + packet_len - 2);
         if (crc16((uint8_t*)&schedule, packet_len - 2, 0) != pkt_crc) {
@@ -448,7 +458,7 @@ static void elwb_run(void)
             }
             /* send the packet */
             if (packet_len) {
-              ELWB_SET_PKT_HEADER(packet);
+              ELWB_SET_PKT_HEADER(&packet);
               packet_len += ELWB_PKT_HDR_LEN;
     #if ELWB_CONF_DATA_ACK
               /* only source nodes receive a D-ACK */
@@ -488,7 +498,7 @@ static void elwb_run(void)
           ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
           ELWB_RCV_PACKET();
           packet_len = gloria_get_payload_len();
-          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {                   /* data received? */
+          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(&packet)) {                   /* data received? */
             if (is_data_round) {
               /* check whether to keep this packet */
               bool keep_packet = ELWB_IS_SINK() || ELWB_RCV_PKT_FILTER();
@@ -536,7 +546,7 @@ static void elwb_run(void)
         packet_len = (ELWB_SCHED_N_SLOTS(&schedule) + 7) / 8;
         if (packet_len) {
           memcpy(packet.payload, data_ack, packet_len);
-          ELWB_SET_PKT_HEADER(packet);
+          ELWB_SET_PKT_HEADER(&packet);
           packet_len += ELWB_PKT_HDR_LEN;
           ELWB_WAIT_UNTIL(t_slot_ofs);
           ELWB_SEND_PACKET();
@@ -553,7 +563,7 @@ static void elwb_run(void)
         if (my_slots != 0xffff) {
           uint32_t first_slot = my_slots >> 8;
           uint32_t num_slots  = my_slots & 0xff;
-          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {
+          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(&packet)) {
             LOG_VERBOSE("D-ACK received");
             memcpy(data_ack, packet.payload, packet_len);
             uint32_t i;
@@ -588,7 +598,7 @@ static void elwb_run(void)
           }
           my_slots = 0xffff;
 
-        } else if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {
+        } else if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(&packet)) {
           stats.pkt_rx_all++;
         }
         ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
@@ -614,7 +624,7 @@ static void elwb_run(void)
           packet.cont.node_id = NODE_ID;
           LOG_INFO("transmitting node ID");
         }
-        ELWB_SET_PKT_HEADER(packet);
+        ELWB_SET_PKT_HEADER(&packet);
   #if ELWB_CONF_CONT_USE_HFTIMER
         /* contention slot requires precise timing: better to use HF timer for this wake-up! */
         ELWB_HFTIMER_SCHEDULE(t_ref_hf + (t_slot_ofs - t_start) * RTIMER_HF_LF_RATIO, elwb_notify);
@@ -638,7 +648,10 @@ static void elwb_run(void)
           rand_backoff--;
         }
         if (ELWB_IS_HOST()) {
-          if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet) && (packet.cont.node_id != 0)) {
+          if (gloria_get_rx_cnt() &&
+              ELWB_IS_PKT_HEADER_VALID(&packet) &&
+              (gloria_get_payload_len() == (ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN)) &&
+              (packet.cont.node_id != 0)) {
             /* process the request only if there is a valid node ID */
             elwb_sched_process_req(packet.cont.node_id, 0);
           }
@@ -663,14 +676,16 @@ static void elwb_run(void)
       packet_len = ELWB_2ND_SCHED_LEN + ELWB_PKT_HDR_LEN;
       if (ELWB_IS_HOST()) {
         /* note: packet content is set above during the contention slot */
-        ELWB_SET_PKT_HEADER(packet);
+        ELWB_SET_PKT_HEADER(&packet);
         ELWB_WAIT_UNTIL(t_slot_ofs);
         ELWB_SEND_PACKET();    /* send as normal packet without sync */
         stats.pkt_tx_all++;
       } else {
         ELWB_WAIT_UNTIL(t_slot_ofs - ELWB_CONF_T_GUARD_SLOT);
         ELWB_RCV_PACKET();
-        if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(packet)) {     /* packet received? */
+        if (gloria_get_rx_cnt() &&
+            ELWB_IS_PKT_HEADER_VALID(&packet) &&
+            (gloria_get_payload_len() == (ELWB_2ND_SCHED_LEN + ELWB_PKT_HDR_LEN))) {     /* packet received? */
           if (packet.sched2.period != 0) {             /* zero means no change */
             schedule.period  = packet.sched2.period;   /* extract updated period */
             schedule.n_slots = 0;

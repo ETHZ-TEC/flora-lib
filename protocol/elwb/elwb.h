@@ -251,9 +251,9 @@
 #define ELWB_SCHED_SET_DATA_SLOTS(s)    ((s)->n_slots |= 0x8000)
 #define ELWB_SCHED_SET_STATE_IDLE(s)    ((s)->n_slots |= 0x2000)
 
-#define ELWB_IS_SCHEDULE_PACKET(s)      ((s).header.type)
-#define ELWB_IS_PKT_HEADER_VALID(p)     ((p).header.net_id == (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))   // checks whether the packet header is valid
-#define ELWB_SET_PKT_HEADER(p)          ((p).header.net_id = ELWB_CONF_NETWORK_ID)    // set the header of a regular packet (all except schedule packets)
+#define ELWB_IS_SCHEDULE_PACKET(s)      ((s)->header.type)
+#define ELWB_IS_PKT_HEADER_VALID(p)     ((p)->header.net_id == (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))   // checks whether the packet header is valid
+#define ELWB_SET_PKT_HEADER(p)          ((p)->header.net_id = ELWB_CONF_NETWORK_ID)    // set the header of a regular packet (all except schedule packets)
 
 /* timer */
 #define ELWB_TIMER_SECOND               LPTIMER_SECOND
