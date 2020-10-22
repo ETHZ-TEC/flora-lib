@@ -153,6 +153,10 @@ uint8_t gloria_stop(void)
     hs_timer_schedule_stop();
     hs_timer_timeout_stop();
 
+    // Reset radio callbacks
+    radio_set_timeout_callback(NULL);
+    radio_set_rx_callback(NULL);
+
     // put radio in standby mode
     radio_standby();
 
