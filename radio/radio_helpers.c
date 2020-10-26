@@ -571,6 +571,12 @@ RadioState_t radio_get_status(void)
 }
 
 
+RadioOperatingModes_t radio_get_opmode(void)
+{
+  return SX126xGetOperatingMode();
+}
+
+
 uint32_t radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
                         uint32_t datarate, uint8_t coderate,
                         uint16_t preambleLen, bool fixLen, uint8_t payloadLen,

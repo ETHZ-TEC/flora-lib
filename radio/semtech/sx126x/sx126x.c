@@ -312,10 +312,10 @@ void SX126xSetRxBoosted( uint32_t timeout )
 {
     uint8_t buf[3];
 
+    RadioSetXoscTrim( );
     OperatingMode = MODE_RX;
 
-    SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensivity
-    RadioSetXoscTrim( );
+    SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
@@ -330,7 +330,7 @@ void SX126xSetRxBoostedWithoutExecute( uint32_t timeout )
     RadioSetXoscTrim( );
     OperatingMode = MODE_RX;
 
-    SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensivity
+    SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );

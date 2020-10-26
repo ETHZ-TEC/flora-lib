@@ -59,6 +59,7 @@ uint32_t  radio_get_last_pkt_snr(void);
 int32_t   radio_get_rssi(void);
 
 RadioState_t radio_get_status(void);
+RadioOperatingModes_t radio_get_opmode(void);
 
 /*!
  * \brief Get time-on-air for arbitrary radio settings.
