@@ -73,7 +73,7 @@ uint32_t log_buffer_size(void)
 
 uint32_t log_buffer_space(void)
 {
-  return (LOG_BUFFER_SIZE - log_buffer_size());
+  return (LOG_BUFFER_SIZE - log_buffer_size() - 1);
 }
 
 bool log_flush(void)
@@ -104,7 +104,7 @@ bool log_flush(void)
     }
   }
   if (buffer_full) {
-    LOG_PRINT_FUNC("~", 1);         /* to indicate that the queue was full! */
+    LOG_PRINT_FUNC(LOG_QUEUE_FULL_MARK LOG_NEWLINE, strlen(LOG_QUEUE_FULL_MARK LOG_NEWLINE));   /* to indicate that the queue was full! */
   }
   if (log_lock_failed) {
     LOG_PRINT_FUNC(LOG_ERR_MSG_LOCK_FAILED, sizeof(LOG_ERR_MSG_LOCK_FAILED));
@@ -130,13 +130,15 @@ static void log_buffer_add(const char* str, uint32_t len)
 
 #else /* LOG_PRINT_IMMEDIATELY */
   if (!log_buffer_full()) {
-    uint32_t n = MIN(log_buffer_space(), len);
-    uint32_t m = (LOG_BUFFER_SIZE - write_idx);
-    memcpy(&log_buffer[write_idx], str, MIN(n, m));
-    if(m < n) {
-      memcpy(log_buffer, str + m, n - m);
+    len = MIN(log_buffer_space(), len);           /* truncate */
+    uint32_t rem = (LOG_BUFFER_SIZE - write_idx);
+    if (len > rem) {
+      memcpy(&log_buffer[write_idx], str, rem);
+      memcpy(log_buffer, str + rem, len - rem);
+    } else {
+      memcpy(&log_buffer[write_idx], str, len);
     }
-    write_idx += n;
+    write_idx += len;
     if(write_idx >= LOG_BUFFER_SIZE) {
       write_idx -= LOG_BUFFER_SIZE;
     }

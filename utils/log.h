@@ -63,6 +63,10 @@
 #define LOG_NEWLINE             "\r\n"
 #endif /* LOG_NEWLINE */
 
+#ifndef LOG_QUEUE_FULL_MARK
+#define LOG_QUEUE_FULL_MARK     "\\~"
+#endif /* LOG_QUEUE_FULL_MARK */
+
 #if LOG_ADD_LEVEL
   #ifndef LOG_LEVEL_ERROR_STR
     #define LOG_LEVEL_ERROR_STR   "ERROR  "

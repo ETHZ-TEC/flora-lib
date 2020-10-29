@@ -39,6 +39,11 @@ bool bolt_init(void);
 bool bolt_status(void);
 
 /*
+ * return true if the BOLT queue is full (write access denied)
+ */
+bool bolt_full(void);
+
+/*
  * flush the BOLT queue (drop all incoming messages)
  */
 void bolt_flush(void);

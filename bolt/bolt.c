@@ -151,6 +151,16 @@ bool bolt_status(void)
 }
 
 
+bool bolt_full(void)
+{
+  if (bolt_acquire(true)) {
+    bolt_release();
+    return false;
+  }
+  return true;
+}
+
+
 void bolt_flush(void)
 {
   uint32_t cnt = 0;
