@@ -414,7 +414,9 @@ static void elwb_run(void)
       bool is_data_round = ELWB_SCHED_HAS_DATA_SLOTS(&schedule);
 
     #if ELWB_CONF_SCHED_COMPRESS
-      elwb_sched_uncompress((uint8_t*)schedule.slot, ELWB_SCHED_N_SLOTS(&schedule));
+      if (!elwb_sched_uncompress((uint8_t*)schedule.slot, ELWB_SCHED_N_SLOTS(&schedule))) {
+        LOG_ERROR("failed to uncompress the schedule");
+      }
     #endif /* ELWB_CONF_SCHED_COMPRESS */
 
       /* set the slot duration */

@@ -61,7 +61,7 @@
 #define ELWB_CONF_MAX_NODES       10
 #endif /* ELWB_CONF_MAX_NODES */
 
-/* max. number of data slots per round */
+/* max. number of data or request slots per round */
 #ifndef ELWB_CONF_MAX_DATA_SLOTS
 #define ELWB_CONF_MAX_DATA_SLOTS  10
 #endif /* ELWB_CONF_MAX_DATA_SLOTS */
@@ -234,6 +234,10 @@
 #if ELWB_CONF_CONT_TH == 0
 #error "invalid value for ELWB_CONF_CONT_TH"
 #endif /* ELWB_CONF_CONT_TH == 0 */
+
+#if ELWB_CONF_MAX_DATA_SLOTS < ELWB_CONF_MAX_NODES
+#error "ELWB_CONF_MAX_DATA_SLOTS must be larger than ELWB_CONF_MAX_NODES"
+#endif
 
 /*---------------------------------------------------------------------------*/
 

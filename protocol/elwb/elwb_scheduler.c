@@ -505,7 +505,9 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
   uint32_t compressed_size;
 #if ELWB_CONF_SCHED_COMPRESS
   compressed_size = elwb_sched_compress((uint8_t*)sched->slot, n_slots_assigned);
-  if ((compressed_size + ELWB_SCHED_HDR_LEN) > ELWB_CONF_MAX_PKT_LEN) {
+  if ((compressed_size == 0) && (n_slots_assigned > 0)) {
+    LOG_ERROR("schedule compression failed");
+  } else if ((compressed_size + ELWB_SCHED_HDR_LEN) > ELWB_CONF_MAX_PKT_LEN) {
     LOG_ERROR("compressed schedule is too big!");
   }
 #else
