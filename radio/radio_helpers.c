@@ -25,7 +25,6 @@ static const double radio_lora_symb_times[3][8] = { { 32.768, 16.384, 8.192, 4.0
 
 volatile static uint8_t lora_last_payload_size = 0;
 volatile static uint8_t current_modulation = 0;
-volatile static uint8_t current_band = 0;
 volatile static int32_t override_preamble_length = -1;
 volatile static uint8_t channel_free = 0;       // set in the CAD callback
 
@@ -160,15 +159,14 @@ void radio_set_config_tx(uint8_t modulation_index,
                          bool crc)
 {
   current_modulation = modulation_index;
-  current_band = band_index;
 
   if (preamble_length == -1) {
     preamble_length = radio_modulations[current_modulation].preambleLen;
   }
 
   // Do not allow for illegal power level
-  if (radio_bands[current_band].maxPower < power) {
-    power = radio_bands[current_band].maxPower;
+  if (radio_bands[band_index].maxPower < power) {
+    power = radio_bands[band_index].maxPower;
   }
 
   if (bandwidth == -1) {
@@ -185,7 +183,7 @@ void radio_set_config_tx(uint8_t modulation_index,
   }
 
   Radio.Standby();
-  Radio.SetChannel(radio_bands[current_band].centerFrequency);
+  Radio.SetChannel(radio_bands[band_index].centerFrequency);
   Radio.SetTxConfig(
       radio_modulations[current_modulation].modem,
       power,
@@ -215,10 +213,7 @@ void radio_set_config_rx(uint8_t modulation_index,
                          bool crc,
                          bool stop_rx_on_preamble)
 {
-  // deafult value of "stop_rx_on_preamble": true
-
   current_modulation = modulation_index;
-  current_band = band_index;
 
   if (preamble_length == -1) {
     preamble_length = radio_modulations[current_modulation].preambleLen;
@@ -231,7 +226,7 @@ void radio_set_config_rx(uint8_t modulation_index,
   if (bandwidth == -1) {
     bandwidth = radio_modulations[current_modulation].bandwidth;
   }
-  uint32_t afc_bandwidth = 2 * (bandwidth / 2 + radio_bands[current_band].centerFrequency) / RADIO_CLOCK_DRIFT;
+  uint32_t afc_bandwidth = 2 * (bandwidth / 2 + radio_bands[band_index].centerFrequency) / RADIO_CLOCK_DRIFT;
   int32_t bandwidth_rx = bandwidth + afc_bandwidth;
 
   if (bitrate == -1) {
@@ -240,7 +235,7 @@ void radio_set_config_rx(uint8_t modulation_index,
 
   Radio.Standby();
 
-  Radio.SetChannel(radio_bands[current_band].centerFrequency);
+  Radio.SetChannel(radio_bands[band_index].centerFrequency);
 
   Radio.SetRxConfig(
       radio_modulations[current_modulation].modem,
