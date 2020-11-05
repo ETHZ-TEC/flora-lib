@@ -35,6 +35,8 @@
 #define BASEBOARD_DEBUG_GPIO_Port         COM_PROG_GPIO_Port
 
 #define BASEBOARD_IS_ENABLED()            PIN_STATE(BASEBOARD_ENABLE)
+#define BASEBOARD_ENABLE()                PIN_SET(BASEBOARD_ENABLE)
+#define BASEBOARD_DISABLE()               PIN_CLR(BASEBOARD_ENABLE)
 
 
 /* Macros */

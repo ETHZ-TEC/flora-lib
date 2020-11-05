@@ -19,6 +19,9 @@
 
 /* private variables */
 
+static uint32_t bolt_write_cnt        = 0;
+static uint32_t bolt_write_failed_cnt = 0;
+
 
 /* functions */
 
@@ -126,11 +129,29 @@ bool bolt_write(uint8_t* data, uint32_t len)
   if (!data || !len || len > BOLT_MAX_MSG_LEN) {
     return false;
   }
+#if BOLT_WAKE_BASEBOARD_THRESHOLD
+  /* if IND_OUT is low, reset the write counter */
+  if (!BOLT_DATA_IN_OUTPUT_QUEUE) {
+    bolt_write_cnt = 0;
+  }
+#endif /* BOLT_WAKE_BASEBOARD_THRESHOLD */
+
   if (!bolt_acquire(true)) {
+    bolt_write_failed_cnt++;
     return false;
   }
   BOLT_SPI_WRITE(data, len);
   bolt_release();
+
+  bolt_write_cnt++;
+
+#if BOLT_WAKE_BASEBOARD_THRESHOLD
+  /* if the number of written messages reaches the configured threshold, then make sure the baseboard is woken / enabled */
+  if ((bolt_write_cnt >= BOLT_WAKE_BASEBOARD_THRESHOLD) && !BASEBOARD_IS_ENABLED()) {
+    BASEBOARD_ENABLE();
+    LOG_INFO("baseboard woken (BOLT queue threshold exceeded)");
+  }
+#endif /* BOLT_WAKE_BASEBOARD_THRESHOLD */
 
   return true;
 }
@@ -176,6 +197,26 @@ void bolt_flush(void)
     cnt++;
   }
   LOG_VERBOSE("queue cleared (%lu messages removed)", cnt);
+}
+
+
+uint32_t bolt_get_write_cnt(bool reset)
+{
+  uint32_t cnt = bolt_write_cnt;
+  if (reset) {
+    bolt_write_cnt = 0;
+  }
+  return cnt;
+}
+
+
+uint32_t bolt_get_write_failed_cnt(bool reset)
+{
+  uint32_t cnt = bolt_write_failed_cnt;
+  if (reset) {
+    bolt_write_failed_cnt = 0;
+  }
+  return cnt;
 }
 
 #endif /* BOLT_CONF_ON */

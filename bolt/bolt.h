@@ -21,6 +21,15 @@
 #define BOLT_MAX_MSG_LEN                128  /* bytes */
 #endif /* BOLT_MAX_MSG_LEN */
 
+#if BASEBOARD
+  /* baseboard-specific features */
+  #ifndef BOLT_WAKE_BASEBOARD_THRESHOLD
+  #define BOLT_WAKE_BASEBOARD_THRESHOLD 0   /* if set to a value != 0, the baseboard will be woken (enable pin high) if the #written messages exceeds this value */
+  #endif /* BOLT_WAKE_BASEBOARD_THRESHOLD */
+#else  /* BASEBOARD */
+  #define BOLT_WAKE_BASEBOARD_THRESHOLD 0   /* force disable feature */
+#endif /* BASEBOARD */
+
 /* interface to SPI HAL functions */
 #ifndef BOLT_SPI_WRITE
 #define BOLT_SPI_WRITE(data, len)       HAL_SPI_Transmit(&hspi1, data, len, pdMS_TO_TICKS(10))
@@ -62,6 +71,21 @@ uint32_t bolt_read(uint8_t* out_data);
  * @return  true if the operation was successful, false otherwise
  */
 bool bolt_write(uint8_t* data, uint32_t len);
+
+/*
+ * get the write counter
+ * @param   reset: set to true to reset the counter
+ * @return  the number of messages that have been successfully written to BOLT since the last reset;
+ *          in case BOLT_WAKE_BASEBOARD_WRITE_TH is used, this value represents the number of written messages since the BOLT output queue was empty the last time (~= estimated # messages currently in the output queue)
+ */
+uint32_t bolt_get_write_cnt(bool reset);
+
+/*
+ * get the write-failed counter
+ * @param   reset: set to true to reset the counter
+ * @return  the number of messages that could not be written to BOLT (due to queue full) since the last reset
+ */
+uint32_t bolt_get_write_failed_cnt(bool reset);
 
 
 #endif /* BOLT_BOLT_H_ */
