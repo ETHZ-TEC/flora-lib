@@ -48,7 +48,7 @@ typedef struct lora_message_s {
 
 
 void radio_init(void);
-void radio_sleep(bool warm);
+void radio_sleep(bool warm);  /* note: radio_wakeup() must be called before using the radio again after calling radio_sleep() */
 void radio_reset(void);
 bool radio_wakeup(void);      /* returns true if the radio was in sleep mode and has been woken successfully, false otherwise */
 void radio_standby(void);

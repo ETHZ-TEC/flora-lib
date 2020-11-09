@@ -551,12 +551,6 @@ uint32_t radio_get_last_pkt_snr(void)
 int32_t radio_get_rssi(void)
 {
   return SX126xGetRssiInst();   // instantaneous RSSI value -> radio needs to be in RX mode for this
-  /*PacketStatus_t pktStatus;
-  SX126xGetPacketStatus(&pktStatus);
-  if (pktStatus.packetType == PACKET_TYPE_GFSK) {
-    return pktStatus.Params.Gfsk.RssiSync;  // or: .RssiAvg
-  }
-  return pktStatus.Params.LoRa.RssiPkt;*/
 }
 
 

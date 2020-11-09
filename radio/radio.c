@@ -50,9 +50,10 @@ void radio_rx_sync_cb(void);
 void radio_rx_preamble_cb(void);
 
 
-void radio_init(void)
+// restore basic radio configuration (e.g. after cold sleep)
+static void radio_restore_config(void)
 {
-  static RadioEvents_t radio_events;      // must be static
+  static RadioEvents_t radio_events;
 
   // assign callback functions for radio driver
   radio_events.CadDone    = radio_cad_done_cb;
@@ -64,13 +65,19 @@ void radio_init(void)
   radio_events.RxSync     = radio_rx_sync_cb;
   radio_events.RxPreamble = radio_rx_preamble_cb;
 
+  Radio.Init(&radio_events);
+}
+
+
+void radio_init(void)
+{
   bool irq_set = RADIO_READ_DIO1_PIN();
 
   if (!irq_set) {
     radio_reset();
   }
 
-  Radio.Init(&radio_events);
+  radio_restore_config();
 
   if (irq_set) {
     (*RadioOnDioIrqCallback)();
@@ -82,18 +89,7 @@ void radio_init(void)
 
   radio_sleep(true);
 
-  // initial configuration
-  uint8_t modulation      = 3;
-  uint8_t band            = 34;
-  int8_t  power           = 0;
-  int32_t bandwidth       = -1;
-  int32_t fsk_bitrate     = -1;
-  int     preamble_length = -1;
-  bool    implicit        = false;
-  uint8_t payload_length  = 0;
-  bool    crc             = true;
-  radio_set_config_rx(modulation, band, bandwidth, fsk_bitrate, preamble_length, 0, implicit, payload_length, crc, true);
-  radio_set_config_tx(modulation, band, power, bandwidth, fsk_bitrate, preamble_length, implicit, crc);
+  // note: RX/TX config has to be set by the user / application
 
   // reset duty cycle counters
   dcstat_reset(&radio_dc_rx);
@@ -252,8 +248,8 @@ bool radio_wakeup(void)
   if (radio_sleeping) {
     SX126xWakeup();
     if (radio_sleeping == COLD) {
-      SX126xSetDio2AsRfSwitchCtrl(true);
-      SX126xSetRegulatorMode( USE_DCDC );
+      /* radio config is lost and must be restored */
+      radio_restore_config();
     }
     radio_sleeping = false;
     return true;
@@ -538,6 +534,8 @@ static void radio_execute(void)
 
 void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_set_payload(buffer, size);
   if (schedule) {
     radio_command_scheduled = true;
@@ -554,6 +552,8 @@ void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
 
 void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t time)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_command_scheduled = true;
   radio_set_payload(buffer, size);
   SX126xSetTxWithoutExecute(0);
@@ -564,6 +564,8 @@ void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t ti
 
 void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_command_scheduled = true;
   radio_set_packet_params_and_size(size);
   SX126xSetPayload(overwrite_buffer, overwrite_size);
@@ -589,6 +591,8 @@ void radio_execute_manually(int64_t timer)
 
 void radio_set_tx(uint64_t timestamp)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_command_scheduled = true;
   SX126xSetTxWithoutExecute(0);
   hs_timer_schedule(timestamp, &radio_execute);
@@ -597,6 +601,8 @@ void radio_set_tx(uint64_t timestamp)
 
 void radio_set_rx(uint64_t timestamp, uint32_t timeout)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_command_scheduled = true;
   SX126xSetRxBoostedWithoutExecute(timeout);
   hs_timer_schedule(timestamp, &radio_execute);
@@ -612,6 +618,8 @@ void radio_set_rx(uint64_t timestamp, uint32_t timeout)
 
 void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_receive_continuous = false;
   hs_timer_timeout(radio_calculate_timeout(false), &radio_timeout_cb);
   radio_command_scheduled = true;
@@ -631,6 +639,8 @@ void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
 
 void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   // default value for "rx_timeout": 0
   radio_receive_continuous = !schedule;
 
@@ -677,6 +687,8 @@ void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_time
 
 void radio_sync_receive(void)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_receive_continuous = false;
   SX126xSetRxBoosted(0);
   RADIO_RX_START_IND();
@@ -686,6 +698,8 @@ void radio_sync_receive(void)
 
 void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   radio_receive_continuous = false;
 
   rx = (uint64_t) rx; // in 15.625 us steps
@@ -701,6 +715,10 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
 
 }
 
+
+/**
+ * functions to query / reset stats
+ */
 
 uint64_t radio_get_last_sync_timestamp(void)
 {
