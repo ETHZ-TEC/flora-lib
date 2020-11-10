@@ -87,8 +87,6 @@ void radio_init(void)
   hs_timer_capture(&radio_irq_capture_cb);
   radio_set_irq_direct(true);
 
-  radio_sleep(true);
-
   // note: RX/TX config has to be set by the user / application
 
   // reset duty cycle counters
@@ -261,6 +259,8 @@ bool radio_wakeup(void)
 /* puts the radio into idle mode */
 void radio_standby(void)
 {
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
   Radio.Standby();
 
   RADIO_RX_STOP_IND();

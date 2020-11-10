@@ -131,6 +131,7 @@ void system_sleep(bool deep)
 void system_wakeup(void)
 {
   leds_wakeup();
+  radio_wakeup();
 }
 
 
