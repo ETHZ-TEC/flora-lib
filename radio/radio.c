@@ -262,7 +262,6 @@ bool radio_wakeup(void)
 void radio_standby(void)
 {
   Radio.Standby();
-  radio_sleeping = false;
 
   RADIO_RX_STOP_IND();
   RADIO_TX_STOP_IND();
