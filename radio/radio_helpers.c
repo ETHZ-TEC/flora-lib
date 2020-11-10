@@ -158,6 +158,8 @@ void radio_set_config_tx(uint8_t modulation_index,
                          bool implicit,
                          bool crc)
 {
+  if (modulation_index >= RADIO_NUM_MODULATIONS) return;
+
   current_modulation = modulation_index;
 
   if (preamble_length == -1) {
@@ -213,6 +215,8 @@ void radio_set_config_rx(uint8_t modulation_index,
                          bool crc,
                          bool stop_rx_on_preamble)
 {
+  if (modulation_index >= RADIO_NUM_MODULATIONS) return;
+
   current_modulation = modulation_index;
 
   if (preamble_length == -1) {
@@ -339,6 +343,8 @@ uint32_t radio_calculate_timeout(bool preamble)
 
 uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation)
 {
+  if (modulation >= RADIO_NUM_MODULATIONS) return 0;
+
   if (radio_modulations[modulation].modem == MODEM_LORA) {
     return length * radio_lora_symb_times[radio_modulations[modulation].bandwidth][12 - radio_modulations[modulation].datarate] * HS_TIMER_FREQUENCY_MS;
   }
@@ -350,6 +356,8 @@ uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation)
 
 uint32_t radio_get_preamble_toa(uint16_t length, uint8_t modulation)
 {
+  if (modulation >= RADIO_NUM_MODULATIONS) return 0;
+
   if (!length) {
     length = radio_modulations[modulation].preambleLen;
   }
@@ -510,7 +518,7 @@ static void radio_channel_free_cb(bool detected)
 /* do LoRa CAD */
 bool radio_is_channel_free(uint8_t modulation, uint32_t timeout_ms)
 {
-  if ((modulation <= RADIO_NUM_CAD_PARAMS)) {
+  if (modulation <= RADIO_NUM_CAD_PARAMS) {
     radio_cad_params_t params = radio_cad_params[modulation];
     SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, LORA_CAD_ONLY, 0);   // no timeout needed since we do not want to receive the packet
     radio_set_cad_callback(radio_channel_free_cb);
@@ -594,6 +602,8 @@ uint32_t radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
 
 uint32_t radio_get_toa(uint8_t payload_len, uint8_t modulation)
 {
+  if (modulation >= RADIO_NUM_MODULATIONS) return 0;
+
   return Radio.TimeOnAir( radio_modulations[modulation].modem,
                           radio_modulations[modulation].bandwidth,
                           radio_modulations[modulation].datarate,
