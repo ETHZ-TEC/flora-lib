@@ -75,6 +75,8 @@ void radio_init(void)
 
   if (!irq_set) {
     radio_reset();
+  } else {
+    LOG_WARNING("radio reset skipped (DIO1 pin is high)");
   }
 
   radio_restore_config();
