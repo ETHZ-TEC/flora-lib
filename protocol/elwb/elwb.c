@@ -62,25 +62,25 @@ static const char* elwb_syncstate_to_string[NUM_OF_SYNC_STATES] = {
 
 #define ELWB_SEND_SCHED() \
 {\
-  gloria_start(NODE_ID, (uint8_t*)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
+  gloria_start(true, (uint8_t*)&schedule, schedule_len, ELWB_CONF_N_TX, 1);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED);\
   gloria_stop();\
 }
 #define ELWB_RCV_SCHED() \
 {\
-  gloria_start(0, (uint8_t*)&schedule, packet_len, ELWB_CONF_N_TX, 1);\
+  gloria_start(false, (uint8_t*)&schedule, packet_len, ELWB_CONF_N_TX, 1);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);\
   gloria_stop();\
 }
 #define ELWB_SEND_PACKET() \
 {\
-  gloria_start(NODE_ID, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
+  gloria_start(true, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot);\
   gloria_stop();\
 }
 #define ELWB_RCV_PACKET() \
 {\
-  gloria_start(0, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
+  gloria_start(false, (uint8_t*)&packet, packet_len, ELWB_CONF_N_TX, 0);\
   ELWB_WAIT_UNTIL(ELWB_TIMER_LAST_EXP() + t_slot + ELWB_CONF_T_GUARD_SLOT);\
   gloria_stop();\
 }

@@ -30,7 +30,7 @@ static bool             internal_enable_flood_printing = false;          // enab
 static gloria_cb_func_t flood_cb = 0;                                    // user-defined callback; only called if flood participation terminates before gloria_stop() is called
 
 /* variables to store gloria_start arguments */
-static uint16_t         arg_initiator_id = 0;               // ID of the inititator
+static uint16_t         arg_is_initiator = 0;               // ID of the inititator
 static uint8_t*         arg_payload_ptr = NULL;             // pointer to payload of currently ongoing flood
 static bool             arg_sync_slot;                      // holds state whether current flood is used to update last_t_ref or not
 
@@ -42,7 +42,7 @@ static void update_t_ref(void);
 
 
 /* INTERFACE FUNCTIONS ********************************************************/
-void gloria_start(uint16_t initiator_id,
+void gloria_start(bool is_initiator,
                   uint8_t *payload,
                   uint8_t payload_len,
                   uint8_t n_tx_max,
@@ -60,7 +60,7 @@ void gloria_start(uint16_t initiator_id,
 
   /* argument checks */
   if (payload_len > GLORIA_INTERFACE_MAX_PAYLOAD_LEN) {
-    if (initiator_id == NODE_ID) {
+    if (is_initiator) {
       LOG_WARNING("payload_len passed to gloria_start as initiator exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before sending!");
     } else {
       LOG_WARNING("payload_len passed to gloria_start as receiver exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before returning!");
@@ -71,7 +71,7 @@ void gloria_start(uint16_t initiator_id,
   GLORIA_START_IND();
 
   /* store arguments for further use */
-  arg_initiator_id = initiator_id;
+  arg_is_initiator = is_initiator;
   arg_payload_ptr  = payload;
   // arg_payload_len: stored during argument check
   arg_sync_slot    = sync_slot;
@@ -104,7 +104,7 @@ void gloria_start(uint16_t initiator_id,
   flood.header.slot_index = 0;
   // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
 
-  if (initiator_id == NODE_ID) {
+  if (is_initiator) {
     // send flood
     flood.marker        = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;     // marker (timestamp when flood shall start) must be set on the initiator
     flood.initial       = true;       // this node is the initator
@@ -143,7 +143,7 @@ uint8_t gloria_stop(void)
   // only stop if flood is not terminated yet
   if (flood_running) {
     if (!flood_completed) {
-      if (arg_initiator_id == NODE_ID) {
+      if (arg_is_initiator) {
         // If this node is initiator, we can detect if flood did not terminate and warn the user
         LOG_WARNING("Stopping glossy while flood sending is still ongoing!");
       }
@@ -186,7 +186,7 @@ uint8_t gloria_stop(void)
     }
 
     /* clear arg variables */
-    arg_initiator_id = 0;
+    arg_is_initiator = false;
     arg_payload_ptr = NULL;
     arg_sync_slot = false;
     flood_cb = NULL;
