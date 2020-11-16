@@ -25,7 +25,7 @@ current_state_t current_state = STATE_IDLE;
 // overhearing related variables
 uint8_t overhearing = 0; // do we overhear a message
 uint64_t overhear_time; // length of overhearing phase
-message_type_t overhearing_message_type; // the type of messages accepted in the overhearing mode
+dozer_message_type_t overhearing_message_type; // the type of messages accepted in the overhearing mode
 
 
 
@@ -517,7 +517,7 @@ void stop_overhearing() {
 /*
  * set expected message type and time for overhearing
  */
-void set_overhear_params(message_type_t oh_msg_type, uint32_t oh_time) {
+void set_overhear_params(dozer_message_type_t oh_msg_type, uint32_t oh_time) {
     if (oh_time) { // only set if not 0, to allow for continued overhearing
         overhear_time = oh_time;
     }

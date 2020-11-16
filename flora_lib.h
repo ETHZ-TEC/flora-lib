@@ -44,19 +44,7 @@
 
 /* protocols, networking */
 #include "flocklab/flocklab.h"
-#include "protocol/gloria/gloria.h"
-#if DOZER_ENABLE
-#include "protocol/dozer/dozer.h"
-#endif /* DOZER_ENABLE */
-#if SLWB_ENABLE
-#include "protocol/simple_lwb/slwb.h"
-#endif /* SLWB_ENABLE */
-#if GMW_ENABLE
-#include "protocol/gmw/gmw.h"
-#endif /* GMW_ENABLE */
-#if ELWB_ENABLE
-#include "protocol/elwb/elwb.h"
-#endif /* ELWB_ENABLE */
+#include "protocol/protocol.h"
 
 /* misc utilities */
 #include "utils/misc.h"

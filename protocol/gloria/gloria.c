@@ -34,12 +34,17 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
 
   // initialize flood parameters
   current_flood->first_rx_index = ((current_flood->ack_mode ? -2 : -1));
+  current_flood->header.protocol_id = PROTOCOL_ID_GLORIA;
+  current_flood->header.type = 0;
   current_flood->header.slot_index = 0;
   current_flood->msg_received = current_flood->initial;
   current_flood->last_active_slot = gloria_calculate_last_active_slot(current_flood);
 
   current_flood->remaining_retransmissions = current_flood->max_retransmissions;
 
+  current_flood->ack_message.protocol_id = PROTOCOL_ID_GLORIA;
+  current_flood->ack_message.type = 0;
+  current_flood->ack_message.sync = 0;
   current_flood->ack_message.dst = 0;
   current_flood->ack_counter = 0;
   current_flood->acked = 0;

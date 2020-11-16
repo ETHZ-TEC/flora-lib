@@ -44,16 +44,6 @@
 #endif /* GLORIA_INTERFACE_POWER */
 
 /**
- * Upper bound of the slot number during one flood (limits flood duration)
- * NOTE: also limits max number of hops
- * NOTE: intentially set to a large number since GMW does not specify this
- *       number but limits the Gloria round by calling gloria_stop().
- */
-#ifndef GLORIA_INTERFACE_MAX_SLOTS
-#define GLORIA_INTERFACE_MAX_SLOTS          127
-#endif /* GLORIA_INTERFACE_MAX_SLOTS */
-
-/**
  * Whether to disable potentially interfering interrupts before starting a
  * Gloria flood. The disabled interrupts will be re-enabled in gloria_stop().
  */
@@ -62,12 +52,14 @@
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
 /**
- * 7-bit type identifier, used to determine whether a received packet belongs
- * to this protocol
+ * Upper bound of the slot number during one flood (limits flood duration)
+ * NOTE: also limits max number of hops
+ * NOTE: intentially set to a large number since GMW does not specify this
+ *       number but limits the Gloria round by calling gloria_stop().
  */
-#ifndef GLORIA_INTERFACE_PKT_HDR_TYPE_ID
-#define GLORIA_INTERFACE_PKT_HDR_TYPE_ID    0x11
-#endif /* GLORIA_INTERFACE_PKT_HDR_TYPE_ID */
+#ifndef GLORIA_INTERFACE_MAX_SLOTS
+#define GLORIA_INTERFACE_MAX_SLOTS          127
+#endif /* GLORIA_INTERFACE_MAX_SLOTS */
 
 /* CONFIG CHECKS **************************************************************/
 
@@ -275,11 +267,13 @@ void gloria_register_flood_callback(gloria_flood_cb_t cb);
 
 /**
  * \brief           Set a custom RX packet filter
- *
  * \param           A callback function that takes a pointer to the received
  *                  payload as well as the payload length. It must returns true
  *                  if the received packet should be kept / accepted and false
  *                  otherwise.
+ *                  IMPORTANT: The function must be fast and deterministic. Make
+ *                  sure the function completes execution within ~100us. Longer
+ *                  execution times may disrupt the Gloria timing.
  * \note            The callback function will be cleared in gloria_stop().
  */
 void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb);

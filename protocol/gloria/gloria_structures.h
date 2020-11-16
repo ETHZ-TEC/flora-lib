@@ -14,12 +14,16 @@
 typedef void (* gloria_flood_cb_t)(void);
 typedef bool (* gloria_pkt_filter_cb_t)(uint8_t*, uint8_t);
 
-typedef struct __attribute__((__packed__)) {
+typedef struct __attribute__((__packed__, __aligned__(1))) {
+  uint8_t protocol_id : 4;    // protocol ID
+  uint8_t type : 3;           // msg type
+  uint8_t sync: 1;            // 1: message includes ts for sync, 0: no ts
   uint8_t dst;
 } gloria_ack_message_t;
 
 typedef struct __attribute__((__packed__, __aligned__(1))) {
-  uint8_t type: 7;            // msg type
+  uint8_t protocol_id : 4;    // protocol ID
+  uint8_t type : 3;           // msg type
   uint8_t sync: 1;            // 1: message includes ts for sync, 0: no ts
   uint8_t slot_index;         // current slot index
   uint8_t src;                // msg source
@@ -80,5 +84,9 @@ typedef struct {
   uint16_t node_id;
 
 } gloria_flood_t;
+
+
+_Static_assert(sizeof(gloria_ack_message_t) == GLORIA_ACK_LENGTH, "gloria_ack_message_t is not GLORIA_ACK_LENGTH bytes in size!");
+_Static_assert(sizeof(gloria_header_t) == GLORIA_HEADER_LENGTH, "gloria_ack_message_t is not GLORIA_ACK_LENGTH bytes in size!");
 
 #endif /* PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_ */

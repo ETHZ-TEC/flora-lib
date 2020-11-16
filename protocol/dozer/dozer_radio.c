@@ -24,7 +24,7 @@ static uint64_t rx_start_ts;
 static uint32_t rx_timeout_time; // global rx timeout variable to allow receiving again after a message with wrong address was received
 
 
-message_type_t send_message_type; // message type of the sent message
+dozer_message_type_t send_message_type; // message type of the sent message
 
 // message buffers
 static dozer_message_t* message = NULL;
