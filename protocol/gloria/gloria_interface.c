@@ -16,23 +16,24 @@
 
 
 /* internal state */
-static gloria_flood_t   flood;                                           // flood struct which (serves as input, state, and output to/from gloria_run_flood)
-static uint8_t          gloria_payload[GLORIA_INTERFACE_MAX_PAYLOAD_LEN];  // buffer for the message
-static bool             flood_running;                                   // indicates whether flood is onging or not
-static bool             flood_completed;                                 // indicates whether the flood completed (N_TX reached)
-static uint8_t          lastrun_n_rx_started = 0;                        // number of rx started events during the last Gloria run
-static bool             lastrun_t_ref_updated = false;                   // indicates whether last_t_ref has been updated during the last flood
-static uint64_t         last_t_ref = 0;                                  // reference time (updated if gloria_start is called with sync_slot=true)
-static int8_t           internal_power = GLORIA_INTERFACE_POWER;         // internal state for power (can be adapted from the GMW layer)
-static uint8_t          internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the GMW layer)
-static uint8_t          internal_band = GLORIA_INTERFACE_RF_BAND;        // internal state for the frequency band (can be adapted from the GMW layer)
-static bool             internal_enable_flood_printing = false;          // enable printing of finished (i.e. completely received/transmitted) floods
-static gloria_cb_func_t flood_cb = 0;                                    // user-defined callback; only called if flood participation terminates before gloria_stop() is called
+static gloria_flood_t         flood;                                              // flood struct which (serves as input, state, and output to/from gloria_run_flood)
+static uint8_t                gloria_payload[GLORIA_INTERFACE_MAX_PAYLOAD_LEN];   // buffer for the message
+static bool                   flood_running;                                      // indicates whether flood is onging or not
+static bool                   flood_completed;                                    // indicates whether the flood completed (N_TX reached)
+static uint8_t                lastrun_n_rx_started = 0;                           // number of rx started events during the last Gloria run
+static bool                   lastrun_t_ref_updated = false;                      // indicates whether last_t_ref has been updated during the last flood
+static uint64_t               last_t_ref = 0;                                     // reference time (updated if gloria_start is called with sync_slot=true)
+static int8_t                 internal_power = GLORIA_INTERFACE_POWER;            // internal state for power (can be adapted from the GMW layer)
+static uint8_t                internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the GMW layer)
+static uint8_t                internal_band = GLORIA_INTERFACE_RF_BAND;           // internal state for the frequency band (can be adapted from the GMW layer)
+static bool                   internal_enable_flood_printing = false;             // enable printing of finished (i.e. completely received/transmitted) floods
+static gloria_flood_cb_t      flood_cb = 0;                                       // user-defined callback; only called if flood participation terminates before gloria_stop() is called
+static gloria_pkt_filter_cb_t pkt_filter_cb = 0;                                  // a user-defined packet filter callback function
 
 /* variables to store gloria_start arguments */
-static uint16_t         arg_is_initiator = 0;               // ID of the inititator
-static uint8_t*         arg_payload_ptr = NULL;             // pointer to payload of currently ongoing flood
-static bool             arg_sync_slot;                      // holds state whether current flood is used to update last_t_ref or not
+static uint16_t               arg_is_initiator = 0;                               // ID of the inititator
+static uint8_t*               arg_payload_ptr = NULL;                             // pointer to payload of currently ongoing flood
+static bool                   arg_sync_slot;                                      // holds state whether current flood is used to update last_t_ref or not
 
 
 /* Private Function Prototypes */
@@ -52,6 +53,10 @@ void gloria_start(bool is_initiator,
     LOG_WARNING("invalid parameters");
     return;
   }
+  if (flood_running) {
+    LOG_WARNING("flood is still running");
+    return;
+  }
 
   /* radio must be woken from sleep mode! */
   if (radio_wakeup()) {
@@ -61,9 +66,9 @@ void gloria_start(bool is_initiator,
   /* argument checks */
   if (payload_len > GLORIA_INTERFACE_MAX_PAYLOAD_LEN) {
     if (is_initiator) {
-      LOG_WARNING("payload_len passed to gloria_start as initiator exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before sending!");
+      LOG_WARNING("payload_len passed to gloria_start as initiator exceeds limit! payload will be truncated");
     } else {
-      LOG_WARNING("payload_len passed to gloria_start as receiver exceeds limit (GLORIA_MAX_PAYLOAD_LENGTH)! Payload will be truncated before returning!");
+      LOG_WARNING("payload_len passed to gloria_start as receiver exceeds limit! payload will be truncated");
     }
     payload_len = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
   }
@@ -97,7 +102,8 @@ void gloria_start(bool is_initiator,
   flood.sync_timer          = 0;
   flood.lp_listening        = false;
   flood.radio_no_sleep      = true;
-  flood.node_id             = NODE_ID;
+  flood.node_id             = 0;      // unused
+  flood.pkt_filter          = pkt_filter_cb;
 
   flood.header.type       = 0;
   flood.header.sync       = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
@@ -187,9 +193,10 @@ uint8_t gloria_stop(void)
 
     /* clear arg variables */
     arg_is_initiator = false;
-    arg_payload_ptr = NULL;
-    arg_sync_slot = false;
-    flood_cb = NULL;
+    arg_payload_ptr  = NULL;
+    arg_sync_slot    = false;
+    flood_cb         = NULL;
+    pkt_filter_cb    = NULL;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
     /* re-enable other interrupts */
@@ -321,9 +328,15 @@ void gloria_enable_flood_printing(bool enable)
 }
 
 
-void gloria_register_flood_callback(gloria_cb_func_t cb)
+void gloria_register_flood_callback(gloria_flood_cb_t cb)
 {
   flood_cb = cb;
+}
+
+
+void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb)
+{
+  pkt_filter_cb = filter_cb;
 }
 
 
@@ -332,7 +345,7 @@ void gloria_register_flood_callback(gloria_cb_func_t cb)
 
 static void gloria_flood_callback(void)
 {
-  gloria_cb_func_t cb = flood_cb;
+  gloria_flood_cb_t cb = flood_cb;
 
   // flood completed
   flood_completed = true;

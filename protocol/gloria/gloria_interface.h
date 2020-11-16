@@ -68,11 +68,6 @@
 #error "GLORIA_INTERFACE_MAX_PAYLOAD_LEN exceeds allowed range!"
 #endif
 
-/* MISC ***********************************************************************/
-
-typedef void (* gloria_cb_func_t)(void);
-
-
 /* FUNCTIONS ******************************************************************/
 
 /**
@@ -269,15 +264,24 @@ void gloria_enable_flood_printing(bool enable);
  *                   flood stops before gloria_stop() is called!
  * \param            cb: callback function
  */
-void gloria_register_flood_callback(gloria_cb_func_t cb);
+void gloria_register_flood_callback(gloria_flood_cb_t cb);
 
+/**
+ * \brief           Set a custom RX packet filter
+ *
+ * \param           A callback function that takes a pointer to the received
+ *                  payload as well as the payload length. It must returns true
+ *                  if the received packet should be kept / accepted and false
+ *                  otherwise.
+ * \note            The callback function will be cleared in gloria_stop().
+ */
+void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb);
 
 /**
  * \brief           Get the RSSI value of the last received packet.
  * \return          RSSI value in dBm
  */
 int32_t gloria_get_rssi();
-
 
 /**
  * \brief           Get the SNR value of the last received packet.

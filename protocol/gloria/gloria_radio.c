@@ -258,6 +258,9 @@ static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t r
     current_flood->crc_error = true;
     gloria_radio_continue_rx();
   }
+  else if (current_flood->pkt_filter && !current_flood->pkt_filter(payload, size)) {
+    gloria_radio_continue_rx();
+  }
   else {
     current_flood->rssi = rssi;
     current_flood->snr = snr;
