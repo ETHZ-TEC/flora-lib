@@ -82,7 +82,7 @@ typedef void (* gloria_cb_func_t)(void);
  *                      standby mode when gloria_start() is called. If radio is
  *                      in sleep mode, the timing is not feasible and errors
  *                      will occur!
- * \param initiator_id  Node ID of the flood initiator.
+ * \param is_initiator  Set to true to initiate a flood.
  * \param payload       A pointer to the data.
  *                      At the initiator, Glossy reads from the given memory
  *                      location data provided by the application.
@@ -95,7 +95,7 @@ typedef void (* gloria_cb_func_t)(void);
  * \param sync_slot     Not zero if flood should be used to update the
  *                      reference, zero otherwise.
  */
-void gloria_start(uint16_t initiator_id,
+void gloria_start(bool is_initiator,
                   uint8_t *payload,
                   uint8_t payload_len,
                   uint8_t n_tx_max,

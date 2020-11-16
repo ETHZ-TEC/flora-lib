@@ -123,7 +123,7 @@ uint32_t bolt_read(uint8_t* out_data)
 }
 
 
-bool bolt_write(uint8_t* data, uint32_t len)
+bool bolt_write(uint8_t* data, uint16_t len)
 {
   /* parameter check */
   if (!data || !len || len > BOLT_MAX_MSG_LEN) {
