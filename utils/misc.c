@@ -8,6 +8,11 @@
 #include "flora_lib.h"
 
 
+#ifdef HAL_RNG_MODULE_ENABLED
+extern RNG_HandleTypeDef hrng;
+#endif /* HAL_RNG_MODULE_ENABLED */
+
+
 void delay(volatile uint32_t loop_passes)
 {
   while (loop_passes) loop_passes--;
@@ -107,3 +112,41 @@ int _write(int32_t file, uint8_t *ptr, int32_t len)
 }
 
 #endif /* SWO_ENABLE */
+
+
+void random_init(void)
+{
+  // seed the random number generator
+#ifndef HAL_RNG_MODULE_ENABLED
+  srand((unsigned int)hs_timer_get_current_timestamp() + NODE_ID);
+#endif /* HAL_RNG_MODULE_ENABLED */
+}
+
+
+uint32_t random_rand16(void)
+{
+  // seed the random number generator
+#ifdef HAL_RNG_MODULE_ENABLED
+  // use the true random number generator of the STM32L4
+  uint32_t rand_val = 0;
+  HAL_RNG_GenerateRandomNumber(&hrng, &rand_val);
+  return (uint16_t)rand_val;
+#else /* HAL_RNG_MODULE_ENABLED */
+  // use the stdlib random generator; LCG algorithm by default:  rand_val = ((prev_rand_val * 1103515245U) + 12345U) & 0x7fffffff
+  return rand();
+#endif /* HAL_RNG_MODULE_ENABLED */
+}
+
+
+#ifdef HAL_RNG_MODULE_ENABLED
+uint32_t random_rand32(void)
+{
+  // use the true random number generator of the STM32L4
+  uint32_t rand_val = 0;
+  HAL_RNG_GenerateRandomNumber(&hrng, &rand_val);
+  return rand_val;
+}
+#endif /* HAL_RNG_MODULE_ENABLED */
+
+
+

@@ -21,6 +21,11 @@
 #define ABS(a)        ((a) >= 0 ? (a) : -(a))
 #endif /* ABS */
 
+#ifndef RAND
+#define RAND()        random_rand16()
+#endif /* RAND */
+
+
 #define IS_INTERRUPT()        ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0)
 
 #define SUSPEND_SYSTICK()     CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk)
@@ -50,5 +55,11 @@ void delay_us(volatile uint32_t us);
 
 bool swo_println(const char* str);
 bool swo_print(const char* str, uint32_t len);
+
+void     random_init(void);
+uint32_t random_rand16(void);        /* returns a 16-bit random number (c-lib) */
+#ifdef HAL_RNG_MODULE_ENABLED
+uint32_t random_rand32(void);        /* returns a 32-bit random number (only available if the hardware RNG is enabled) */
+#endif /* HAL_RNG_MODULE_ENABLED */
 
 #endif /* UTILS_MISC_H_ */

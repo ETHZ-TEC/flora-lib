@@ -52,7 +52,7 @@ void system_init(void)
 #endif /* CLI_ENABLE */
 
   /* set seed for random generator */
-  srand((unsigned int) hs_timer_get_current_timestamp() + NODE_ID);
+  random_init();
 
   /* configure interrupts */
 #ifndef DEVKIT
