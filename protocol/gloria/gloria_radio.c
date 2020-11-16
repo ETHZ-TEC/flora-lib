@@ -258,7 +258,10 @@ static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t r
     current_flood->crc_error = true;
     gloria_radio_continue_rx();
   }
-  else if (current_flood->pkt_filter && !current_flood->pkt_filter(payload, size)) {
+  // check packet type and apply user-defined packet filter
+  else if ((size >= current_flood->header_size) &&
+           ( (current_flood->header.type && (current_flood->header.type != ((gloria_header_t*)payload)->type)) ||
+             (current_flood->pkt_filter && !current_flood->pkt_filter(payload + current_flood->header_size, size - current_flood->header_size)) )) {
     gloria_radio_continue_rx();
   }
   else {

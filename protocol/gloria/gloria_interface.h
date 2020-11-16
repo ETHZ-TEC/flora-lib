@@ -50,7 +50,6 @@
  *       number but limits the Gloria round by calling gloria_stop().
  */
 #ifndef GLORIA_INTERFACE_MAX_SLOTS
-// #define GLORIA_INTERFACE_MAX_SLOTS          4
 #define GLORIA_INTERFACE_MAX_SLOTS          127
 #endif /* GLORIA_INTERFACE_MAX_SLOTS */
 
@@ -61,6 +60,14 @@
 #ifndef GLORIA_INTERFACE_DISABLE_INTERRUPTS
 #define GLORIA_INTERFACE_DISABLE_INTERRUPTS 1
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
+
+/**
+ * 7-bit type identifier, used to determine whether a received packet belongs
+ * to this protocol
+ */
+#ifndef GLORIA_INTERFACE_PKT_HDR_TYPE_ID
+#define GLORIA_INTERFACE_PKT_HDR_TYPE_ID    0x11
+#endif /* GLORIA_INTERFACE_PKT_HDR_TYPE_ID */
 
 /* CONFIG CHECKS **************************************************************/
 

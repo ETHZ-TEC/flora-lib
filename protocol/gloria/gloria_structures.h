@@ -12,7 +12,7 @@
 
 
 typedef void (* gloria_flood_cb_t)(void);
-typedef bool (* gloria_pkt_filter_cb_t)(void*, uint8_t);
+typedef bool (* gloria_pkt_filter_cb_t)(uint8_t*, uint8_t);
 
 typedef struct __attribute__((__packed__)) {
   uint8_t dst;

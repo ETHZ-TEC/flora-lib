@@ -105,9 +105,9 @@ void gloria_start(bool is_initiator,
   flood.node_id             = 0;      // unused
   flood.pkt_filter          = pkt_filter_cb;
 
-  flood.header.type       = 0;
-  flood.header.sync       = 0;  // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
-  flood.header.slot_index = 0;
+  flood.header.type         = GLORIA_INTERFACE_PKT_HDR_TYPE_ID;
+  flood.header.sync         = 0;      // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
+  flood.header.slot_index   = 0;
   // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
 
   if (is_initiator) {
