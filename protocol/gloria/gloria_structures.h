@@ -87,6 +87,6 @@ typedef struct {
 
 
 _Static_assert(sizeof(gloria_ack_message_t) == GLORIA_ACK_LENGTH, "gloria_ack_message_t is not GLORIA_ACK_LENGTH bytes in size!");
-_Static_assert(sizeof(gloria_header_t) == GLORIA_HEADER_LENGTH, "gloria_ack_message_t is not GLORIA_ACK_LENGTH bytes in size!");
+_Static_assert(sizeof(gloria_header_t) == GLORIA_HEADER_LENGTH, "gloria_header_t is not GLORIA_HEADER_LENGTH bytes in size!");
 
 #endif /* PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_ */
