@@ -28,8 +28,8 @@ typedef enum message_type{
 
 
 
-typedef struct dozer_header {
-    dozer_message_type_t type;  // type of the message payload
+typedef struct __attribute__((__packed__, __aligned__(1))) {
+    dozer_message_type_t type : 8;  // type of the message payload
     uint8_t source;      // message source / sender
     uint8_t dest;      // message destination
     uint8_t ack;      // the lsb is used to signal that an ack is requested; the second bit to signal that no more data messages will be sent
