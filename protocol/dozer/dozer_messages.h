@@ -15,24 +15,24 @@
 
 
 typedef enum message_type{
-    ACTIVATION_MSG     = 0x30,
-    ACK_MSG            = 0x40,
+    ACTIVATION_MSG     = 0x30 | PROTOCOL_ID_DOZER,
+    ACK_MSG            = 0x40 | PROTOCOL_ID_DOZER,
 
-    BEACON_MSG         = 0x50,
-    CONNECTION_REQ_MSG = 0x60,
-    HANDSHAKE_MSG      = 0x70,
-    
-    DATA_MSG           = 0x80,
-}message_type_t;
+    BEACON_MSG         = 0x50 | PROTOCOL_ID_DOZER,
+    CONNECTION_REQ_MSG = 0x60 | PROTOCOL_ID_DOZER,
+    HANDSHAKE_MSG      = 0x70 | PROTOCOL_ID_DOZER,
 
-
+    DATA_MSG           = 0x80 | PROTOCOL_ID_DOZER,
+} dozer_message_type_t;
 
 
-typedef struct dozer_header {
+
+
+typedef struct __attribute__((__packed__, __aligned__(1))) {
+    dozer_message_type_t type : 8;  // type of the message payload
     uint8_t source;      // message source / sender
     uint8_t dest;      // message destination
     uint8_t ack;      // the lsb is used to signal that an ack is requested; the second bit to signal that no more data messages will be sent
-    message_type_t type;  // type of the message payload
 } dozer_header_t;
 
 typedef struct dozer_metadata {

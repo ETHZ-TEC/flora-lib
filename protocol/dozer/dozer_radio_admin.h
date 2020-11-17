@@ -42,7 +42,7 @@ void receive_messages_to_buffer(uint8_t num, uint16_t id, uint16_t * _lastSeqNr)
 
 // overhearing functions
 // overhear params have to be set before start_overhearing
-void set_overhear_params(message_type_t oh_msg_type, uint32_t oh_time);
+void set_overhear_params(dozer_message_type_t oh_msg_type, uint32_t oh_time);
 void start_overhearing(uint8_t continued) ;
 void stop_overhearing();
 
