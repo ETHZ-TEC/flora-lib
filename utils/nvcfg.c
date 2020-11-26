@@ -101,6 +101,22 @@ bool nvcfg_save(const void* data)
   uint32_t addr  = NVCFG_MEM_ADDR;
   uint32_t tries = NVCFG_ERASE_RETRY;
 
+#if NVCFG_ONLY_SAVE_IF_CHANGED
+  /* before continuing, check whether the data has changed */
+  if (nvcfg_load(nvcfg_buffer)) {
+    uint32_t i;
+    for (i = 0; i < NVCFG_BLOCK_SIZE; i++) {
+      if (nvcfg_buffer[i] != ((uint8_t*)data)[i]) {
+        break;
+      }
+    }
+    if (i == NVCFG_BLOCK_SIZE) {
+      /* no difference detected -> skip save operation to reduce flash memory wear */
+      return true;
+    }
+  }
+#endif /* NVCFG_ONLY_SAVE_IF_CHANGED */
+
   /* find the first empty block in the reserved flash memory page */
   while ((addr + NVCFG_BLOCK_SIZE_WITH_CRC) <= (NVCFG_MEM_ADDR + NVCFG_MEM_SIZE) && ADDR_VAL16(addr) != (uint16_t)NVCFG_FLASH_EMPTY_VALUE) {
     addr += NVCFG_BLOCK_SIZE_WITH_CRC;

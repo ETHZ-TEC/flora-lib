@@ -32,6 +32,10 @@
 #define NVCFG_ERASE_RETRY  3
 #endif /* NVCFG_ERASE_RETRY */
 
+#ifndef NVCFG_ONLY_SAVE_IF_CHANGED
+#define NVCFG_ONLY_SAVE_IF_CHANGED  0       /* if set to 1, nvcfg_save() will only write the new config into the memory if it is different from the previous config */
+#endif /* NVCFG_ONLY_SAVE_IF_CHANGED */
+
 #if NVCFG_ERASE_RETRY == 0
 #error "NVCFG_ERASE_RETRY can't be zero"
 #endif
