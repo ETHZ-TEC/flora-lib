@@ -551,7 +551,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
 }
 
 
-void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint32_t time)
+void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint64_t time)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
