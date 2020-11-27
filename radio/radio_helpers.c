@@ -8,6 +8,7 @@
 #include "flora_lib.h"
 
 
+extern volatile bool radio_irq_direct;
 extern bool          cli_interactive_mode;
 extern SX126x_t      SX126x;
 extern const struct  Radio_s Radio;
@@ -30,6 +31,10 @@ radio_message_t* last_message_list = NULL;
 
 void radio_update_cli()
 {
+  if (!radio_irq_direct && cli_initialized) {
+    Radio.IrqProcess();
+  }
+
   radio_message_t* tmp = last_message_list;
 
   while (tmp != NULL) {
