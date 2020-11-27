@@ -92,7 +92,7 @@ void RadioSetGfskWhitening( uint8_t whitening );
 
 void SX126xInit( )
 {
-    //SX126xReset( );
+    SX126xReset( );
 
     SX126xWakeup( );
     SX126xSetStandby( STDBY_XOSC );

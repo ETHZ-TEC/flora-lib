@@ -65,26 +65,14 @@ static void radio_restore_config(void)
   radio_events.RxSync     = radio_rx_sync_cb;
   radio_events.RxPreamble = radio_rx_preamble_cb;
 
+  // note: Radio.Init() performs a hard reset of the SX1262 chip
   Radio.Init(&radio_events);
 }
 
 
 void radio_init(void)
 {
-  bool irq_set = RADIO_READ_DIO1_PIN();
-
-  if (!irq_set) {
-    radio_reset();
-  } else {
-    LOG_WARNING("radio reset skipped (DIO1 pin is high)");
-  }
-
   radio_restore_config();
-
-  if (irq_set) {
-    (*RadioOnDioIrqCallback)();
-    radio_process_irq_in_loop_once = true;
-  }
 
   hs_timer_capture(&radio_irq_capture_cb);
   radio_set_irq_direct(true);
