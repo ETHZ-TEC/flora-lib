@@ -13,11 +13,8 @@ extern const struct Radio_s Radio;
 extern radio_message_t* last_message_list;
 
 
-/* global state (shared) */
-volatile bool radio_irq_direct = false;
-volatile bool radio_process_irq_in_loop_once = false;
-
 /* internal state */
+static volatile bool              radio_irq_direct = false;
 static volatile radio_sleeping_t  radio_sleeping = false;
 static volatile lora_irq_mode_t   radio_mode;
 static volatile bool              radio_receive_continuous = false;

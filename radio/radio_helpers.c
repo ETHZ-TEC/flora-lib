@@ -8,10 +8,7 @@
 #include "flora_lib.h"
 
 
-extern volatile bool radio_process_irq_in_loop_once;
-extern volatile bool radio_irq_direct;
 extern bool          cli_interactive_mode;
-extern volatile bool cli_initialized;
 extern SX126x_t      SX126x;
 extern const struct  Radio_s Radio;
 
@@ -28,6 +25,24 @@ volatile static uint8_t current_modulation = 0;
 volatile static int32_t override_preamble_length = -1;
 volatile static uint8_t channel_free = 0;       // set in the CAD callback
 
+radio_message_t* last_message_list = NULL;
+
+
+void radio_update_cli()
+{
+  radio_message_t* tmp = last_message_list;
+
+  while (tmp != NULL) {
+    radio_message_t* tmp_next;
+    radio_print_message(tmp);
+    tmp_next = tmp->next;
+    free(tmp->payload);
+    free(tmp);
+    tmp = tmp_next;
+  }
+
+  last_message_list = NULL;
+}
 
 
 void radio_set_lora_syncword(radio_lora_syncword_t syncword)
