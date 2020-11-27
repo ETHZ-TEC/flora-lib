@@ -10,6 +10,7 @@
 
 extern volatile bool radio_irq_direct;
 extern bool          cli_interactive_mode;
+extern bool          cli_initialized;
 extern SX126x_t      SX126x;
 extern const struct  Radio_s Radio;
 

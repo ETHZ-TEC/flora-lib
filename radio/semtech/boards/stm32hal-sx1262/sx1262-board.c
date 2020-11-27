@@ -44,6 +44,7 @@ uint32_t SX126xGetBoardTcxoWakeupTime( void )
 
 void SX126xReset( void )
 {
+    delay_us(100);
     RADIO_CLR_NRESET_PIN();
     delay_us(200);
     RADIO_SET_NRESET_PIN();
