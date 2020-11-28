@@ -105,6 +105,10 @@ void SX126xInit( )
     SX126xCalibrate( calibParam );
 #endif
 
+    // adjust TX clamp config register to optimize the PA clamping threshold (workaround as described in the datasheet, p.103)
+    uint8_t txclampcfg = SX126xReadRegister(0x08D8);
+    SX126xWriteRegister(0x08D8, txclampcfg | 0x1E);
+
     SX126xSetDio2AsRfSwitchCtrl( true );
     OperatingMode = MODE_STDBY_XOSC;
 }

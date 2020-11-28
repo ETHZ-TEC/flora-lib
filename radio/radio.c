@@ -70,6 +70,9 @@ static void radio_restore_config(void)
 
 void radio_init(void)
 {
+  if (RADIO_READ_DIO1_PIN()) {
+    LOG_WARNING("SX1262 DIO1 pin is high");
+  }
   radio_restore_config();
 
   hs_timer_capture(&radio_irq_capture_cb);
