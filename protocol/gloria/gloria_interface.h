@@ -62,8 +62,9 @@
 #endif /* GLORIA_INTERFACE_MAX_SLOTS */
 
 /**
- * If set to 1, the initiator will append a hstimer timestamp at the end of a
- * packet.
+ * If set to 1, the initiator will append a Gloria timestamp at the end of a
+ * packet (GLORIA_TIMESTAMP_LENGTH bytes, hstimer timestamp divided by
+ * GLORIA_SCHEDULE_GRANULARITY).
  */
 #ifndef GLORIA_INTERFACE_APPEND_TIMESTAMP
 #define GLORIA_INTERFACE_APPEND_TIMESTAMP   0
@@ -301,7 +302,7 @@ int32_t gloria_get_snr();
 
 
 /**
- * \brief           Returns the last received hstimer timestamp
+ * \brief           Returns the last received Gloria timestamp
  * \param           buffer to hold the timestamp
  * \note            GLORIA_INTERFACE_APPEND_TIMESTAMP must be enabled
  */

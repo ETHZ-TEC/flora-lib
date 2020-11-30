@@ -18,8 +18,20 @@
 #define PROTOCOL_ID_DOZER                 0x2
 #define PROTOCOL_ID_CHAOS                 0x3
 
+#define PROTOCOL_ID_CUSTOM                0xc     /* reserved ID for user-defined protocols (not part of the Flora lib) -> each protocol must have a unique 4-bit sub-ID (see table below) */
+#define PROTOCOL_ID_CUSTOM2               0xd
+#define PROTOCOL_ID_CUSTOM3               0xe
+#define PROTOCOL_ID_CUSTOM4               0xf
+
 #define PROTOCOL_ID_MASK                  0x0f
 #define PROTOCOL_CHECK_ID(id, protocol)   (((id) & PROTOCOL_ID_MASK) == (PROTOCOL_ID_##protocol))
+
+
+/*
+ * list of custom protocols (defined in a user project) -> the upper 4 bits are used to differentiate them
+ * NOTE: register all user-defined protocols here that need to rely on a unique identifier on the lowest layer
+ */
+#define PROTOCOL_ID_CUSTOM_FT_DISCOVERY   (PROTOCOL_ID_CUSTOM + 0x10)         /* used in Fault Tolerance thesis project */
 
 
 #include "protocol/gloria/gloria.h"
