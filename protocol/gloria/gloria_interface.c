@@ -29,6 +29,9 @@ static uint8_t                internal_band = GLORIA_INTERFACE_RF_BAND;         
 static bool                   internal_enable_flood_printing = false;             // enable printing of finished (i.e. completely received/transmitted) floods
 static gloria_flood_cb_t      flood_cb = 0;                                       // user-defined callback; only called if flood participation terminates before gloria_stop() is called
 static gloria_pkt_filter_cb_t pkt_filter_cb = 0;                                  // a user-defined packet filter callback function
+#if GLORIA_INTERFACE_APPEND_TIMESTAMP
+static uint8_t               last_timestamp[GLORIA_TIMESTAMP_LENGTH];             // last received 64-bit hstimer timestamp
+#endif /* GLORIA_INTERFACE_APPEND_TIMESTAMP */
 
 /* variables to store gloria_start arguments */
 static uint16_t               arg_is_initiator = 0;                               // ID of the inititator
@@ -99,14 +102,14 @@ void gloria_start(bool is_initiator,
   flood.ack_mode            = 0;
   flood.max_acks            = 0;
   flood.data_slots          = GLORIA_INTERFACE_MAX_SLOTS;
-  flood.sync_timer          = 0;
+  flood.sync_timer          = 0;      // do not automatically adjust the hs timer offset
   flood.lp_listening        = false;
   flood.radio_no_sleep      = true;
   flood.node_id             = 0;      // unused
   flood.pkt_filter          = pkt_filter_cb;
 
   flood.header.type         = 0;
-  flood.header.sync         = 0;      // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
+  flood.header.sync         = (GLORIA_INTERFACE_APPEND_TIMESTAMP != 0);   // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
   flood.header.slot_index   = 0;
   // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
 
@@ -183,6 +186,11 @@ uint8_t gloria_stop(void)
     } else {
       lastrun_n_rx_started = radio_get_sync_counter();
     }
+
+  #if GLORIA_INTERFACE_APPEND_TIMESTAMP
+    // the timestamp is stored in the receive buffer after the actual payload
+    memcpy(&last_timestamp, flood.payload + flood.payload_size, GLORIA_TIMESTAMP_LENGTH);
+  #endif /* GLORIA_INTERFACE_APPEND_TIMESTAMP */
 
     // DEBUG: print flood struct
     if (internal_enable_flood_printing) {
@@ -338,6 +346,18 @@ void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb)
 {
   pkt_filter_cb = filter_cb;
 }
+
+
+#if GLORIA_INTERFACE_APPEND_TIMESTAMP
+
+void gloria_get_received_timestamp(uint8_t* out_timestamp)
+{
+  if (out_timestamp) {
+    memcpy(out_timestamp, &last_timestamp, GLORIA_TIMESTAMP_LENGTH);
+  }
+}
+
+#endif /* GLORIA_INTERFACE_APPEND_TIMESTAMP */
 
 
 
