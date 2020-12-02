@@ -21,6 +21,11 @@
  * \author    Gregory Cristian ( Semtech )
  */
 
+/*
+ * reference implementation is available at https://github.com/Lora-net/LoRaMac-node/blob/master/src/radio/sx126x/radio.c
+ */
+
+
 #include "flora_lib.h"
 
 TimerEvent_t RxTimeoutTimer = {.Timestamp = 0, .ReloadValue = 0, .IsRunning = false, .Callback = NULL};
@@ -1102,7 +1107,7 @@ void RadioSleep( void )
     params.Fields.WarmStart = 1;
     SX126xSetSleep( params );
 
-    // delay_us(2); // time required to put radio into sleep state (no other command is allowed during this time) -> ensure with other means
+    delay_us(600); // at least 500us required to put radio into sleep state (see datasheet p.67)
 }
 
 void RadioColdSleep( void )
@@ -1112,7 +1117,7 @@ void RadioColdSleep( void )
     params.Fields.WarmStart = 0;
     SX126xSetSleep( params );
 
-    // delay_us(2); // time required to put radio into sleep state (no other command is allowed during this time) -> ensure with other means
+    delay_us(600); // at least 500us required to put radio into sleep state (see datasheet p.67)
 }
 
 void RadioStandby( void )
