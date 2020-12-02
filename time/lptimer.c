@@ -57,10 +57,10 @@ uint32_t lptimer_seconds(void)
 
 void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
 {
-  lptimer_cb  = cb;
+  lptimer_cb  = 0;
   lptimer_exp = t_exp;
 
-  if (t_exp != 0 && cb) {
+  if (cb) {
 
 #if LPTIMER_CHECK_EXP_TIME
     uint64_t curr_timestamp = lptimer_now();
@@ -82,6 +82,8 @@ void lptimer_set(uint64_t t_exp, lptimer_cb_func_t cb)
     __HAL_LPTIM_COMPARE_SET(&hlptim1, (uint16_t)t_exp);
     while (!__HAL_LPTIM_GET_FLAG(&hlptim1, LPTIM_FLAG_CMPOK));    /* wait until compare register set */
     __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_FLAG_CMPOK);
+
+    lptimer_cb = cb;
   }
 }
 
