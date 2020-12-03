@@ -184,7 +184,7 @@ static void gloria_radio_setup_callback() {
     radio_set_irq_mode(IRQ_MODE_TX);
     radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
     radio_set_payload_chunk((uint8_t*)&current_flood->header, 0, current_flood->header_size, false);
-    radio_set_payload_chunk((uint8_t*)current_flood->payload, current_flood->header_size, current_flood->payload_size, true);
+    radio_set_payload_chunk((uint8_t*)current_flood->payload, current_flood->header_size, current_flood->payload_size + current_flood->header.sync * GLORIA_TIMESTAMP_LENGTH, true);
     radio_set_tx_callback(&gloria_radio_tx_callback);
     radio_set_tx(current_flood->current_tx_marker);
     break;
