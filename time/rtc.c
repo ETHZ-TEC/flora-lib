@@ -104,7 +104,7 @@ uint32_t rtc_shift(int32_t offset_ms, bool block_until_rtc_updated)
     delay_us(offset_ms * 1000);
   }
 
-  LOG_VERBOSE("RTC shifted by %dms", offset_ms);
+  //LOG_VERBOSE("RTC shifted by %dms", offset_ms);
 
   return offset_ms;
 }
@@ -287,6 +287,14 @@ void rtc_get_time(uint32_t* hour, uint32_t* minute, uint32_t* second)
 }
 
 
+/* current daytime in seconds since midnight */
+uint32_t rtc_get_daytime_sec(void)
+{
+  rtc_update_datetime();
+  return (uint32_t)rtc_time.Hours * 3600 + (uint32_t)rtc_time.Minutes * 60 + (uint32_t)rtc_time.Seconds;
+}
+
+
 uint32_t rtc_get_unix_timestamp(void)
 {
   rtc_update_datetime();
@@ -412,6 +420,28 @@ bool rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void
     return true;
   }
   return false;
+}
+
+
+/* returns the time to the next scheduled 'daytime' alarm in seconds, or 0 in case no alarm is active or an error occurred */
+uint32_t rtc_time_to_next_alarm(void)
+{
+  RTC_AlarmTypeDef alarm;
+
+  if ((hrtc.Instance->CR & RTC_CR_ALRAE) == 0 || (hrtc.Instance->CR & RTC_IT_ALRA) == 0) {
+    return -1;      // no alarm scheduled
+  }
+
+  if (HAL_RTC_GetAlarm(&hrtc, &alarm, RTC_ALARM_A, RTC_FORMAT_BIN) != HAL_OK) {
+    return -1;
+  }
+
+  uint32_t next_alarm = (uint32_t)alarm.AlarmTime.Hours * 3600 + (uint32_t)alarm.AlarmTime.Minutes * 60 + (uint32_t)alarm.AlarmTime.Seconds;
+  uint32_t curr_time  = rtc_get_daytime_sec();
+  if (curr_time >= next_alarm) {
+    next_alarm += (24*3600);
+  }
+  return next_alarm - curr_time;
 }
 
 
