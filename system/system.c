@@ -147,7 +147,7 @@ void system_reset_into_bootloader(void)
   HAL_NVIC_SystemReset();
 }
 
-const char* system_get_reset_cause(uint32_t* out_reset_flag)
+const char* system_get_reset_cause(uint8_t* out_reset_flag)
 {
   static uint_fast8_t reset_flag = 0;
 
