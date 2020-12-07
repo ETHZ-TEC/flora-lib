@@ -32,7 +32,7 @@
 #define RADIO_NUM_CAD_PARAMS  8
 
 #ifndef US915
-#define RADIO_DEFAULT_BAND 48
+#define RADIO_DEFAULT_BAND 40
 #else
 #define RADIO_DEFAULT_BAND 0
 #endif

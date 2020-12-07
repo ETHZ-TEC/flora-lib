@@ -33,7 +33,7 @@
  * configurations in radio_constants.c
  */
 #ifndef GLORIA_INTERFACE_MODULATION
-#define GLORIA_INTERFACE_MODULATION         3
+#define GLORIA_INTERFACE_MODULATION         10
 #endif /* GLORIA_INTERFACE_MODULATION */
 
 /**
