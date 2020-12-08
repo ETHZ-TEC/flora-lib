@@ -263,7 +263,7 @@ void RadioStartCad( void );
  * \param [IN]: power      Sets the output power [dBm]
  * \param [IN]: time       Transmission mode timeout [s]
  */
-void RadioSetTxContinuousWave( uint32_t freq, int8_t power, uint16_t time );
+void RadioSetTxContinuousWave( uint32_t freq, int8_t power, uint32_t time );
 
 /*!
  * \brief Set the trim values for the XOSC (external XTAL)
@@ -539,7 +539,7 @@ static RadioEvents_t* RadioEvents;
 SX126x_t SX126x;
 
 
-static void StartTimer(TimerEvent_t* timer, uint16_t timeout)
+static void StartTimer(TimerEvent_t* timer, uint32_t timeout)
 {
     if(timeout > 0)
     {
@@ -765,7 +765,6 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
 
         case MODEM_LORA:
             SX126xSetStopRxTimerOnPreambleDetect( false );
-            SX126xSetLoRaSymbNumTimeout( symbTimeout );
             SX126x.ModulationParams.PacketType = PACKET_TYPE_LORA;
             SX126x.ModulationParams.Params.LoRa.SpreadingFactor = ( RadioLoRaSpreadingFactors_t )datarate;
             SX126x.ModulationParams.Params.LoRa.Bandwidth = Bandwidths[bandwidth];
@@ -813,6 +812,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             RadioSetModem( ( SX126x.ModulationParams.PacketType == PACKET_TYPE_GFSK ) ? MODEM_FSK : MODEM_LORA );
             SX126xSetModulationParams( &SX126x.ModulationParams );
             SX126xSetPacketParams( &SX126x.PacketParams );
+            SX126xSetLoRaSymbNumTimeout( symbTimeout );
 
             // Timeout Max, Timeout handled directly in SetRx function
             RxTimeout = 0x0;
@@ -1196,13 +1196,13 @@ void RadioTx( uint32_t timeout )
     SX126xSetTx( timeout << 6 );
 }
 
-void RadioSetTxContinuousWave( uint32_t freq, int8_t power, uint16_t time )
+void RadioSetTxContinuousWave( uint32_t freq, int8_t power, uint32_t time )
 {
     SX126xSetRfFrequency( freq );
     SX126xSetRfTxPower( power );
     SX126xSetTxContinuousWave( );
 
-    StartTimer(&TxTimeoutTimer, time * 1E3);
+    StartTimer(&TxTimeoutTimer, (uint32_t)time * 1000);
 }
 
 void RadioSetXoscTrim( void )
@@ -1353,7 +1353,7 @@ void RadioIrqProcess( void )
         CRITICAL_SECTION_END( );
 
         uint16_t irqRegs = SX126xGetIrqStatus( );
-        SX126xClearIrqStatus( IRQ_RADIO_ALL );
+        SX126xClearIrqStatus( irqRegs );
 
         if( ( irqRegs & IRQ_TX_DONE ) == IRQ_TX_DONE )
         {

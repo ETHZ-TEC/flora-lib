@@ -333,7 +333,7 @@ struct Radio_s
      * \param [IN]: power      Sets the output power [dBm]
      * \param [IN]: time       Transmission mode timeout [s]
      */
-    void    ( *SetTxContinuousWave )( uint32_t freq, int8_t power, uint16_t time );
+    void    ( *SetTxContinuousWave )( uint32_t freq, int8_t power, uint32_t time );
     /*!
      * \brief Reads the current RSSI value
      *
