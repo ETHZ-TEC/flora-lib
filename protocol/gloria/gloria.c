@@ -105,6 +105,10 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
   current_flood->crc_error = false;
   current_flood->crc_timeout = false;
 
+  // set radio config
+  radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
+  radio_set_config_rx(current_flood->modulation, current_flood->band, -1, -1, -1, 0, false, 0, true, false);
+
   gloria_process_slot();
 }
 
