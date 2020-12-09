@@ -28,8 +28,6 @@
 
 #include "flora_lib.h"
 
-TimerEvent_t RxTimeoutTimer = {.Timestamp = 0, .ReloadValue = 0, .IsRunning = false, .Callback = NULL};
-TimerEvent_t TxTimeoutTimer = {.Timestamp = 0, .ReloadValue = 0, .IsRunning = false, .Callback = NULL};
 
 uint8_t MaxPayloadRead = 0xFF;
 
@@ -237,19 +235,15 @@ void RadioStandby( void );
 
 /*!
  * \brief Sets the radio in reception mode for the given time
- * \param [IN] timeout Reception timeout [ms]
- *                     [0: continuous, others timeout]
  */
-void RadioRx( uint32_t timeout );
+void RadioRx( );
 
 /*!
  * \brief Sets the radio in reception mode for the given time with configuring
  *        the radio interrupts by the mask
- * \param [IN] timeout Reception timeout [ms]
- *                     [0: continuous, others timeout]
  * \param [IN] mask Mask to enable/disable radio interrupts
  */
-void RadioRxMask( uint32_t timeout, uint16_t mask );
+void RadioRxMask( uint16_t mask );
 
 /*!
  * \brief Start a Channel Activity Detection
@@ -261,9 +255,8 @@ void RadioStartCad( void );
  *
  * \param [IN]: freq       Channel RF frequency
  * \param [IN]: power      Sets the output power [dBm]
- * \param [IN]: time       Transmission mode timeout [s]
  */
-void RadioSetTxContinuousWave( uint32_t freq, int8_t power, uint32_t time );
+void RadioSetTxContinuousWave( uint32_t freq, int8_t power );
 
 /*!
  * \brief Set the trim values for the XOSC (external XTAL)
@@ -363,18 +356,14 @@ void RadioIrqProcess( void );
 
 /*!
  * \brief Sets the radio in reception mode with Max LNA gain for the given time
- * \param [IN] timeout Reception timeout [ms]
- *                     [0: continuous, others timeout]
  */
-void RadioRxBoosted( uint32_t timeout );
+void RadioRxBoosted( );
 
 /*!
  * \brief Sets the radio in reception mode with Max LNA gain for the given time
- * \param [IN] timeout Reception timeout [ms]
- *                     [0: continuous, others timeout]
  * \param [IN] mask    Mask to enable/disable radio interrupts
  */
-void RadioRxBoostedMask( uint32_t timeout, uint16_t mask );
+void RadioRxBoostedMask( uint16_t mask );
 
 /*!
  * \brief Sets the Rx duty cycle management parameters
@@ -539,21 +528,6 @@ static RadioEvents_t* RadioEvents;
 SX126x_t SX126x;
 
 
-static void StartTimer(TimerEvent_t* timer, uint32_t timeout)
-{
-    if(timeout > 0)
-    {
-        timer->Timestamp = 0;
-        timer->ReloadValue = timeout;
-        timer->IsRunning = true;
-    }
-    else
-    {
-        timer->IsRunning = false;
-    }
-}
-
-
 /*!
  * Returns the known FSK bandwidth registers value
  *
@@ -593,11 +567,6 @@ void RadioInit( RadioEvents_t *events )
     SX126xSetBufferBaseAddress( 0x00, 0x00 );
     SX126xSetTxParams( 0, RADIO_RAMP_200_US );
     SX126xSetDioIrqParams( IRQ_RADIO_ALL, IRQ_RADIO_ALL, IRQ_RADIO_NONE, IRQ_RADIO_NONE );
-
-    // Initialize driver timeout timers
-    RxTimeoutTimer.Callback = &RadioOnRxTimeoutIrq;
-    TxTimeoutTimer.Callback = &RadioOnRxTimeoutIrq;
-
 
     IrqFired = false;
 }
@@ -1097,7 +1066,6 @@ void RadioSend( uint8_t *buffer, uint8_t size )
     }
     SX126xSetPacketParams( &SX126x.PacketParams );
     SX126xSendPayload( buffer, size, 0 );
-    StartTimer(&TxTimeoutTimer, TxTimeout);
 }
 
 void RadioSleep( void )
@@ -1126,22 +1094,17 @@ void RadioStandby( void )
     SX126xSetStandby( STDBY_XOSC );
 }
 
-void RadioRx( uint32_t timeout )
+void RadioRx( )
 {
-    RadioRxMask( timeout, (IRQ_RADIO_ALL) );
+    RadioRxMask( (IRQ_RADIO_ALL) );
 }
 
-void RadioRxMask( uint32_t timeout, uint16_t mask )
+void RadioRxMask( uint16_t mask )
 {
     SX126xSetDioIrqParams( mask,
                            mask,
                            IRQ_RADIO_NONE,
                            IRQ_RADIO_NONE );
-
-    if( timeout != 0 )
-    {
-      StartTimer(&RxTimeoutTimer, timeout);
-    }
 
     if( RxContinuous == true )
     {
@@ -1153,21 +1116,17 @@ void RadioRxMask( uint32_t timeout, uint16_t mask )
     }
 }
 
-void RadioRxBoosted( uint32_t timeout )
+void RadioRxBoosted( )
 {
-    RadioRxBoostedMask(timeout, (IRQ_RADIO_ALL) );
+    RadioRxBoostedMask( (IRQ_RADIO_ALL) );
 }
 
-void RadioRxBoostedMask( uint32_t timeout, uint16_t mask )
+void RadioRxBoostedMask( uint16_t mask )
 {
     SX126xSetDioIrqParams( mask,
                            mask,
                            IRQ_RADIO_NONE,
                            IRQ_RADIO_NONE );
-    if( timeout != 0 )
-    {
-      StartTimer(&RxTimeoutTimer, timeout);
-    }
 
     if( RxContinuous == true )
     {
@@ -1196,13 +1155,11 @@ void RadioTx( uint32_t timeout )
     SX126xSetTx( timeout << 6 );
 }
 
-void RadioSetTxContinuousWave( uint32_t freq, int8_t power, uint32_t time )
+void RadioSetTxContinuousWave( uint32_t freq, int8_t power )
 {
     SX126xSetRfFrequency( freq );
     SX126xSetRfTxPower( power );
     SX126xSetTxContinuousWave( );
-
-    StartTimer(&TxTimeoutTimer, (uint32_t)time * 1000);
 }
 
 void RadioSetXoscTrim( void )
@@ -1357,7 +1314,6 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_TX_DONE ) == IRQ_TX_DONE )
         {
-            RxTimeoutTimer.IsRunning = false;
             if( ( RadioEvents != NULL ) && ( RadioEvents->TxDone != NULL ) )
             {
                 RadioEvents->TxDone( );
@@ -1386,7 +1342,6 @@ void RadioIrqProcess( void )
 
             uint8_t size;
 
-            RxTimeoutTimer.IsRunning = false;
             SX126xGetPayload( RadioRxPayload, &size , MaxPayloadRead );
             SX126xGetPacketStatus( &RadioPktStatus );
             if( ( RadioEvents != NULL ) && ( RadioEvents->RxDone != NULL ) )
@@ -1415,7 +1370,6 @@ void RadioIrqProcess( void )
         {
             if( ( irqRegs & IRQ_RX_DONE ) != IRQ_RX_DONE )
             {
-                RxTimeoutTimer.IsRunning = false;
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
                 {
                     RadioEvents->RxError( );
@@ -1435,7 +1389,6 @@ void RadioIrqProcess( void )
         {
             if( SX126xGetOperatingMode( ) == MODE_TX )
             {
-                TxTimeoutTimer.IsRunning = true;
                 if( ( RadioEvents != NULL ) && ( RadioEvents->TxTimeout != NULL ) )
                 {
                     RadioEvents->TxTimeout( );
@@ -1443,7 +1396,6 @@ void RadioIrqProcess( void )
             }
             else if( SX126xGetOperatingMode( ) == MODE_RX )
             {
-                RxTimeoutTimer.IsRunning = false;
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxTimeout != NULL ) )
                 {
                     RadioEvents->RxTimeout( );
