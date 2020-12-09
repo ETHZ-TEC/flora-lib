@@ -5,6 +5,7 @@
 
 const radio_config_t radio_modulations[RADIO_NUM_MODULATIONS] =
 {
+    // NOTE: bandwidth is the DSB
         {   // 0
             .modem = MODEM_LORA,
             .bandwidth = 0,

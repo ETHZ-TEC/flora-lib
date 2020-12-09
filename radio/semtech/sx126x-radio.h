@@ -169,7 +169,7 @@ struct Radio_s
      * \brief Sets the reception parameters
      *
      * \param [IN] modem        Radio modem to be used [0: FSK, 1: LoRa]
-     * \param [IN] bandwidth    Sets the bandwidth
+     * \param [IN] bandwidth    Sets the bandwidth (DSB)
      *                          FSK : >= 2600 and <= 250000 Hz
      *                          LoRa: [0: 125 kHz, 1: 250 kHz,
      *                                 2: 500 kHz, 3: Reserved]
