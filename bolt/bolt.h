@@ -32,8 +32,8 @@
 
 /* interface to SPI HAL functions */
 #ifndef BOLT_SPI_WRITE
-#define BOLT_SPI_WRITE(data, len)       HAL_SPI_Transmit(&hspi1, data, len, pdMS_TO_TICKS(10))
-#define BOLT_SPI_READ(data, len)        HAL_SPI_Receive(&hspi1, data, len, pdMS_TO_TICKS(10))
+#define BOLT_SPI_WRITE(data, len)       HAL_SPI_Transmit(&hspi1, data, len, pdMS_TO_TICKS(10))        /* SPI transmit function, must return 0 on success */
+#define BOLT_SPI_READ(data, len)        HAL_SPI_Receive(&hspi1, data, len, pdMS_TO_TICKS(10))         /* SPI receive function, must return 0 on success */
 #endif /* BOLT_SPI_WRITE */
 
 #define BOLT_DATA_AVAILABLE             (PIN_GET(BOLT_IND) != 0)
