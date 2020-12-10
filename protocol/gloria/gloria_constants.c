@@ -69,14 +69,14 @@ const gloria_timings_t gloria_timings[] = {
     { // 8 (FSK 125k)
         .slotOverhead = 28000, // 3.5 ms (adapted by kelmicha)
         .slotAckOverhead = 28000, // 3.5 ms (adapted by kelmicha)
-        .floodInitOverhead = 14263, // 1.783 ms
+        .floodInitOverhead = 16800, // 2.1 ms
         .rxOffset = 4096, // 512.000 us
         .txSync = 4137, // 517.125 us (updated 20200812)
     },
     { // 9 (FSK 200k)
         .slotOverhead = 26400, // 3.3 ms (adapted by kelmicha)
         .slotAckOverhead = 26400, // 3.3 ms (adapted by kelmicha)
-        .floodInitOverhead = 14263, // 1.783 ms
+        .floodInitOverhead = 16800, // 2.1 ms
         .rxOffset = 2560, // 320.000 us
         // .txSync = 3206, // 400.75 us (adapted by kelmicha)
         .txSync = 3034, // 379.25 us (updated 20200812)
@@ -84,7 +84,7 @@ const gloria_timings_t gloria_timings[] = {
     { // 10 (FSK 250k)
         .slotOverhead = 26400, // 3.3 ms (copied from 9)
         .slotAckOverhead = 26400, // 3.3 ms (copied from 9)
-        .floodInitOverhead = 14263, // 1.783 ms (copy from 9)
+        .floodInitOverhead = 16800, // 2.1 ms (copy from 9)
         .rxOffset = 2560, // 320.000 us (copy from 9)
         .txSync = 3140, // 392.5 us (updated 20200814)
     },
