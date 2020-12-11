@@ -54,47 +54,31 @@ uart_fifo_t* uart_rx()
 }
 
 
-uint32_t uart_tx(char* buffer, uint32_t size)
+bool uart_tx(char* buffer, uint32_t size)
 {
-  if(uart_initialized && size)
-  {
-    while (size)
-    {
+  if(uart_initialized && size) {
+    while (size) {
       uint16_t processable_size = (UART_FIFO_BUFFER_SIZE - tx_fifo.item_count);
-      processable_size = (processable_size > size) ? size : processable_size;
-
-      if (processable_size)
-      {
-        if ((tx_fifo.set_pointer + processable_size) > UART_FIFO_BUFFER_SIZE) {
-          void* copy_dst = (void*) tx_fifo.buffer + tx_fifo.set_pointer;
-          uint16_t copy_size = UART_FIFO_BUFFER_SIZE - tx_fifo.set_pointer;
-          memcpy(copy_dst, (void*) buffer, copy_size);
-
-          size -= copy_size;
-          buffer += copy_size;
-          tx_fifo.item_count += copy_size;
-          tx_fifo.set_pointer = 0;
-        }
-        else {
-          void* copy_dst = (void*) tx_fifo.buffer + tx_fifo.set_pointer;
-          memcpy(copy_dst, (void*) buffer, processable_size);
-
-          size -= processable_size;
-          buffer += processable_size;
-          tx_fifo.item_count += processable_size;
-          tx_fifo.set_pointer = (tx_fifo.set_pointer + processable_size) % UART_FIFO_BUFFER_SIZE;
-        }
+      if (processable_size > size) {
+        processable_size = size;
       }
+      if (processable_size) {
+        if ((tx_fifo.set_pointer + processable_size) > UART_FIFO_BUFFER_SIZE) {
+          processable_size = UART_FIFO_BUFFER_SIZE - tx_fifo.set_pointer;
+        }
+        memcpy((void*) tx_fifo.buffer + tx_fifo.set_pointer, (void*) buffer, processable_size);
+        tx_fifo.set_pointer = (tx_fifo.set_pointer + processable_size) % UART_FIFO_BUFFER_SIZE;
+        size               -= processable_size;
+        buffer             += processable_size;
+        tx_fifo.item_count += processable_size;
 
-      uart_tx_fifo_send();
+        uart_tx_fifo_send();
+      }
     }
+    return true;
 
-    return 0;
-
-  }
-  else
-  {
-    return 0;
+  } else {
+    return false;
   }
 }
 
@@ -106,7 +90,7 @@ bool uart_tx_direct(char* buffer, uint32_t size)
 
 void uart_tx_fifo_send(void)
 {
-  if (tx_fifo.item_count)
+  if (tx_fifo.item_count && !tx_fifo.dma_transfer_count)
   {
     uint16_t processable_size;
     if ((tx_fifo.get_pointer + tx_fifo.item_count) >= UART_FIFO_BUFFER_SIZE) {
@@ -165,9 +149,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     tx_fifo.get_pointer = (tx_fifo.get_pointer + tx_fifo.dma_transfer_count) % UART_FIFO_BUFFER_SIZE;
     tx_fifo.item_count -= tx_fifo.dma_transfer_count;
     tx_fifo.dma_transfer_count = 0;
-
-    if (tx_fifo.item_count)
-      uart_tx_fifo_send();
+    uart_tx_fifo_send();
   }
 
   return;

@@ -20,7 +20,7 @@
 #define LOG_LEVEL               LOG_LEVEL_INFO
 #endif /* LOG_LEVEL */
 
-/* whether to print immediately or postpone it (write to intermediate buffer) */
+/* whether to print immediately or postpone it (write to intermediate buffer) -> has no effect if LOG_USE_DMA is enabled */
 #ifndef LOG_PRINT_IMMEDIATELY
 #define LOG_PRINT_IMMEDIATELY   0
 #endif /* LOG_PRINT_IMMEDIATELY */
@@ -54,9 +54,17 @@
 #define LOG_LINE_LENGTH         256
 #endif /* LOG_LINE_LENGTH */
 
+#ifndef LOG_USE_DMA
+#define LOG_USE_DMA             0
+#endif /* LOG_USE_DMA */
+
 /* the actual print function to use, must take 2 arguments (str and length) and return a boolean value (true = success, false = failed) */
 #ifndef LOG_PRINT_FUNC
-#define LOG_PRINT_FUNC          uart_tx_direct
+ #if LOG_USE_DMA
+  #define LOG_PRINT_FUNC          uart_tx
+ #else /* LOG_USE_DMA */
+  #define LOG_PRINT_FUNC          uart_tx_direct
+ #endif /* LOG_USE_DMA */
 #endif /* LOG_PRINT_FUNC */
 
 #ifndef LOG_NEWLINE

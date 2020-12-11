@@ -34,7 +34,7 @@ bool uart_tx_fifo_empty(void);
 /*
  * Write asynchronously to TX buffer using DMA
  */
-uint32_t uart_tx(char* buffer, uint32_t size);
+bool uart_tx(char* buffer, uint32_t size);
 
 /*
  * Write synchronously to the UART device (blocking call)
