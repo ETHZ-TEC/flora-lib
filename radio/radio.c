@@ -284,10 +284,9 @@ void radio_timeout_cb(void)
   radio_rx_callback = 0;
 
   if (radio_timeout_callback) {
-      void (*tmp)(bool) = radio_timeout_callback;
-      radio_set_timeout_callback(NULL);
+      radio_timeout_cb_t tmp = radio_timeout_callback;
+      radio_timeout_callback = 0;
       radio_standby();
-
       if(tmp) {
         tmp(false);
     }
@@ -307,16 +306,15 @@ void radio_cad_done_cb(bool detected)
 {
   if (radio_cad_callback) {
     radio_set_timeout_callback(NULL);
-    void (*tmp)(bool) = radio_cad_callback;
-    radio_set_cad_callback(NULL);
+    radio_cad_cb_t tmp = radio_cad_callback;
+    radio_cad_callback = 0;
     if(tmp) {
       tmp(detected);
     }
   }
   else if (radio_timeout_callback && !detected) {
-    void (*tmp)(bool) = radio_timeout_callback;
-    radio_set_timeout_callback(NULL);
-
+    radio_timeout_cb_t tmp = radio_timeout_callback;
+    radio_timeout_callback = 0;
     if(tmp) {
       tmp(false);
     }
@@ -467,9 +465,8 @@ void radio_tx_done_cb(void)
 
   radio_set_timeout_callback(NULL);
 
-  void (*tmp)() = radio_tx_callback;
-  radio_set_tx_callback(NULL);
-
+  radio_tx_cb_t tmp = radio_tx_callback;
+  radio_tx_callback = 0;
   if (tmp) {
     tmp();
   }
@@ -481,9 +478,8 @@ void radio_tx_timeout_cb(void)
   RADIO_TX_STOP_IND();
   dcstat_stop(&radio_dc_tx);
 
-  void (*tmp)(bool) = radio_timeout_callback;
-  radio_set_timeout_callback(NULL);
-
+  radio_timeout_cb_t tmp = radio_timeout_callback;
+  radio_timeout_callback = 0;
   if (tmp) {
     tmp(false);
   }
