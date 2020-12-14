@@ -4,8 +4,6 @@
 #define RADIO_RADIO_CONSTANTS_H_
 
 
-#define HS_TIMER_SCHEDULE_MARGIN 800 // 100.000 us
-
 // SX1262 Timings from datasheet in us
 #define RADIO_TIME_SLEEP_COLD_TO_STBY   3500 // cold start (no data retention)
 #define RADIO_TIME_SLEEP_WARM_TO_STBY   340 // warm start (with data retention)
@@ -51,8 +49,6 @@ typedef enum
   LORA_SYNCWORD_PRIVATE = LORA_MAC_PRIVATE_SYNCWORD,
   LORA_SYNCWORD_PERMASENSE = (LORA_MAC_PUBLIC_SYNCWORD ^ 0xdada)
 } radio_lora_syncword_t;
-
-#define RADIO_FSK_SYNCWORD ( uint8_t[] ){ 0x45, 0x54, 0x0x48, 0x00, 0x00, 0x00, 0x00, 0x00 } // "ETH"
 
 typedef struct
 {
