@@ -67,8 +67,7 @@ uint64_t hs_timer_now();
 
 void hs_timer_capture(void (*callback));
 void hs_timer_schedule(uint64_t timestamp, void (*callback)());
-void hs_timer_timeout(uint64_t offset, void (*callback));
-void hs_timer_timeout_start(uint64_t compare_timestamp);
+void hs_timer_timeout(uint64_t timeout, void (*callback));
 void hs_timer_generic(uint64_t timestamp, void (*callback)());
 
 void hs_timer_schedule_stop();

@@ -1244,10 +1244,10 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
   if (!count) {
     if (execute_offset) {
       if (compare) {
-        radio_receive_and_execute(boost, hs_timer_get_compare_timestamp() + execute_offset);
+        radio_receive_scheduled(boost, hs_timer_get_compare_timestamp() + execute_offset);
       }
       else {
-        radio_receive_and_execute(boost, hs_timer_get_current_timestamp() + execute_offset);
+        radio_receive_scheduled(boost, hs_timer_get_current_timestamp() + execute_offset);
       }
 
       if (cli_interactive_mode) {

@@ -87,18 +87,22 @@ uint8_t radio_get_payload_size()
 
 void radio_set_payload(uint8_t* buffer, uint8_t size)
 {
-  radio_set_packet_params_and_size(size);
-  SX126xWriteBuffer(0, buffer, size);
+  if (buffer && size) {
+    radio_set_packet_params_and_size(size);
+    SX126xWriteBuffer(0, buffer, size);
+  }
 }
 
 
 // the last chunk of the payload must be the one with the largest offset
 void radio_set_payload_chunk(uint8_t* buffer, uint8_t offset, uint8_t size, bool last_chunk)
 {
-  if (last_chunk) {
-    radio_set_packet_params_and_size(offset + size);
+  if (buffer && size) {
+    if (last_chunk) {
+      radio_set_packet_params_and_size(offset + size);
+    }
+    SX126xWriteBuffer(offset, buffer, size);
   }
-  SX126xWriteBuffer(offset, buffer, size);
 }
 
 
@@ -323,6 +327,7 @@ void radio_set_config_rxtx(bool lora_mode,
 }
 
 
+// calculate the RX timeout in hs ticks
 uint32_t radio_calculate_timeout(bool preamble)
 {
   if (preamble) {
@@ -339,6 +344,7 @@ uint32_t radio_calculate_timeout(bool preamble)
 }
 
 
+// symbol TOA in hs ticks
 uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation)
 {
   if (modulation >= RADIO_NUM_MODULATIONS) return 0;

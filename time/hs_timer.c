@@ -39,7 +39,7 @@ static uint32_t hs_timer_timeout_counter_extension  = 0;
 static uint32_t hs_timer_generic_counter_extension  = 0;
 #endif /* BOLT_ENABLE */
 
-static uint64_t timeout_offset        = 0;
+static uint64_t timeout_timestamp = 0;
 
 
 #if DOZER_ENABLE
@@ -300,7 +300,7 @@ void hs_timer_capture(void (*callback))
 }
 
 
-void hs_timer_schedule(uint64_t timestamp, void (*callback)())
+void hs_timer_schedule_start(uint64_t timestamp, void (*callback)())
 {
   uint64_t now = hs_timer_get_current_timestamp();
 
@@ -324,19 +324,17 @@ void hs_timer_schedule(uint64_t timestamp, void (*callback)())
 }
 
 
-void hs_timer_timeout(uint64_t offset, void (*callback))
+void hs_timer_timeout(uint64_t timeout, void (*callback))
 {
-  timeout_callback = callback;
-  timeout_offset = offset;
-}
-
-
-void hs_timer_timeout_start(uint64_t compare_timestamp)
-{
-  if (timeout_offset) {
-    hs_timer_set_timeout_timestamp(compare_timestamp + timeout_offset);
+  timeout_callback  = callback;
+  timeout_timestamp = timeout;
+  if (timeout_timestamp) {
+    hs_timer_set_timeout_timestamp(timeout);
     //__HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC3);
     HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_3);
+  } else {
+    HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
+    __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC3);
   }
 }
 
@@ -375,7 +373,7 @@ void hs_timer_schedule_stop(void)
 
 void hs_timer_timeout_stop(void)
 {
-  timeout_offset = 0;
+  timeout_timestamp = 0;
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
   __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC3);
 }
@@ -476,7 +474,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
  #endif /* DEVKIT */
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
-      timeout_offset = 0;
+      timeout_timestamp = 0;
       if (timeout_callback) {
         timeout_callback();
       }
@@ -528,7 +526,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
  #endif /* DEVKIT */
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
-      timeout_offset = 0;
+      timeout_timestamp = 0;
       if(timeout_callback) {
         timeout_callback();
       }

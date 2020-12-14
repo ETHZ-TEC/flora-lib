@@ -62,11 +62,10 @@ void radio_set_cad_callback(void (*callback)(bool));
 void radio_set_timeout_callback(void (*callback)(bool crc_error));
 void radio_set_tx_callback(void (*callback)());
 
-void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule);
-void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint64_t time);
-void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time);
-void radio_receive_and_execute(bool boost, uint32_t schedule_timer);
-void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout);
+void radio_transmit(uint8_t* buffer, uint8_t size);
+void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp);
+void radio_receive(bool boost, uint32_t timeout);
+void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout);
 void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule);
 void radio_sync_receive();
 void radio_execute_manually(int64_t timer);

@@ -522,46 +522,27 @@ static void radio_execute(void)
 }
 
 
-void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule)
+void radio_transmit(uint8_t* buffer, uint8_t size)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
   radio_set_payload(buffer, size);
-  if (schedule) {
-    radio_command_scheduled = true;
-    SX126xSetTxWithoutExecute(0);
-  }
-  else {
-    SX126xSetTx(0);
-    hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
-    RADIO_TX_START_IND();
-    dcstat_start(&radio_dc_tx);
-  }
+  SX126xSetTx(0);
+  hs_timer_set_schedule_timestamp((uint32_t) hs_timer_get_current_timestamp());
+  RADIO_TX_START_IND();
+  dcstat_start(&radio_dc_tx);
 }
 
 
-void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint64_t time)
+void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  radio_command_scheduled = true;
   radio_set_payload(buffer, size);
   SX126xSetTxWithoutExecute(0);
-
-  hs_timer_schedule(time, &radio_execute);
-}
-
-
-void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time)
-{
-  if (radio_sleeping) return;      // abort if radio is still in sleep mode
-
   radio_command_scheduled = true;
-  radio_set_packet_params_and_size(size);
-  SX126xSetPayload(overwrite_buffer, overwrite_size);
-  SX126xSetTxWithoutExecute(0);
 
-  hs_timer_schedule(time, &radio_execute);
+  hs_timer_schedule(timestamp, &radio_execute);
 }
 
 
@@ -579,99 +560,58 @@ void radio_execute_manually(int64_t timer)
 }
 
 
-void radio_set_tx(uint64_t timestamp)
+void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  radio_command_scheduled = true;
-  SX126xSetTxWithoutExecute(0);
-  hs_timer_schedule(timestamp, &radio_execute);
-}
+  radio_receive_continuous = false;
 
-
-void radio_set_rx(uint64_t timestamp, uint32_t timeout)
-{
-  if (radio_sleeping) return;      // abort if radio is still in sleep mode
-
-  radio_command_scheduled = true;
-  SX126xSetRxBoostedWithoutExecute(timeout);
-  hs_timer_schedule(timestamp, &radio_execute);
-
+  // timeout in hs ticks on the MCU
+  /*if (timeout) {
+    hs_timer_timeout(timeout * HS_TIMER_FREQUENCY / RADIO_TIMER_FREQUENCY, &radio_timeout_cb);
+  }
+  else {
+    hs_timer_timeout(radio_calculate_timeout(false), &radio_timeout_cb);
+  }
   if (radio_mode != IRQ_MODE_SYNC_ONLY) {
     hs_timer_timeout_start(timestamp);
   }
   else {
     hs_timer_timeout_start(0);
   }
-}
-
-
-void radio_receive_and_execute(bool boost, uint32_t schedule_timer)
-{
-  if (radio_sleeping) return;      // abort if radio is still in sleep mode
-
-  radio_receive_continuous = false;
-  hs_timer_timeout(radio_calculate_timeout(false), &radio_timeout_cb);
-  radio_command_scheduled = true;
-
-  uint32_t hardware_timeout = radio_calculate_timeout(true);
+  */
 
   if (boost) {
-    SX126xSetRxBoostedWithoutExecute(hardware_timeout);
+    SX126xSetRxBoostedWithoutExecute(timeout);
   }
   else {
-    SX126xSetRxWithoutExecute(hardware_timeout);
+    SX126xSetRxWithoutExecute(timeout);
   }
+  radio_command_scheduled = true;
 
-  hs_timer_schedule(schedule_timer, &radio_execute);
+  hs_timer_schedule(schedule_timestamp, &radio_execute);
 }
 
 
-void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout)
+void radio_receive(bool boost, uint32_t timeout)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  // default value for "rx_timeout": 0
-  radio_receive_continuous = !schedule;
+  radio_receive_continuous = true;
 
-  if (schedule) {
-    if (timeout) {
-      hs_timer_timeout(timeout  + (uint32_t) (85.2 * HS_TIMER_FREQUENCY_US), &radio_timeout_cb);
-    }
-    else {
-      hs_timer_timeout(radio_calculate_timeout(false), &radio_timeout_cb);
-    }
+  // timeout in hs ticks on the MCU
+  /*if (timeout) {
+    hs_timer_timeout(timeout * (HS_TIMER_FREQUENCY / RADIO_TIMER_FREQUENCY), &radio_timeout_cb);
+  }*/
 
-    if (boost) {
-      if(rx_timeout) {
-        SX126xSetRxBoostedWithoutExecute(rx_timeout);
-      }
-      else {
-        SX126xSetRxBoostedWithoutExecute(radio_calculate_timeout(true));
-      }
-
-    }
-    else {
-      if(rx_timeout) {
-        SX126xSetRxWithoutExecute(rx_timeout);
-      }
-      else {
-        SX126xSetRxWithoutExecute(radio_calculate_timeout(true));
-      }
-    }
-
-    radio_command_scheduled = true;
+  if (boost) {
+    SX126xSetRxBoosted(timeout);
   }
   else {
-    if (boost) {
-      SX126xSetRxBoosted(timeout);
-    }
-    else {
-      SX126xSetRx(timeout);
-    }
-    RADIO_RX_START_IND();
-    dcstat_start(&radio_dc_rx);
+    SX126xSetRx(timeout);
   }
+  RADIO_RX_START_IND();
+  dcstat_start(&radio_dc_rx);
 }
 
 
