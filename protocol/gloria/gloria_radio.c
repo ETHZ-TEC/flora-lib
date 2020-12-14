@@ -218,12 +218,12 @@ static void gloria_radio_setup_callback() {
       // if the flood marker is not 0 start listening at the expected flood time
       uint64_t schedule_ts = current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood);
       rx_timeout_ts = schedule_ts + current_flood->rx_timeout;
-      radio_receive_scheduled(true, schedule_ts, (uint64_t) current_flood->rx_timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY);
+      radio_receive_scheduled(true, schedule_ts, (uint64_t) current_flood->rx_timeout);
     }
     else {
       // start receiving immediately
       rx_timeout_ts = hs_timer_get_current_timestamp() + current_flood->rx_timeout;
-      radio_receive(true, (uint64_t) current_flood->rx_timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY);
+      radio_receive(true, (uint64_t) current_flood->rx_timeout);
     }
     break;
 
@@ -280,10 +280,10 @@ static void gloria_radio_continue_rx() {
     if (current_flood->rx_timeout) {
       uint64_t now = hs_timer_get_current_timestamp();
 
-      if (rx_timeout_ts > now + GLORIA_MIN_RX_TIME) {
+      if (rx_timeout_ts > (now + GLORIA_MIN_RX_TIME)) {
         radio_set_rx_callback(&gloria_radio_rx_callback);
         radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
-        radio_receive(true, (rx_timeout_ts - now) * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY);
+        radio_receive(true, (rx_timeout_ts - now));
       }
       else {
         rx_callback(NULL, 0);

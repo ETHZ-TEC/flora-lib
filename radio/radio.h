@@ -11,6 +11,12 @@
 #define RADIO_FLORA_RADIO_H_
 
 
+/* whether to use the hardware timeout of the radio chip; if set to 0, a software timeout will be used instead (hs timer) */
+#ifndef RADIO_USE_HW_TIMEOUT
+#define RADIO_USE_HW_TIMEOUT      0
+#endif /* RADIO_USE_HW_TIMEOUT */
+
+
 typedef enum {
   FALSE = 0,
   COLD = 1,
@@ -69,8 +75,8 @@ void radio_set_tx_callback(radio_tx_cb_t callback);
 
 void radio_transmit(uint8_t* buffer, uint8_t size);
 void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp);
-void radio_receive(bool boost, uint32_t timeout);
-void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout);
+void radio_receive(bool boost, uint32_t timeout);                                           // timeout in hs_timer ticks
+void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout);    // timestamp and timeout in hs ticks
 void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule);
 void radio_sync_receive();
 void radio_execute_manually(int64_t timer);
