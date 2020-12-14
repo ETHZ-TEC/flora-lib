@@ -39,6 +39,11 @@ typedef struct lora_message_s {
   struct lora_message_s* next;
 } radio_message_t;
 
+typedef void (* radio_rx_cb_t)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error);
+typedef void (* radio_cad_cb_t)(bool);
+typedef void (* radio_timeout_cb_t)(bool crc_error);
+typedef void (* radio_tx_cb_t)(void);
+
 
 /* include all required radio drivers */
 #include "radio/semtech/sx126x-radio.h"
@@ -57,10 +62,10 @@ void radio_set_irq_callback(void (*callback)());
 void radio_set_irq_mode(lora_irq_mode_t mode);
 void radio_set_irq_direct(bool direct);
 
-void radio_set_rx_callback(void (*callback)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error));
-void radio_set_cad_callback(void (*callback)(bool));
-void radio_set_timeout_callback(void (*callback)(bool crc_error));
-void radio_set_tx_callback(void (*callback)());
+void radio_set_rx_callback(radio_rx_cb_t callback);
+void radio_set_cad_callback(radio_cad_cb_t callback);
+void radio_set_timeout_callback(radio_timeout_cb_t callback);
+void radio_set_tx_callback(radio_tx_cb_t callback);
 
 void radio_transmit(uint8_t* buffer, uint8_t size);
 void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp);

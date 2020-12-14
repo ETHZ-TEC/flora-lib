@@ -180,25 +180,25 @@ void radio_set_irq_direct(bool direct)
 }
 
 
-void radio_set_cad_callback(void (*callback)(bool))
+void radio_set_cad_callback(radio_cad_cb_t callback)
 {
   radio_cad_callback = callback;
 }
 
 
-void radio_set_rx_callback(void (*callback)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error))
+void radio_set_rx_callback(radio_rx_cb_t callback)
 {
   radio_rx_callback = callback;
 }
 
 
-void radio_set_timeout_callback(void (*callback)(bool crc_error))
+void radio_set_timeout_callback(radio_timeout_cb_t callback)
 {
   radio_timeout_callback = callback;
 }
 
 
-void radio_set_tx_callback(void (*callback)())
+void radio_set_tx_callback(radio_tx_cb_t callback)
 {
   radio_tx_callback = callback;
 }
@@ -286,7 +286,7 @@ void radio_irq_capture_cb(void)
 
 void radio_timeout_cb(void)
 {
-  radio_set_rx_callback(NULL);
+  radio_rx_callback = 0;
 
   if (radio_timeout_callback) {
       void (*tmp)(bool) = radio_timeout_callback;
@@ -349,8 +349,8 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
   if (radio_rx_callback) {
     radio_set_timeout_callback(NULL);
 
-    void (*tmp)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) = radio_rx_callback;
-    radio_set_rx_callback(NULL);
+    radio_rx_cb_t tmp = radio_rx_callback;
+    radio_rx_callback = 0;
 
     if (tmp) {
       tmp(payload, size, rssi, snr, crc_error);
