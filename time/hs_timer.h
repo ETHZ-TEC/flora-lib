@@ -30,6 +30,9 @@
 #endif /* HS_TIMER_INIT_FROM_RTC */
 
 
+typedef void (* hs_timer_cb_t)(void);
+
+
 void hs_timer_init();
 
 #if HS_TIMER_COMPENSATE_DRIFT
@@ -65,10 +68,13 @@ uint32_t hs_timer_get_counter_extension();
  * this function can't be called from an interrupt context */
 uint64_t hs_timer_now();
 
-void hs_timer_capture(void (*callback));
-void hs_timer_schedule(uint64_t timestamp, void (*callback)());
-void hs_timer_timeout(uint64_t timeout, void (*callback));
-void hs_timer_generic(uint64_t timestamp, void (*callback)());
+void hs_timer_capture(hs_timer_cb_t callback);
+void hs_timer_schedule(uint64_t timestamp, hs_timer_cb_t callback);
+void hs_timer_timeout(uint64_t timeout, hs_timer_cb_t callback);
+
+#if !BOLT_ENABLE
+void hs_timer_generic(uint64_t timestamp, hs_timer_cb_t callback);
+#endif /* BOLT_ENABLE */
 
 void hs_timer_schedule_stop();
 void hs_timer_timeout_stop();

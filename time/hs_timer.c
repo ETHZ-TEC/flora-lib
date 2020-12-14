@@ -24,11 +24,11 @@ bool      hs_timer_recovered_by_rtc     = false;
 uint64_t  hs_timer_scheduled_timestamp  = 0;
 bool      hs_timer_scheduled            = false;
 
-static void (*schedule_callback)() = NULL;
-static void (*timeout_callback)()  = NULL;
-static void (*capture_callback)()  = NULL;
+static hs_timer_cb_t schedule_callback = NULL;
+static hs_timer_cb_t timeout_callback  = NULL;
+static hs_timer_cb_t capture_callback  = NULL;
 #if !BOLT_ENABLE
-static void (*generic_callback)()  = NULL;
+static hs_timer_cb_t generic_callback  = NULL;
 #endif /* BOLT_ENABLE */
 
 static uint32_t hs_timer_counter_extension          = 0;
@@ -41,30 +41,6 @@ static uint32_t hs_timer_generic_counter_extension  = 0;
 
 static uint64_t timeout_timestamp = 0;
 
-
-#if DOZER_ENABLE
-
-static void (*timeout2_callback)() = NULL;
-volatile static uint64_t timeout2_offset = 0;
-
-
-#ifndef DEVKIT
-extern TIM_HandleTypeDef htim15;
-
-uint16_t counter_extension_tim15 = 0;
-bool tim15_initialized = false;
-
-#else
-extern TIM_HandleTypeDef htim5;
-
-uint32_t counter_extension_tim5 = 0;
-bool tim5_initialized = false;
-
-#endif
-static void (*rx_timeout_watchdog_callback)() = NULL;
-static void (*data_gen_timer_callback)() = NULL;
-
-#endif /* DOZER_ENABLE */
 
 
 void hs_timer_init(void)
@@ -115,7 +91,7 @@ double_t hs_timer_get_drift(void)
 void hs_timer_set_counter(uint64_t timestamp)
 {
   HAL_TIM_Base_Stop_IT(&htim2);
-  htim2.Instance->CNT = timestamp & 0xffffffffU;
+  __HAL_TIM_SET_COUNTER(&htim2, (uint32_t)timestamp);
   hs_timer_counter_extension = (timestamp >> 32);
   HAL_TIM_Base_Start_IT(&htim2);
 }
@@ -123,7 +99,7 @@ void hs_timer_set_counter(uint64_t timestamp)
 
 void hs_timer_set_lower_counter(uint32_t timestamp)
 {
-  htim2.Instance->CNT = timestamp;
+  __HAL_TIM_SET_COUNTER(&htim2, timestamp);
 }
 
 
@@ -289,7 +265,7 @@ uint32_t hs_timer_get_counter_extension(void)
 }
 
 
-void hs_timer_capture(void (*callback))
+void hs_timer_capture(hs_timer_cb_t callback)
 {
   capture_callback = callback;
 #ifndef DEVKIT
@@ -300,7 +276,7 @@ void hs_timer_capture(void (*callback))
 }
 
 
-void hs_timer_schedule(uint64_t timestamp, void (*callback)())
+void hs_timer_schedule(uint64_t timestamp, hs_timer_cb_t callback)
 {
   uint64_t now = hs_timer_get_current_timestamp();
 
@@ -324,7 +300,7 @@ void hs_timer_schedule(uint64_t timestamp, void (*callback)())
 }
 
 
-void hs_timer_timeout(uint64_t timeout, void (*callback))
+void hs_timer_timeout(uint64_t timeout, hs_timer_cb_t callback)
 {
   timeout_callback  = callback;
   timeout_timestamp = timeout;
@@ -340,7 +316,8 @@ void hs_timer_timeout(uint64_t timeout, void (*callback))
 
 
 #if !BOLT_ENABLE
-void hs_timer_generic(uint64_t timestamp, void (*callback)()) {
+
+void hs_timer_generic(uint64_t timestamp, hs_timer_cb_t callback) {
   uint64_t now = hs_timer_get_current_timestamp();
 
   if ((timestamp - now) < TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
@@ -356,6 +333,7 @@ void hs_timer_generic(uint64_t timestamp, void (*callback)()) {
 #endif
   }
 }
+
 #endif /* BOLT_ENABLE */
 
 
@@ -408,30 +386,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
 void hs_timer_handle_overflow(TIM_HandleTypeDef *htim)
 {
-#if DOZER_ENABLE
-
-  if (htim->Instance == TIM2) {
-    hs_timer_counter_extension++;
-  }
- #ifndef DEVKIT
-  else if (tim15_initialized && htim->Instance == TIM15) {
-    counter_extension_tim15++;
-  }
- #else
-  else if (tim5_initialized && htim->Instance == TIM5) {
-    counter_extension_tim5++;
-  }
- #endif
-
-#else /* DOZER_ENABLE */
-
   hs_timer_counter_extension++;
-
-#endif /* DOZER_ENABLE */
 }
 
-
-#if !DOZER_ENABLE
 
 // TIM2 output compare interrupt handler
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
@@ -453,7 +410,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
       }
   #endif /* BOLT_ENABLE */
     }
- #else /* DEVKIT */
+#else /* DEVKIT */
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
       if((hs_timer_scheduled_timestamp >> 32) == hs_timer_counter_extension) {
         hs_timer_scheduled = false;
@@ -471,7 +428,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
       }
   #endif /* BOLT_ENABLE */
     }
- #endif /* DEVKIT */
+#endif /* DEVKIT */
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
       timeout_timestamp = 0;
@@ -481,355 +438,4 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
     }
   }
 }
-#endif /* DOZER_ENABLE */
 
-
-#if DOZER_ENABLE
-// TIM2 output compare interrupt handler
-void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  if(htim->Instance == TIM2)
-  {
- #ifndef DEVKIT
-    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-      HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
-      if(schedule_callback) {
-        schedule_callback();
-      }
-    }
-    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4) {
-      timeout2_offset = 0;
-      HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_4);
-
-      if(timeout2_callback) {
-        timeout2_callback();
-      }
-    }
- #else /* DEVKIT */
-    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-      if((hs_timer_scheduled_timestamp >> 32) == hs_timer_counter_extension) {
-        hs_timer_scheduled = false;
-        HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_1);
-        if(schedule_callback) {
-          schedule_callback();
-        }
-      }
-    }
-    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-      timeout2_offset = 0;
-      HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
-
-      if(timeout2_callback) {
-        timeout2_callback();
-      }
-    }
- #endif /* DEVKIT */
-    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
-      HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
-      timeout_timestamp = 0;
-      if(timeout_callback) {
-        timeout_callback();
-      }
-    }
-
-
-  }
- #ifndef DEVKIT
-  else if (htim->Instance == TIM15)
-  {
-    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-      HAL_TIM_OC_Stop_IT(&htim15, TIM_CHANNEL_1);
-
-      if(rx_timeout_watchdog_callback) {
-        rx_timeout_watchdog_callback();
-      }
-    }
-    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-      HAL_TIM_OC_Stop_IT(&htim15, TIM_CHANNEL_2);
-
-      if(data_gen_timer_callback) {
-        data_gen_timer_callback();
-      }
-    }
-  }
- #else /* DEVKIT */
-  else if (htim->Instance == TIM5)
-  {
-    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-      HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_1);
-
-      if(rx_timeout_watchdog_callback) {
-        cli_log("tim5 bt", "TIM5", CLI_LOG_LEVEL_WARNING);// TODO: delete
-        rx_timeout_watchdog_callback();
-      }
-    }
-    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-      HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_2);
-
-      if(data_gen_timer_callback) {
-        data_gen_timer_callback();
-      }
-    }
-//    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
-//      HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_3);
-//
-//      if(rec_rx_timeout_watchdog_callback) {
-//        rec_rx_timeout_watchdog_callback();
-//      }
-//    }
-//    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4) {
-//        HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_4);
-//
-//        if(con_req_timer_callback) {
-//          con_req_timer_callback();
-//        }
-//      }
-
-  }
- #endif /* DEVKIT */
-}
-
-#endif /* DOZER_ENABLE */
-
-
-
-
-#if DOZER_ENABLE
-
-void hs_timer_set_timeout2_timestamp(uint32_t timestamp)
-{
-#ifndef DEVKIT
-  htim2.Instance->CCR4 = timestamp;
-#else
-  htim2.Instance->CCR2 = timestamp;
-#endif
-}
-
-
-void hs_timer_timeout2_start(uint64_t compare_timestamp, void (*callback)) {
-
-  timeout2_callback = callback;
-
-#ifndef DEVKIT
-  hs_timer_set_timeout2_timestamp(compare_timestamp);
-  __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC4);
-  HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_4);
-#else
-  hs_timer_set_timeout2_timestamp(compare_timestamp);
-  __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC2);
-  HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
-#endif
-}
-
-
-void hs_timer_timeout2_stop(void)
-{
-  timeout2_offset = 0;
-
-#ifndef DEVKIT
-  HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_4);
-#else
-  HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
-#endif
-}
-
-
-
-#ifndef DEVKIT
-
-uint32_t tim15_get_current_timestamp(void)
-{
-  uint32_t timestamp = htim15.Instance->CNT;
-  timestamp |= ((uint32_t) counter_extension_tim15) << 16;
-  return timestamp;
-}
-
-
-void tim15_set_current_timestamp(uint32_t timestamp)
-{
-  HAL_TIM_Base_Stop_IT(&htim15);
-  htim15.Instance->CNT = timestamp & 0xffffU;
-  counter_extension_tim15 = (timestamp >> 16);
-  HAL_TIM_Base_Start_IT(&htim15);
-}
-
-
-void tim15_init(void)
-{
-  uint64_t timestamp = rtc_get_timestamp(false); // TODO: hs_timer ???
-  tim15_set_current_timestamp((uint32_t)timestamp);
-  tim15_initialized = true;
-}
-
-
-/*
- * Rx timeout watchdog
- */
-
-void tim15_set_rx_timeout_watchdog_timestamp(uint32_t timestamp)
-{
-  htim15.Instance->CCR1 = timestamp;
-}
-
-
-void tim15_rx_timeout_watchdog_start(uint64_t compare_timestamp, void (*callback)) {
-  rx_timeout_watchdog_callback = callback;
-
-  tim15_set_rx_timeout_watchdog_timestamp(compare_timestamp);
-  __HAL_TIM_CLEAR_IT(&htim15, TIM_IT_CC1);
-  HAL_TIM_OC_Start_IT(&htim15, TIM_CHANNEL_1);
-}
-
-void tim15_rx_timeout_watchdog_stop(void) {
-  HAL_TIM_OC_Stop_IT(&htim15, TIM_CHANNEL_1);
-}
-
-
-/*
- *Data generation timer
- */
-
-void tim15_set_data_gen_timer_timestamp(uint32_t timestamp)
-{
-  htim15.Instance->CCR2 = timestamp;
-}
-
-
-void tim15_data_gen_timer_start(uint64_t compare_timestamp, void (*callback))
-{
-  data_gen_timer_callback = callback;
-
-  tim15_set_data_gen_timer_timestamp(compare_timestamp);
-  __HAL_TIM_CLEAR_IT(&htim15, TIM_IT_CC2);
-  HAL_TIM_OC_Start_IT(&htim15, TIM_CHANNEL_2);
-}
-
-
-void tim15_data_gen_timer_stop(void)
-{
-  HAL_TIM_OC_Stop_IT(&htim15, TIM_CHANNEL_2);
-}
-
-#else /* DEVKIT */
-
-void tim5_init(void)
-{
-  uint64_t timestamp = rtc_get_timestamp(false);
-  tim5_set_current_timestamp(timestamp);
-  tim5_initialized = true;
-}
-
-uint64_t tim5_get_current_timestamp(void)
-{
-  uint64_t timestamp = htim5.Instance->CNT;
-  timestamp |= ((uint64_t) counter_extension_tim5) << 32;
-  return timestamp;
-}
-
-void tim5_set_current_timestamp(uint64_t timestamp)
-{
-  HAL_TIM_Base_Stop_IT(&htim5);
-  htim5.Instance->CNT = timestamp & 0xffffU;
-  counter_extension_tim5 = (timestamp >> 32);
-  HAL_TIM_Base_Start_IT(&htim5);
-}
-
-
-/*
- * Rx timeout watchdog
- */
-
-void tim5_set_rx_timeout_watchdog_timestamp(uint32_t timestamp)
-{
-  htim5.Instance->CCR1 = timestamp;
-}
-
-
-void tim5_rx_timeout_watchdog_start(uint64_t compare_timestamp, void (*callback))
-{
-  rx_timeout_watchdog_callback = callback;
-
-  tim5_set_rx_timeout_watchdog_timestamp(compare_timestamp);
-  __HAL_TIM_CLEAR_IT(&htim5, TIM_IT_CC1);
-  HAL_TIM_OC_Start_IT(&htim5, TIM_CHANNEL_1);
-}
-
-
-void tim5_rx_timeout_watchdog_stop(void)
-{
-  HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_1);
-}
-
-
-/*
- *Data generation timer
- */
-
-void tim5_set_data_gen_timer_timestamp(uint32_t timestamp)
-{
-  htim5.Instance->CCR2 = timestamp;
-}
-
-
-void tim5_data_gen_timer_start(uint64_t compare_timestamp, void (*callback))
-{
-  data_gen_timer_callback = callback;
-
-  tim5_set_data_gen_timer_timestamp(compare_timestamp);
-  __HAL_TIM_CLEAR_IT(&htim5, TIM_IT_CC2);
-  HAL_TIM_OC_Start_IT(&htim5, TIM_CHANNEL_2);
-}
-
-
-void tim5_data_gen_timer_stop(void)
-{
-  HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_2);
-}
-
-
-/*
- * Beacon timer
- */
-
-//void tim5_set_rec_rx_timeout_watchdog_timestamp(uint32_t timestamp) {
-//  htim5.Instance->CCR3 = timestamp;
-//}
-//
-//
-//void tim5_rec_rx_timeout_watchdog_start(uint64_t compare_timestamp, void (*callback)) {
-//  rec_rx_timeout_watchdog_callback = callback;
-//
-//  tim5_set_rec_rx_timeout_watchdog_timestamp(compare_timestamp);
-//  __HAL_TIM_CLEAR_IT(&htim5, TIM_IT_CC3);
-//  HAL_TIM_OC_Start_IT(&htim5, TIM_CHANNEL_3);
-//}
-//
-//void tim5_rec_rx_timeout_watchdog_stop() {
-////  rec_rx_timeout_watchdog_offset = 0;
-//  HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_3);
-//}
-
-
-/*
- * Connection request timer
- */
-
-//void tim5_set_con_req_timer_timestamp(uint32_t timestamp) {
-//  htim5.Instance->CCR4 = timestamp;
-//}
-//
-//
-//void tim5_con_req_timer_start(uint64_t compare_timestamp, void (*callback)) {
-//  con_req_timer_callback = callback;
-//
-//  tim5_set_con_req_timer_timestamp(compare_timestamp);
-//  __HAL_TIM_CLEAR_IT(&htim5, TIM_IT_CC4);
-//  HAL_TIM_OC_Start_IT(&htim5, TIM_CHANNEL_4);
-//}
-//
-//void tim5_con_req_timer_stop() {
-//  HAL_TIM_OC_Stop_IT(&htim5, TIM_CHANNEL_4);
-//}
-#endif /* DEVKIT */
-
-#endif /* DOZER_ENABLE */
