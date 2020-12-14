@@ -300,7 +300,7 @@ void hs_timer_capture(void (*callback))
 }
 
 
-void hs_timer_schedule_start(uint64_t timestamp, void (*callback)())
+void hs_timer_schedule(uint64_t timestamp, void (*callback)())
 {
   uint64_t now = hs_timer_get_current_timestamp();
 
