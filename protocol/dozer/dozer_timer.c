@@ -12,6 +12,10 @@
 
 #if DOZER_ENABLE
 
+#define TIM5_TIMER_FREQUENCY    1000      // ms timer (htim5) cycles per second
+#define TIM5_TIMER_FREQUENCY_MS 1         // ms timer (htim5) cycles per ms
+#define TIM5_TIMER_FREQUENCY_US 0.001     // ms timer (htim5) cycles per us
+
 static void (*timeout2_callback)() = NULL;
 volatile static uint64_t timeout2_offset = 0;
 

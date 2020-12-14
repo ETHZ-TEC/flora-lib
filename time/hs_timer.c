@@ -97,12 +97,6 @@ void hs_timer_set_counter(uint64_t timestamp)
 }
 
 
-void hs_timer_set_lower_counter(uint32_t timestamp)
-{
-  __HAL_TIM_SET_COUNTER(&htim2, timestamp);
-}
-
-
 void hs_timer_set_schedule_timestamp(uint64_t timestamp)
 {
 #if HS_TIMER_COMPENSATE_DRIFT
@@ -280,7 +274,7 @@ void hs_timer_schedule(uint64_t timestamp, hs_timer_cb_t callback)
 {
   uint64_t now = hs_timer_get_current_timestamp();
 
-  if ((timestamp - now) < TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
+  if ((timestamp - now) < HS_TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
     callback();
     LOG_WARNING("Schedule too late!");
   }
@@ -320,7 +314,7 @@ void hs_timer_timeout(uint64_t timeout, hs_timer_cb_t callback)
 void hs_timer_generic(uint64_t timestamp, hs_timer_cb_t callback) {
   uint64_t now = hs_timer_get_current_timestamp();
 
-  if ((timestamp - now) < TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
+  if ((timestamp - now) < HS_TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
     callback();
   }
   else {
