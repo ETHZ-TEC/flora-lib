@@ -28,11 +28,11 @@ static dcstat_t                   radio_dc_rx = { 0 };
 static dcstat_t                   radio_dc_tx = { 0 };
 
 /* function pointers */
-static void (*radio_irq_callback) () = NULL;
-static void (*radio_rx_callback)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) = NULL;
-static void (*radio_cad_callback)(bool success) = NULL;
-static void (*radio_timeout_callback)(bool crc_error) = NULL;
-static void (*radio_tx_callback) () = NULL;
+static radio_irq_cb_t     radio_irq_callback;
+static radio_rx_cb_t      radio_rx_callback      = 0;
+static radio_cad_cb_t     radio_cad_callback     = 0;
+static radio_timeout_cb_t radio_timeout_callback = 0;
+static radio_tx_cb_t      radio_tx_callback      = 0;
 
 /* private callback functions */
 void radio_irq_capture_cb(void);

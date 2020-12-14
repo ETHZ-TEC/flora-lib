@@ -45,6 +45,7 @@ typedef struct lora_message_s {
   struct lora_message_s* next;
 } radio_message_t;
 
+typedef void (* radio_irq_cb_t)(void);
 typedef void (* radio_rx_cb_t)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error);
 typedef void (* radio_cad_cb_t)(bool);
 typedef void (* radio_timeout_cb_t)(bool crc_error);
