@@ -18,7 +18,6 @@ volatile bool radio_irq_direct = false;
 /* internal state */
 static volatile radio_sleeping_t  radio_sleeping = false;
 static volatile lora_irq_mode_t   radio_mode;
-static volatile bool              radio_receive_continuous = false;
 static volatile bool              radio_command_scheduled = false;
 static uint64_t                   radio_last_sync_timestamp = 0;
 static uint8_t                    preamble_detected_counter = 0;
@@ -355,11 +354,6 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
       tmp(payload, size, rssi, snr, crc_error);
     }
   }
-  else if(radio_receive_continuous) {
-    SX126xSetRxBoosted(0);
-    RADIO_RX_START_IND();
-    dcstat_start(&radio_dc_rx);
-  }
 
 #ifdef FLORA_DEBUG
   if (!crc_error) {
@@ -410,17 +404,11 @@ void radio_rx_error_cb(void)
   hs_timer_timeout_stop();
 #endif /* RADIO_USE_HW_TIMEOUT */
 
-  if(!radio_rx_callback && radio_receive_continuous) {
-    SX126xSetRxBoosted(0);
-    RADIO_RX_START_IND();
-  }
-  else {
-    dcstat_stop(&radio_dc_rx);
-    radio_timeout_cb_t tmp = radio_timeout_callback;
-    radio_timeout_callback = 0;
-    if(tmp) {
-      tmp(true);
-    }
+  dcstat_stop(&radio_dc_rx);
+  radio_timeout_cb_t tmp = radio_timeout_callback;
+  radio_timeout_callback = 0;
+  if(tmp) {
+    tmp(true);
   }
 
 #ifdef FLORA_DEBUG
@@ -567,8 +555,6 @@ void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t t
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  radio_receive_continuous = false;
-
 #if RADIO_USE_HW_TIMEOUT
   timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;   // convert to radio timer ticks
 #else  /* RADIO_USE_HW_TIMEOUT */
@@ -594,8 +580,6 @@ void radio_receive(bool boost, uint32_t timeout)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  radio_receive_continuous = true;
-
 #if RADIO_USE_HW_TIMEOUT
   timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
 #else  /* RADIO_USE_HW_TIMEOUT */
@@ -620,7 +604,6 @@ void radio_sync_receive(void)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  radio_receive_continuous = false;
   SX126xSetRxBoosted(0);
   RADIO_RX_START_IND();
   dcstat_start(&radio_dc_rx);
@@ -630,8 +613,6 @@ void radio_sync_receive(void)
 void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
-
-  radio_receive_continuous = false;
 
   rx = (uint64_t) rx; // in 15.625 us steps
   sleep = (uint64_t) sleep; // in 15.625 us steps (see Figure 13-2: "RX Duty Cycle Energy Profile" in SX1262 datasheet)
