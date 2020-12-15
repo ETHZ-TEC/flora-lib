@@ -169,7 +169,7 @@ struct Radio_s
      * \brief Sets the reception parameters
      *
      * \param [IN] modem        Radio modem to be used [0: FSK, 1: LoRa]
-     * \param [IN] bandwidth    Sets the bandwidth
+     * \param [IN] bandwidth    Sets the bandwidth (DSB)
      *                          FSK : >= 2600 and <= 250000 Hz
      *                          LoRa: [0: 125 kHz, 1: 250 kHz,
      *                                 2: 500 kHz, 3: Reserved]
@@ -317,11 +317,9 @@ struct Radio_s
     /*!
      * \brief Sets the radio in reception mode for the given time with configuring
      *        the radio interrupts by the mask
-     * \param [IN] timeout Reception timeout [ms]
-     *                     [0: continuous, others timeout]
      * \param [IN] mask Mask to enable/disable radio interrupts
      */
-    void    ( *RxMask )( uint32_t timeout, uint16_t mask );
+    void    ( *RxMask )( uint16_t mask );
     /*!
      * \brief Start a Channel Activity Detection
      */
@@ -331,9 +329,8 @@ struct Radio_s
      *
      * \param [IN]: freq       Channel RF frequency
      * \param [IN]: power      Sets the output power [dBm]
-     * \param [IN]: time       Transmission mode timeout [s]
      */
-    void    ( *SetTxContinuousWave )( uint32_t freq, int8_t power, uint16_t time );
+    void    ( *SetTxContinuousWave )( uint32_t freq, int8_t power );
     /*!
      * \brief Reads the current RSSI value
      *
@@ -412,11 +409,9 @@ struct Radio_s
      *
      * \remark Available on SX126x radios only.
      *
-     * \param [IN] timeout Reception timeout [ms]
-     *                     [0: continuous, others timeout]
      * \param [IN] mask Mask to enable/disable radio interrupts
      */
-    void    ( *RxBoostedMask )( uint32_t timeout, uint16_t mask );
+    void    ( *RxBoostedMask )( uint16_t mask );
     /*!
      * \brief Sets the Rx duty cycle management parameters
      *

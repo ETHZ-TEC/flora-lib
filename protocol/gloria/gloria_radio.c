@@ -182,7 +182,7 @@ static void gloria_radio_setup_callback() {
   switch (state) {
   case GLORIA_RADIO_TX:
     radio_set_irq_mode(IRQ_MODE_TX);
-    radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
+    // NOTE: TX config is set in gloria_run_flood()
     radio_set_payload_chunk((uint8_t*)&current_flood->header, 0, current_flood->header_size, false);
     radio_set_payload_chunk((uint8_t*)current_flood->payload, current_flood->header_size, current_flood->payload_size + current_flood->header.sync * GLORIA_TIMESTAMP_LENGTH, true);
     radio_set_tx_callback(&gloria_radio_tx_callback);
@@ -191,7 +191,7 @@ static void gloria_radio_setup_callback() {
 
   case GLORIA_RADIO_ACK_TX:
     radio_set_irq_mode(IRQ_MODE_TX);
-    radio_set_config_tx(current_flood->modulation, current_flood->band, current_flood->power, -1, -1, -1, false, true);
+    // NOTE: TX config is set in gloria_run_flood()
     radio_set_payload((uint8_t*) &current_flood->ack_message, GLORIA_ACK_LENGTH);
     radio_set_tx_callback(&gloria_radio_tx_ack_callback);
     radio_set_tx(current_flood->current_tx_marker);
@@ -205,7 +205,7 @@ static void gloria_radio_setup_callback() {
       // many false positive preamble detected events for FSK => we don't use it and therefore disable them
       radio_set_irq_mode(IRQ_MODE_RX_CRC);
     }
-    radio_set_config_rx(current_flood->modulation, current_flood->band, -1, -1, -1, 0, false, 0, true, false);
+    // NOTE: RX config is set in gloria_run_flood()
     radio_set_rx_callback(&gloria_radio_rx_callback);
     radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
 

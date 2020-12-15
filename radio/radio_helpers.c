@@ -150,7 +150,7 @@ void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size)
 void radio_set_config_tx(uint8_t modulation_index,
                          uint8_t band_index,
                          int8_t power,
-                         int32_t bandwidth,
+                         int32_t bandwidth,     // DSB
                          int32_t bitrate,
                          int32_t preamble_length,
                          bool implicit,
@@ -204,7 +204,7 @@ void radio_set_config_tx(uint8_t modulation_index,
 
 void radio_set_config_rx(uint8_t modulation_index,
                          uint8_t band_index,
-                         int32_t bandwidth,
+                         int32_t bandwidth,           // DSB
                          int32_t bitrate,
                          int32_t preamble_length,
                          uint16_t timeout,
@@ -245,7 +245,7 @@ void radio_set_config_rx(uint8_t modulation_index,
       bitrate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
       0, // AFC Bandwidth (FSK only, not used with SX126x!)
-      preamble_length + 2, // Offset due to safety (preamble detector counter would reset otherwise). RxTimeout is not inflicted.
+      preamble_length,
       timeout,
       implicit, // explicit header mode
       (implicit ? implicit_length : 0), // no fixed payload length (as it is explicit header mode / variable packet length)
@@ -264,7 +264,7 @@ void radio_set_config_rxtx(bool lora_mode,
                            uint8_t band_index,
                            int32_t datarate,
                            int8_t power,
-                           int32_t bandwidth,
+                           int32_t bandwidth,         // DSB
                            int32_t preamble_length,
                            uint8_t coderate,
                            uint16_t timeout,

@@ -107,7 +107,10 @@ uint32_t bolt_read(uint8_t* out_data)
 
   while ((rcvd_bytes < BOLT_MAX_MSG_LEN) && BOLT_ACK_STATUS) {
     /* read one byte at a time */
-    BOLT_SPI_READ(out_data, 1);
+    if (BOLT_SPI_READ(out_data, 1) != 0) {
+      LOG_ERROR("SPI read failed");
+      break;
+    }
     out_data++;
     rcvd_bytes++;
   }
@@ -140,7 +143,11 @@ bool bolt_write(uint8_t* data, uint16_t len)
     bolt_write_failed_cnt++;
     return false;
   }
-  BOLT_SPI_WRITE(data, len);
+  if (BOLT_SPI_WRITE(data, len) != 0) {
+    LOG_ERROR("SPI write failed");
+    bolt_release();
+    return false;
+  }
   bolt_release();
 
   bolt_write_cnt++;
@@ -191,7 +198,10 @@ void bolt_flush(void)
     }
     uint8_t read_byte;
     while (BOLT_ACK_STATUS) {
-      BOLT_SPI_READ(&read_byte, 1);
+      if (BOLT_SPI_READ(&read_byte, 1) != 0) {
+        LOG_ERROR("SPI read failed");
+        break;
+      }
     }
     bolt_release();
     cnt++;

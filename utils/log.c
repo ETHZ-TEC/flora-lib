@@ -14,7 +14,7 @@
 // note: the print buffer is an unprotected shared resource
 static char log_print_buffer[LOG_LINE_LENGTH];
 
-#if !LOG_PRINT_IMMEDIATELY
+#if !LOG_PRINT_IMMEDIATELY || LOG_USE_DMA
   static char log_buffer[LOG_BUFFER_SIZE];
   static int32_t read_idx  = 0;
   static int32_t write_idx = 0;
@@ -50,7 +50,7 @@ static bool log_lock(void)
   return false;
 }
 
-#if !LOG_PRINT_IMMEDIATELY
+#if !LOG_PRINT_IMMEDIATELY || LOG_USE_DMA
 
 bool log_buffer_empty(void)
 {
@@ -111,6 +111,7 @@ bool log_flush(void)
     log_lock_failed = false;
   }
   flush_lock--;
+
   return true;
 }
 
@@ -125,7 +126,7 @@ static void log_buffer_add(const char* str, uint32_t len)
   if (!len) {
     len = strlen(str);
   }
-#if LOG_PRINT_IMMEDIATELY
+#if LOG_PRINT_IMMEDIATELY && !LOG_USE_DMA
   LOG_PRINT_FUNC((char*)str, strlen(str));
 
 #else /* LOG_PRINT_IMMEDIATELY */
@@ -153,6 +154,9 @@ void log_print(const char* str)
     return;
   }
   log_buffer_add(str, 0);
+#if LOG_USE_DMA
+  log_flush();
+#endif /* LOG_USE_DMA */
   log_unlock();
 }
 
@@ -220,6 +224,10 @@ void log_println(log_level_t level, const char* module, const char* msg)
 
   /* print the newline */
   log_buffer_add(LOG_NEWLINE, 0);
+
+#if LOG_USE_DMA
+  log_flush();
+#endif /* LOG_USE_DMA */
 
   /* release lock */
   log_unlock();

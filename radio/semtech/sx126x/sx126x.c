@@ -21,6 +21,10 @@
  * \author    Gregory Cristian ( Semtech )
  */
 
+/*
+ * reference implementation is available at https://github.com/Lora-net/LoRaMac-node/blob/master/src/radio/sx126x/sx126x.c
+ */
+
 #include "flora_lib.h"
 
 

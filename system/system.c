@@ -63,7 +63,7 @@ void system_init(void)
   /* make sure PC13 (RF_DIO1) EXTI is disabled (only needed for wakeup from LPM) */
   HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 
-#if !CLI_ENABLE
+#if !CLI_ENABLE && !LOG_USE_DMA
   HAL_NVIC_DisableIRQ(USART1_IRQn);
 #endif /* CLI_ENABLE */
 
@@ -147,7 +147,7 @@ void system_reset_into_bootloader(void)
   HAL_NVIC_SystemReset();
 }
 
-const char* system_get_reset_cause(uint32_t* out_reset_flag)
+const char* system_get_reset_cause(uint8_t* out_reset_flag)
 {
   static uint_fast8_t reset_flag = 0;
 
