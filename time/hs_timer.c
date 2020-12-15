@@ -88,6 +88,12 @@ double_t hs_timer_get_drift(void)
 #endif /* HS_TIMER_COMPENSATE_DRIFT */
 
 
+uint32_t hs_timer_get_counter(void)
+{
+  return __HAL_TIM_GET_COUNTER(&htim2);
+}
+
+
 void hs_timer_set_counter(uint64_t timestamp)
 {
   HAL_TIM_Base_Stop_IT(&htim2);
@@ -145,7 +151,7 @@ void hs_timer_set_generic_timestamp(uint64_t timestamp)
 
 inline uint64_t hs_timer_get_current_timestamp(void)
 {
-  uint64_t timestamp = htim2.Instance->CNT;
+  uint64_t timestamp = __HAL_TIM_GET_COUNTER(&htim2);
   timestamp |= ((uint64_t) hs_timer_counter_extension) << 32;
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
@@ -163,9 +169,9 @@ uint64_t hs_timer_now(void)
   uint32_t hw_ts, hw_ts2, sw_ext, sw_ext2;
 
   do {
-    hw_ts  = htim2.Instance->CNT;
+    hw_ts  = __HAL_TIM_GET_COUNTER(&htim2);
     sw_ext = hs_timer_counter_extension;
-    hw_ts2  = htim2.Instance->CNT;
+    hw_ts2  = __HAL_TIM_GET_COUNTER(&htim2);
     sw_ext2 = hs_timer_counter_extension;
   } while (sw_ext != sw_ext2 || hw_ts > hw_ts2);
 

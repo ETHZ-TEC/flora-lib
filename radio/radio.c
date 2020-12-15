@@ -517,6 +517,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size)
 
   radio_set_payload(buffer, size);
   SX126xSetTx(0);
+  hs_timer_set_schedule_timestamp(hs_timer_get_counter());
   RADIO_TX_START_IND();
   dcstat_start(&radio_dc_tx);
 }
@@ -538,6 +539,7 @@ void radio_execute_manually(int64_t timer)
 {
   if (radio_command_scheduled) {
     if (timer == -1) {
+      hs_timer_set_schedule_timestamp(hs_timer_get_counter());
       radio_execute();
     }
     else {
