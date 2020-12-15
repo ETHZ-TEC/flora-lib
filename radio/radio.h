@@ -11,6 +11,12 @@
 #define RADIO_FLORA_RADIO_H_
 
 
+/* whether to use the hardware timeout of the radio chip; if set to 0, a software timeout will be used instead (hs timer) */
+#ifndef RADIO_USE_HW_TIMEOUT
+#define RADIO_USE_HW_TIMEOUT      1
+#endif /* RADIO_USE_HW_TIMEOUT */
+
+
 typedef enum {
   FALSE = 0,
   COLD = 1,
@@ -39,6 +45,12 @@ typedef struct lora_message_s {
   struct lora_message_s* next;
 } radio_message_t;
 
+typedef void (* radio_irq_cb_t)(void);
+typedef void (* radio_rx_cb_t)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error);
+typedef void (* radio_cad_cb_t)(bool);
+typedef void (* radio_timeout_cb_t)(bool crc_error);
+typedef void (* radio_tx_cb_t)(void);
+
 
 /* include all required radio drivers */
 #include "radio/semtech/sx126x-radio.h"
@@ -57,16 +69,15 @@ void radio_set_irq_callback(void (*callback)());
 void radio_set_irq_mode(lora_irq_mode_t mode);
 void radio_set_irq_direct(bool direct);
 
-void radio_set_rx_callback(void (*callback)(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error));
-void radio_set_cad_callback(void (*callback)(bool));
-void radio_set_timeout_callback(void (*callback)(bool crc_error));
-void radio_set_tx_callback(void (*callback)());
+void radio_set_rx_callback(radio_rx_cb_t callback);
+void radio_set_cad_callback(radio_cad_cb_t callback);
+void radio_set_timeout_callback(radio_timeout_cb_t callback);
+void radio_set_tx_callback(radio_tx_cb_t callback);
 
-void radio_transmit(uint8_t* buffer, uint8_t size, bool schedule);
-void radio_transmit_at_precise_moment(uint8_t* buffer, uint8_t size, uint64_t time);
-void radio_retransmit_at_precise_moment(uint8_t* overwrite_buffer, uint8_t overwrite_size, uint8_t size, uint64_t time);
-void radio_receive_and_execute(bool boost, uint32_t schedule_timer);
-void radio_receive(bool schedule, bool boost, uint32_t timeout, uint32_t rx_timeout);
+void radio_transmit(uint8_t* buffer, uint8_t size);
+void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp);
+void radio_receive(bool boost, uint32_t timeout);                                           // timeout in hs_timer ticks
+void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout);    // timestamp and timeout in hs ticks
 void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule);
 void radio_sync_receive();
 void radio_execute_manually(int64_t timer);

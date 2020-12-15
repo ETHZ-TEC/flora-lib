@@ -125,13 +125,13 @@ inline int32_t gloria_get_rx_ex_offset(gloria_flood_t* flood)
 
 
 /*
- * calculate rx timeout
+ * calculate rx timeout in hs timer ticks
  */
 inline uint16_t gloria_calculate_rx_timeout(gloria_flood_t* flood)
 {
   const gloria_timings_t* timings = &(gloria_timings[flood->modulation]);
 
-  return (uint64_t) (2*timings->rxOffset + radio_get_toa_hs(0, flood->modulation) + 2*flood->guard_time) * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
+  return (uint64_t) (2*timings->rxOffset + radio_get_toa_hs(0, flood->modulation) + 2*flood->guard_time);
 }
 
 

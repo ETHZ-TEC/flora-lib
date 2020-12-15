@@ -186,7 +186,7 @@ static void gloria_radio_setup_callback() {
     radio_set_payload_chunk((uint8_t*)&current_flood->header, 0, current_flood->header_size, false);
     radio_set_payload_chunk((uint8_t*)current_flood->payload, current_flood->header_size, current_flood->payload_size + current_flood->header.sync * GLORIA_TIMESTAMP_LENGTH, true);
     radio_set_tx_callback(&gloria_radio_tx_callback);
-    radio_set_tx(current_flood->current_tx_marker);
+    radio_transmit_scheduled(0, 0, current_flood->current_tx_marker);
     break;
 
   case GLORIA_RADIO_ACK_TX:
@@ -194,7 +194,7 @@ static void gloria_radio_setup_callback() {
     // NOTE: TX config is set in gloria_run_flood()
     radio_set_payload((uint8_t*) &current_flood->ack_message, GLORIA_ACK_LENGTH);
     radio_set_tx_callback(&gloria_radio_tx_ack_callback);
-    radio_set_tx(current_flood->current_tx_marker);
+    radio_transmit_scheduled(0, 0, current_flood->current_tx_marker);
     break;
 
   case GLORIA_RADIO_RX:
@@ -212,18 +212,18 @@ static void gloria_radio_setup_callback() {
     if (current_flood->msg_received || current_flood->lp_listening) {
       // if a msg has been received listen for predefined timeout
       uint32_t radio_rx_timeout = gloria_calculate_rx_timeout(current_flood);
-      radio_set_rx(current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood), radio_rx_timeout);
+      radio_receive_scheduled(true, current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood), radio_rx_timeout);
     }
     else if (current_flood->marker) {
       // if the flood marker is not 0 start listening at the expected flood time
       uint64_t schedule_ts = current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood);
       rx_timeout_ts = schedule_ts + current_flood->rx_timeout;
-      radio_set_rx(schedule_ts, (uint64_t) current_flood->rx_timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY);
+      radio_receive_scheduled(true, schedule_ts, (uint64_t) current_flood->rx_timeout);
     }
     else {
       // start receiving immediately
       rx_timeout_ts = hs_timer_get_current_timestamp() + current_flood->rx_timeout;
-      radio_receive(false, true, (uint64_t) current_flood->rx_timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY, 0);
+      radio_receive(true, (uint64_t) current_flood->rx_timeout);
     }
     break;
 
@@ -280,10 +280,10 @@ static void gloria_radio_continue_rx() {
     if (current_flood->rx_timeout) {
       uint64_t now = hs_timer_get_current_timestamp();
 
-      if (rx_timeout_ts > now + GLORIA_MIN_RX_TIME) {
+      if (rx_timeout_ts > (now + GLORIA_MIN_RX_TIME)) {
         radio_set_rx_callback(&gloria_radio_rx_callback);
         radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
-        radio_receive(false, true, (rx_timeout_ts - now) * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY, 0);
+        radio_receive(true, (rx_timeout_ts - now));
       }
       else {
         rx_callback(NULL, 0);
@@ -292,7 +292,7 @@ static void gloria_radio_continue_rx() {
     else {
       radio_set_rx_callback(&gloria_radio_rx_callback);
       radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
-      radio_receive(false, true, 0, 0);
+      radio_receive(true, 0);
     }
   }
   else {
