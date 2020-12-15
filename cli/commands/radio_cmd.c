@@ -1155,11 +1155,11 @@ end:
     }
 
     if (command_get_parameter(&execution, 's')) {
-      radio_transmit((uint8_t*) message, length, true);
+      radio_transmit_scheduled((uint8_t*) message, length, ?);   //FIXME
     }
     else {
 //      write_test_registers();
-      radio_transmit((uint8_t*) message, length, false);
+      radio_transmit((uint8_t*) message, length);
     }
 
     return CMD_RET_SUCCESS;
@@ -1178,13 +1178,13 @@ end:
     }
     else {
       if (command_get_parameter(&execution, 's')) {
-        radio_transmit(NULL, 0, true);
+        radio_transmit_scheduled(NULL, 0, ?);  //FIXME
         if (cli_interactive_mode) {
           cli_log_inline("Operation is scheduled.", CLI_LOG_LEVEL_DEBUG, true, true, true);
         }
       }
       else {
-        radio_transmit(NULL, 0, false);
+        radio_transmit(NULL, 0);  //FIXME
       }
     }
 
@@ -1244,10 +1244,10 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
   if (!count) {
     if (execute_offset) {
       if (compare) {
-        radio_receive_scheduled(boost, hs_timer_get_compare_timestamp() + execute_offset);
+        radio_receive_scheduled(boost, hs_timer_get_compare_timestamp() + execute_offset, timeout);
       }
       else {
-        radio_receive_scheduled(boost, hs_timer_get_current_timestamp() + execute_offset);
+        radio_receive_scheduled(boost, hs_timer_get_current_timestamp() + execute_offset, timeout);
       }
 
       if (cli_interactive_mode) {
@@ -1258,7 +1258,7 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
       }
     }
     else if (command_get_parameter(&execution, 's')) {
-      radio_receive(true, boost, timeout, 0);
+      radio_receive(true, boost, timeout, 0);   //FIXME
       if (cli_interactive_mode) {
         cli_log_inline("Listening for one message until radio is set into another mode (e.g. standby, sleep or Tx) or MCU timeout gets triggered after execution", CLI_LOG_LEVEL_DEBUG, true, true, true);
         cli_log_inline("Operation is scheduled.", CLI_LOG_LEVEL_DEBUG, true, true, true);
@@ -1268,7 +1268,7 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
       }
     }
     else {
-      radio_receive(false, boost, timeout, 0);
+      radio_receive(boost, timeout);
 
       if (cli_interactive_mode) {
         cli_log_inline("Listening for messages repeatedly until radio is set into another mode (e.g. standby, sleep or Tx)", CLI_LOG_LEVEL_DEBUG, true, true, true);

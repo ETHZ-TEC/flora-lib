@@ -695,11 +695,11 @@ end:
         cJSON_Delete(tx);
       }
     }
-    radio_transmit((uint8_t*) message, length, false);
+    radio_transmit((uint8_t*) message, length);
     return CMD_RET_SUCCESS;
   }
   else {
-    radio_transmit(NULL, 0, false);
+    radio_transmit(NULL, 0);    //FIXME
     return CMD_RET_SUCCESS;
   }
 }
