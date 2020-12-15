@@ -1184,7 +1184,7 @@ end:
         }
       }
       else {
-        radio_transmit(NULL, 0);  //FIXME
+        radio_transmit(NULL, 0);
       }
     }
 
@@ -1258,7 +1258,7 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
       }
     }
     else if (command_get_parameter(&execution, 's')) {
-      radio_receive(true, boost, timeout, 0);   //FIXME
+      radio_receive_scheduled(boost, ?, timeout);   //FIXME
       if (cli_interactive_mode) {
         cli_log_inline("Listening for one message until radio is set into another mode (e.g. standby, sleep or Tx) or MCU timeout gets triggered after execution", CLI_LOG_LEVEL_DEBUG, true, true, true);
         cli_log_inline("Operation is scheduled.", CLI_LOG_LEVEL_DEBUG, true, true, true);

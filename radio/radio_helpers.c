@@ -87,10 +87,8 @@ uint8_t radio_get_payload_size()
 
 void radio_set_payload(uint8_t* buffer, uint8_t size)
 {
-  if (buffer && size) {
-    radio_set_packet_params_and_size(size);
-    SX126xWriteBuffer(0, buffer, size);
-  }
+  radio_set_packet_params_and_size(size);
+  SX126xWriteBuffer(0, buffer, size);
 }
 
 
