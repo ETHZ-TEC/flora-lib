@@ -525,7 +525,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size)
 }
 
 
-void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp)
+void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_timestamp)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
@@ -535,7 +535,7 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp)
   SX126xSetTxWithoutExecute(0);
   radio_command_scheduled = true;
 
-  hs_timer_schedule(timestamp, &radio_execute);
+  hs_timer_schedule(schedule_timestamp, &radio_execute);
 }
 
 
@@ -561,7 +561,7 @@ void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t t
   timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;   // convert to radio timer ticks
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout) {
-    hs_timer_timeout(timeout, &radio_timeout_cb);
+    hs_timer_timeout(schedule_timestamp + timeout, &radio_timeout_cb);
     timeout = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
@@ -586,7 +586,7 @@ void radio_receive(bool boost, uint32_t timeout)
   timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout) {
-    hs_timer_timeout(timeout, &radio_timeout_cb);
+    hs_timer_timeout(hs_timer_get_current_timestamp() + timeout, &radio_timeout_cb);
     timeout = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
