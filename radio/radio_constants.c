@@ -86,7 +86,7 @@ const radio_config_t radio_modulations[RADIO_NUM_MODULATIONS] =
 };
 
 #ifndef US915
-const radio_band_t radio_bands[] =
+const radio_band_t radio_bands[RADIO_NUM_BANDS] =
 {
         { .centerFrequency = 863062500.0, .bandwidth = 125000.0, .dutyCycle = 1, .maxPower = 14 }, // 0
         { .centerFrequency = 863187500.0, .bandwidth = 125000.0, .dutyCycle = 1, .maxPower = 14 }, // 1

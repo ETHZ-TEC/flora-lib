@@ -63,8 +63,12 @@ static void radio_restore_config(void)
   radio_events.RxSync     = radio_rx_sync_cb;
   radio_events.RxPreamble = radio_rx_preamble_cb;
 
-  // note: Radio.Init() performs a hard reset of the SX1262 chip
+  // NOTE: Radio.Init() performs a hard reset of the SX1262 chip
   Radio.Init(&radio_events);
+
+  // sets the center frequency and performs image calibration if necessary -> can take up to 2ms (see datasheet p.56)
+  // NOTE: Image calibration is valid for the whole frequency band (863 - 870MHz), no recalibration necessary if another frequency within this band is selected later on
+  Radio.SetChannel(radio_bands[RADIO_DEFAULT_BAND].centerFrequency);
 }
 
 
@@ -289,12 +293,12 @@ void radio_timeout_cb(void)
   radio_set_rx_callback(NULL);
 
   if (radio_timeout_callback) {
-      void (*tmp)(bool) = radio_timeout_callback;
-      radio_set_timeout_callback(NULL);
-      radio_standby();
+    void (*tmp)(bool) = radio_timeout_callback;
+    radio_set_timeout_callback(NULL);
+    radio_standby();
 
-      if(tmp) {
-        tmp(false);
+    if(tmp) {
+      tmp(false);
     }
   }
 
@@ -448,6 +452,8 @@ void radio_rx_timeout_cb(void)
 void radio_rx_sync_cb(void)
 {
   RADIO_RX_STOP_IND();
+  __NOP();
+  __NOP();
   RADIO_RX_START_IND();
   radio_last_sync_timestamp = hs_timer_get_capture_timestamp();
   if (sync_detected_counter < 255) {
