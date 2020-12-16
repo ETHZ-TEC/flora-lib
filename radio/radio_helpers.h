@@ -19,14 +19,6 @@ void      radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int3
 void      radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t power, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, bool implicit, bool crc);
 void      radio_set_config_rxtx(bool lora_mode, uint8_t band_index, int32_t datarate, int8_t power, int32_t bandwidth, int32_t preamble_length, uint8_t coderate, uint16_t timeout, bool implicit,  uint8_t implicit_length, bool crc);
 void      radio_set_continuous_preamble(void);
-void      radio_set_tx(uint64_t timestamp);
-
-/**
- * \brief Set (boosted) RX mode without execute
- * \param timestamp     timestamp of the RX start
- * \param timeout       RX timeout in radio timer ticks (RADIO_TIMER_FREQUENCY)
- */
-void      radio_set_rx(uint64_t timestamp, uint32_t timeout);
 
 uint32_t  radio_calculate_timeout(bool preamble);     // calculates the RX timeout in hs ticks
 

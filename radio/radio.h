@@ -79,7 +79,6 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp)
 void radio_receive(bool boost, uint32_t timeout);                                           // timeout in hs_timer ticks
 void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout);    // timestamp and timeout in hs ticks
 void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule);
-void radio_sync_receive();
 void radio_execute_manually(int64_t timer);
 
 uint64_t  radio_get_last_sync_timestamp(void);

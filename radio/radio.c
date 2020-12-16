@@ -557,7 +557,7 @@ void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t t
   timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;   // convert to radio timer ticks
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout) {
-    hs_timer_timeout(timeout * HS_TIMER_FREQUENCY_US, &radio_timeout_cb);
+    hs_timer_timeout(timeout, &radio_timeout_cb);
     timeout = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
@@ -582,7 +582,7 @@ void radio_receive(bool boost, uint32_t timeout)
   timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout) {
-    hs_timer_timeout(timeout * HS_TIMER_FREQUENCY_US, &radio_timeout_cb);
+    hs_timer_timeout(timeout, &radio_timeout_cb);
     timeout = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
@@ -593,16 +593,6 @@ void radio_receive(bool boost, uint32_t timeout)
   else {
     SX126xSetRx(timeout);
   }
-  RADIO_RX_START_IND();
-  dcstat_start(&radio_dc_rx);
-}
-
-
-void radio_sync_receive(void)
-{
-  if (radio_sleeping) return;      // abort if radio is still in sleep mode
-
-  SX126xSetRxBoosted(0);
   RADIO_RX_START_IND();
   dcstat_start(&radio_dc_rx);
 }
