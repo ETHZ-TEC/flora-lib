@@ -29,32 +29,32 @@ static void gloria_finish_slot();
  */
 void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
 {
-  current_flood = flood;
+  current_flood  = flood;
   flood_callback = callback;
 
   // initialize flood parameters
-  current_flood->first_rx_index = ((current_flood->ack_mode ? -2 : -1));
+  current_flood->first_rx_index     = ((current_flood->ack_mode ? -2 : -1));
   current_flood->header.protocol_id = PROTOCOL_ID_GLORIA;
-  current_flood->header.type = 0;
-  current_flood->header.slot_index = 0;
-  current_flood->msg_received = current_flood->initial;
-  current_flood->last_active_slot = gloria_calculate_last_active_slot(current_flood);
+  current_flood->header.type        = 0;
+  current_flood->header.slot_index  = 0;
+  current_flood->msg_received       = current_flood->initial;
+  current_flood->last_active_slot   = gloria_calculate_last_active_slot(current_flood);
 
   current_flood->remaining_retransmissions = current_flood->max_retransmissions;
 
   current_flood->ack_message.protocol_id = PROTOCOL_ID_GLORIA;
-  current_flood->ack_message.type = 0;
-  current_flood->ack_message.sync = 0;
-  current_flood->ack_message.dst = 0;
-  current_flood->ack_counter = 0;
-  current_flood->acked = 0;
+  current_flood->ack_message.type        = 0;
+  current_flood->ack_message.sync        = 0;
+  current_flood->ack_message.dst         = 0;
+  current_flood->ack_counter             = 0;
+  current_flood->acked                   = 0;
 
   // calculate the message size; always needed for the initiator; other nodes need it for low power listening
   current_flood->header_size = (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN);
 
   // calculate the message size for the initiator, initialize markers
   if (current_flood->initial) {
-    current_flood->received_marker = flood->marker;
+    current_flood->received_marker      = flood->marker;
     current_flood->reconstructed_marker = flood->marker;
 
     // add timestamp for sync floods
@@ -64,7 +64,7 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
     }
   }
   else {
-    current_flood->received_marker = 0;
+    current_flood->received_marker      = 0;
     current_flood->reconstructed_marker = 0;
 
     // check if lp listening possible with the given guard time
@@ -99,10 +99,9 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
   if (current_flood->ack_mode) {
     current_flood->header.src = (current_flood->initial ? current_flood->node_id : 0);
   }
-  current_flood->header.slot_index = 0;
 
   // initialize error flags
-  current_flood->crc_error = false;
+  current_flood->crc_error   = false;
   current_flood->crc_timeout = false;
 
   // set radio config

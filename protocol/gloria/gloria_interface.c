@@ -140,7 +140,6 @@ void gloria_start(bool is_initiator,
   HAL_SuspendTick();
   HAL_NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);    // needs to be disabled
   SUSPEND_SYSTICK();
-  //lptimer_enable_ovf_int(false); -> seems to cause issues
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
   gloria_run_flood(&flood, &gloria_flood_callback);
