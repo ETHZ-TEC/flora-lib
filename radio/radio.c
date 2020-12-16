@@ -515,7 +515,9 @@ void radio_transmit(uint8_t* buffer, uint8_t size)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  radio_set_payload(buffer, size);
+  if (buffer) {
+    radio_set_payload(buffer, size);
+  }
   SX126xSetTx(0);
   hs_timer_set_schedule_timestamp(hs_timer_get_counter());
   RADIO_TX_START_IND();
@@ -527,7 +529,9 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t timestamp)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  radio_set_payload(buffer, size);
+  if (buffer) {
+    radio_set_payload(buffer, size);
+  }
   SX126xSetTxWithoutExecute(0);
   radio_command_scheduled = true;
 
