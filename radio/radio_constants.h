@@ -28,6 +28,7 @@
 
 #define RADIO_NUM_MODULATIONS           11
 #define RADIO_NUM_CAD_PARAMS            8
+#define RADIO_NUM_BANDS                 52
 
 #ifndef US915
 #define RADIO_DEFAULT_BAND              40

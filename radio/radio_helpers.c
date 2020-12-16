@@ -160,7 +160,7 @@ void radio_set_config_tx(uint8_t modulation_index,
                          bool implicit,
                          bool crc)
 {
-  if (modulation_index >= RADIO_NUM_MODULATIONS) return;
+  if (modulation_index >= RADIO_NUM_MODULATIONS || band_index >= RADIO_NUM_BANDS) return;
 
   current_modulation = modulation_index;
 
@@ -197,11 +197,11 @@ void radio_set_config_tx(uint8_t modulation_index,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
       preamble_length,
       implicit, // explicit header mode
-      crc, // CRC on
-      false, // no FHSS
-      0, // no FHSS
-      0, // no FHSS
-      0 // no timeout
+      crc,      // CRC on
+      false,    // no FHSS
+      0,        // no FHSS
+      0,        // no FHSS
+      0         // no timeout
   );
 }
 
@@ -217,7 +217,7 @@ void radio_set_config_rx(uint8_t modulation_index,
                          bool crc,
                          bool stop_rx_on_preamble)
 {
-  if (modulation_index >= RADIO_NUM_MODULATIONS) return;
+  if (modulation_index >= RADIO_NUM_MODULATIONS || band_index >= RADIO_NUM_BANDS) return;
 
   current_modulation = modulation_index;
 
@@ -248,16 +248,16 @@ void radio_set_config_rx(uint8_t modulation_index,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? bandwidth : bandwidth_rx,
       bitrate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
-      0, // AFC Bandwidth (FSK only, not used with SX126x!)
+      0,        // AFC Bandwidth (FSK only, not used with SX126x!)
       preamble_length,
       timeout,
       implicit, // explicit header mode
       (implicit ? implicit_length : 0), // no fixed payload length (as it is explicit header mode / variable packet length)
-      crc, // CRC on
-      false, // no FHSS
-      0, // no FHSS
-      false, // no FHSS
-      false // not continuous rx
+      crc,      // CRC on
+      false,    // no FHSS
+      0,        // no FHSS
+      false,    // no FHSS
+      false     // not continuous rx
   );
 
   SX126xSetStopRxTimerOnPreambleDetect(stop_rx_on_preamble);
@@ -276,6 +276,8 @@ void radio_set_config_rxtx(bool lora_mode,
                            uint8_t implicit_length,
                            bool crc)
 {
+  if (band_index >= RADIO_NUM_BANDS) return;
+
   // determine fdev from bandwidth and datarate
   // NOTE: according to the datasheet afc_bandwidth (automated frequency control bandwidth) variable represents the frequency error (2x crystal frequency error)
   uint32_t fdev = 0;

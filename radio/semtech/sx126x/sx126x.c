@@ -97,6 +97,7 @@ void RadioSetGfskWhitening( uint8_t whitening );
 void SX126xInit( )
 {
     SX126xReset( );
+    ImageCalibrated = false;
 
     SX126xWakeup( );
     SX126xSetStandby( STDBY_XOSC );
@@ -238,6 +239,11 @@ uint32_t SX126xGetRandom( void )
 void SX126xSetSleep( SleepParams_t sleepConfig )
 {
     SX126xAntSwOff( );
+
+    if (sleepConfig.Fields.WarmStart == 0)
+    {
+        ImageCalibrated = false;
+    }
 
     SX126xWriteCommand( RADIO_SET_SLEEP, &sleepConfig.Value, 1 );
     OperatingMode = MODE_SLEEP;
