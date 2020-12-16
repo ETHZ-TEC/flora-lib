@@ -251,7 +251,7 @@ static void elwb_run(void)
     node_registered = false;
   }
 
-  start_of_next_round = ELWB_TIMER_LAST_EXP();
+  start_of_next_round = ELWB_TIMER_NOW();
 
   /* --- begin MAIN LOOP for eLWB --- */
   while (elwb_running) {
@@ -274,7 +274,7 @@ static void elwb_run(void)
     if (ELWB_IS_HOST()) {
       /* at this point start_of_next_round and ELWB_TIMER_LAST_EXP() should be the same. However, if the wakeup time is in the past (for whatever reason),
        * the lptimer will set last expiration to the current time and thus prevents that the host gets stuck in a "wakeup too late" loop */
-      t_start = ELWB_TIMER_LAST_EXP();
+      t_start = start_of_next_round;
 
       /* --- SEND SCHEDULE --- */
       ELWB_SEND_SCHED();
@@ -757,7 +757,6 @@ end_of_round:
       int32_t drift_div = 1000000 / stats.drift;
       drift_comp        = drift_counter / drift_div;
       drift_counter    -= drift_comp * drift_div;
-      //LOG_VERBOSE("extra ticks: %lu, counter: %lu", drift_comp, drift_counter);
     } else {
       drift_counter = 0;
       drift_comp = 0;
@@ -771,7 +770,6 @@ end_of_round:
     if (call_preprocess) {
       start_of_next_round -= ELWB_CONF_T_PREPROCESS;    /* wake up earlier such that the pre task can run */
     }
-    //LOG_VERBOSE("wakeup in %ld ticks", (int32_t)(start_of_next_round - lptimer_now()));
     ELWB_WAIT_UNTIL(start_of_next_round);
   }
 
@@ -839,7 +837,7 @@ void elwb_start(uint32_t _host_id)
 
   /* instead of calling elwb_run(), schedule the start */
 #if ELWB_CONF_STARTUP_DELAY > 0
-  ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_STARTUP_DELAY * LPTIMER_SECOND / 1000);
+  ELWB_WAIT_UNTIL(ELWB_TIMER_NOW() + ELWB_CONF_STARTUP_DELAY * ELWB_TIMER_SECOND / 1000);
 #endif /* ELWB_CONF_STARTUP_DELAY */
 
   elwb_run();
