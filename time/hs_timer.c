@@ -280,15 +280,15 @@ void hs_timer_schedule(uint64_t timestamp, hs_timer_cb_t callback)
 {
   uint64_t now = hs_timer_get_current_timestamp();
 
-  if ((timestamp - now) < HS_TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
+  if (timestamp < (now + HS_TIMER_GUARD_TIME)) {
     callback();
     LOG_WARNING("Schedule too late!");
   }
   else {
     hs_timer_scheduled_timestamp = timestamp;
-    hs_timer_scheduled = true;
     schedule_callback = callback;
     hs_timer_set_schedule_timestamp(timestamp);
+    hs_timer_scheduled = true;
 #ifndef DEVKIT
     __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC2);
     HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
