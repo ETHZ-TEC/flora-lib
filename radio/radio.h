@@ -11,7 +11,7 @@
 #define RADIO_FLORA_RADIO_H_
 
 
-/* whether to use the hardware timeout of the radio chip; if set to 0, a software timeout will be used instead (hs timer) */
+/* whether to use the hardware timeout of the radio chip in receive mode; if set to 0, a software timeout will be used instead (hs timer) */
 #ifndef RADIO_USE_HW_TIMEOUT
 #define RADIO_USE_HW_TIMEOUT      1
 #endif /* RADIO_USE_HW_TIMEOUT */
