@@ -170,6 +170,18 @@ void radio_set_irq_mode(lora_irq_mode_t mode)
                            IRQ_RADIO_NONE,
                            IRQ_RADIO_NONE );
     break;
+  case IRQ_MODE_RX_TX:
+    SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
+                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
+      break;
+  case IRQ_MODE_RX_TX_CRC:
+    SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
+                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
+      break;
 
   default:
     break;

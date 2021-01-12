@@ -35,6 +35,8 @@ typedef enum {
   IRQ_MODE_SYNC_ONLY,
   IRQ_MODE_CAD,
   IRQ_MODE_CAD_RX,
+  IRQ_MODE_RX_TX,
+  IRQ_MODE_RX_TX_CRC,
 } lora_irq_mode_t;
 
 typedef struct lora_message_s {
