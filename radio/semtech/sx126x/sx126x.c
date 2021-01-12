@@ -155,7 +155,6 @@ uint8_t SX126xGetPayload( uint8_t *buffer, uint8_t *size,  uint8_t maxSize )
 void SX126xSendPayload( uint8_t *payload, uint8_t size, uint32_t timeout )
 {
     SX126xSetPayload( payload, size );
-    RadioSetXoscTrim( );
     SX126xSetTx( timeout );
 }
 
@@ -273,7 +272,6 @@ void SX126xSetTx( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    RadioSetXoscTrim( );
     OperatingMode = MODE_TX;
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
@@ -286,7 +284,6 @@ void SX126xSetTxWithoutExecute( uint32_t timeout )
 {
   uint8_t buf[3];
 
-  RadioSetXoscTrim( );
   OperatingMode = MODE_TX;
 
   buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
@@ -300,7 +297,6 @@ void SX126xSetRx( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    RadioSetXoscTrim( );
     OperatingMode = MODE_RX;
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
@@ -313,7 +309,6 @@ void SX126xSetRxWithoutExecute( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    RadioSetXoscTrim( );
     OperatingMode = MODE_RX;
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
@@ -326,7 +321,6 @@ void SX126xSetRxBoosted( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    RadioSetXoscTrim( );
     OperatingMode = MODE_RX;
 
     SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
@@ -341,7 +335,6 @@ void SX126xSetRxBoostedWithoutExecute( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    RadioSetXoscTrim( );
     OperatingMode = MODE_RX;
 
     SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
@@ -354,7 +347,6 @@ void SX126xSetRxBoostedWithoutExecute( uint32_t timeout )
 
 void SX126xSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime )
 {
-    RadioSetXoscTrim( );
     uint8_t buf[6];
 
     buf[0] = ( uint8_t )( ( rxTime >> 16 ) & 0xFF );
@@ -369,8 +361,6 @@ void SX126xSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime )
 
 void SX126xSetRxDutyCycleWithoutExecute( uint32_t rxTime, uint32_t sleepTime )
 {
-    RadioSetXoscTrim( );
-
     uint8_t buf[6];
 
     buf[0] = ( uint8_t )( ( rxTime >> 16 ) & 0xFF );
@@ -380,33 +370,28 @@ void SX126xSetRxDutyCycleWithoutExecute( uint32_t rxTime, uint32_t sleepTime )
     buf[4] = ( uint8_t )( ( sleepTime >> 8 ) & 0xFF );
     buf[5] = ( uint8_t )( sleepTime & 0xFF );
     SX126xWriteCommandWithoutExecute( RADIO_SET_RXDUTYCYCLE, buf, 6 );
-    RadioSetXoscTrim( );
     OperatingMode = MODE_RX_DC;
 }
 
 void SX126xSetCad( void )
 {
-    RadioSetXoscTrim( );
     SX126xWriteCommand( RADIO_SET_CAD, 0, 0 );
     OperatingMode = MODE_CAD;
 }
 
 void SX126xSetCadWithoutExecute( void )
 {
-    RadioSetXoscTrim( );
     SX126xWriteCommandWithoutExecute( RADIO_SET_CAD, 0, 0 );
     OperatingMode = MODE_CAD;
 }
 
 void SX126xSetTxContinuousWave( void )
 {
-    RadioSetXoscTrim( );
     SX126xWriteCommand( RADIO_SET_TXCONTINUOUSWAVE, 0, 0 );
 }
 
 void SX126xSetTxInfinitePreamble( void )
 {
-    RadioSetXoscTrim( );
     SX126xWriteCommand( RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 );
 }
 
@@ -431,7 +416,6 @@ void SX126xSetRegulatorMode( RadioRegulatorMode_t mode )
 void SX126xCalibrate( CalibrationParams_t calibParam )
 {
     SX126xWriteCommand( RADIO_CALIBRATE, ( uint8_t* )&calibParam, 1 );
-    RadioSetXoscTrim( );
 }
 
 void SX126xCalibrateImage( uint32_t freq )
@@ -464,7 +448,7 @@ void SX126xCalibrateImage( uint32_t freq )
         calFreq[1] = 0x6F;
     }
     SX126xWriteCommand( RADIO_CALIBRATEIMAGE, calFreq, 2 );
-    RadioSetXoscTrim( ); // necessary since writing calibration values apparently resets stadby mode to STDBY_RC which overwrites external XTAL trim calibration values
+    RadioSetXoscTrim( ); // necessary since writing calibration values apparently resets standby mode to STDBY_RC which overwrites external XTAL trim calibration values
     OperatingMode = MODE_STDBY_XOSC;
 }
 
