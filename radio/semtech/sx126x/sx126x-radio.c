@@ -1319,6 +1319,7 @@ void RadioIrqProcess( void )
             {
                 RadioEvents->TxDone( );
             }
+            SX126xSetOperatingMode( MODE_STDBY_XOSC );
         }
 
         if( ( irqRegs & IRQ_SYNCWORD_VALID ) == IRQ_SYNCWORD_VALID )
@@ -1354,6 +1355,10 @@ void RadioIrqProcess( void )
                     RadioEvents->RxDone( RadioRxPayload, size, RadioPktStatus.Params.Gfsk.RssiAvg, 0, crc_error );
                 }
             }
+            if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS)
+            {
+                SX126xSetOperatingMode( MODE_STDBY_XOSC );
+            }
         }
 
         if( ( irqRegs & IRQ_CRC_ERROR ) == IRQ_CRC_ERROR )
@@ -1362,7 +1367,7 @@ void RadioIrqProcess( void )
             {
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
                 {
-                  RadioEvents->RxError( );
+                    RadioEvents->RxError( );
                 }
             }
         }
@@ -1402,6 +1407,7 @@ void RadioIrqProcess( void )
                     RadioEvents->RxTimeout( );
                 }
             }
+            SX126xSetOperatingMode( MODE_STDBY_XOSC );
         }
 
         if( ( irqRegs & IRQ_PREAMBLE_DETECTED ) == IRQ_PREAMBLE_DETECTED )

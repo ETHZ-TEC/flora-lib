@@ -173,7 +173,8 @@ typedef enum
     MODE_TX,                                                //! The radio is in transmit mode
     MODE_RX,                                                //! The radio is in receive mode
     MODE_RX_DC,                                             //! The radio is in receive duty cycle mode
-    MODE_CAD                                                //! The radio is in channel activity detection mode
+    MODE_CAD,                                               //! The radio is in channel activity detection mode
+    MODE_RX_CONTINUOUS,                                     //! The radio is in continuous receive mode
 }RadioOperatingModes_t;
 
 /*!
@@ -713,6 +714,8 @@ void SX126xInit( void );
  * \retval      RadioOperatingModes_t last operating mode
  */
 RadioOperatingModes_t SX126xGetOperatingMode( void );
+
+void SX126xSetOperatingMode( RadioOperatingModes_t mode );
 
 /*!
  * \brief Wakeup the radio if it is in Sleep mode and check that Busy is low

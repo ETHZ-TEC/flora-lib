@@ -123,6 +123,11 @@ RadioOperatingModes_t SX126xGetOperatingMode( void )
     return OperatingMode;
 }
 
+void SX126xSetOperatingMode( RadioOperatingModes_t mode )
+{
+    OperatingMode = mode;
+}
+
 void SX126xCheckDeviceReady( void )
 {
     if( ( SX126xGetOperatingMode( ) == MODE_SLEEP ) || ( SX126xGetOperatingMode( ) == MODE_RX_DC && RADIO_READ_BUSY_PIN( ) ) )
@@ -297,7 +302,14 @@ void SX126xSetRx( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    OperatingMode = MODE_RX;
+    if (timeout == 0xffffff)
+    {
+        OperatingMode = MODE_RX_CONTINUOUS;
+    }
+    else
+    {
+        OperatingMode = MODE_RX;
+    }
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
@@ -309,7 +321,14 @@ void SX126xSetRxWithoutExecute( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    OperatingMode = MODE_RX;
+    if (timeout == 0xffffff)
+    {
+        OperatingMode = MODE_RX_CONTINUOUS;
+    }
+    else
+    {
+        OperatingMode = MODE_RX;
+    }
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
@@ -321,7 +340,14 @@ void SX126xSetRxBoosted( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    OperatingMode = MODE_RX;
+    if (timeout == 0xffffff)
+    {
+        OperatingMode = MODE_RX_CONTINUOUS;
+    }
+    else
+    {
+        OperatingMode = MODE_RX;
+    }
 
     SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
 
@@ -335,7 +361,14 @@ void SX126xSetRxBoostedWithoutExecute( uint32_t timeout )
 {
     uint8_t buf[3];
 
-    OperatingMode = MODE_RX;
+    if (timeout == 0xffffff)
+    {
+        OperatingMode = MODE_RX_CONTINUOUS;
+    }
+    else
+    {
+        OperatingMode = MODE_RX;
+    }
 
     SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
 
