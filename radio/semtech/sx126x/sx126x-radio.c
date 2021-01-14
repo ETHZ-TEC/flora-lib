@@ -1315,11 +1315,11 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_TX_DONE ) == IRQ_TX_DONE )
         {
+            SX126xSetOperatingMode( MODE_STDBY_XOSC );
             if( ( RadioEvents != NULL ) && ( RadioEvents->TxDone != NULL ) )
             {
                 RadioEvents->TxDone( );
             }
-            SX126xSetOperatingMode( MODE_STDBY_XOSC );
         }
 
         if( ( irqRegs & IRQ_SYNCWORD_VALID ) == IRQ_SYNCWORD_VALID )
@@ -1341,11 +1341,13 @@ void RadioIrqProcess( void )
         if( ( irqRegs & IRQ_RX_DONE ) == IRQ_RX_DONE )
         {
             bool crc_error = (irqRegs & IRQ_CRC_ERROR) == IRQ_CRC_ERROR || (irqRegs & IRQ_HEADER_ERROR) == IRQ_HEADER_ERROR;
-
             uint8_t size;
-
             SX126xGetPayload( RadioRxPayload, &size , MaxPayloadRead );
             SX126xGetPacketStatus( &RadioPktStatus );
+            if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS)
+            {
+                SX126xSetOperatingMode( MODE_STDBY_XOSC );
+            }
             if( ( RadioEvents != NULL ) && ( RadioEvents->RxDone != NULL ) )
             {
                 if (RadioPktStatus.packetType == PACKET_TYPE_LORA) {
@@ -1355,16 +1357,16 @@ void RadioIrqProcess( void )
                     RadioEvents->RxDone( RadioRxPayload, size, RadioPktStatus.Params.Gfsk.RssiAvg, 0, crc_error );
                 }
             }
-            if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS)
-            {
-                SX126xSetOperatingMode( MODE_STDBY_XOSC );
-            }
         }
 
         if( ( irqRegs & IRQ_CRC_ERROR ) == IRQ_CRC_ERROR )
         {
             if( ( irqRegs & IRQ_RX_DONE ) != IRQ_RX_DONE )
             {
+                if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS)
+                {
+                    SX126xSetOperatingMode( MODE_STDBY_XOSC );
+                }
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
                 {
                     RadioEvents->RxError( );
@@ -1376,6 +1378,10 @@ void RadioIrqProcess( void )
         {
             if( ( irqRegs & IRQ_RX_DONE ) != IRQ_RX_DONE )
             {
+                if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS)
+                {
+                    SX126xSetOperatingMode( MODE_STDBY_XOSC );
+                }
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxError != NULL ) )
                 {
                     RadioEvents->RxError( );
@@ -1385,6 +1391,7 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_CAD_DONE ) == IRQ_CAD_DONE )
         {
+            SX126xSetOperatingMode( MODE_STDBY_XOSC );
             if( ( RadioEvents != NULL ) && ( RadioEvents->CadDone != NULL ) )
             {
                 RadioEvents->CadDone( ( ( irqRegs & IRQ_CAD_ACTIVITY_DETECTED ) == IRQ_CAD_ACTIVITY_DETECTED ) );
@@ -1395,6 +1402,7 @@ void RadioIrqProcess( void )
         {
             if( SX126xGetOperatingMode( ) == MODE_TX )
             {
+                SX126xSetOperatingMode( MODE_STDBY_XOSC );
                 if( ( RadioEvents != NULL ) && ( RadioEvents->TxTimeout != NULL ) )
                 {
                     RadioEvents->TxTimeout( );
@@ -1402,12 +1410,12 @@ void RadioIrqProcess( void )
             }
             else if( SX126xGetOperatingMode( ) == MODE_RX )
             {
+                SX126xSetOperatingMode( MODE_STDBY_XOSC );
                 if( ( RadioEvents != NULL ) && ( RadioEvents->RxTimeout != NULL ) )
                 {
                     RadioEvents->RxTimeout( );
                 }
             }
-            SX126xSetOperatingMode( MODE_STDBY_XOSC );
         }
 
         if( ( irqRegs & IRQ_PREAMBLE_DETECTED ) == IRQ_PREAMBLE_DETECTED )

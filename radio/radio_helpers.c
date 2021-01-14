@@ -591,6 +591,17 @@ RadioOperatingModes_t radio_get_opmode(void)
 }
 
 
+void radio_print_status(void)
+{
+  uint8_t  status = SX126xGetStatus().Value;
+  uint8_t  opmode = SX126xGetOperatingMode();
+  uint16_t irq    = SX126xGetIrqStatus();
+  uint16_t errors = SX126xGetDeviceErrors().Value;
+  bool     dio1   = RADIO_READ_DIO1_PIN();
+  LOG_INFO("status: 0x%x  opmode: 0x%x  dio1: %u  irq: 0x%x  errors: 0x%x", status, opmode, dio1, irq, errors);
+}
+
+
 uint32_t radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
                         uint32_t datarate, uint8_t coderate,
                         uint16_t preambleLen, bool fixLen, uint8_t payloadLen,
