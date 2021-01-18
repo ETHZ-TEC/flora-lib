@@ -1093,6 +1093,13 @@ void RadioStandby( void )
 {
     // SX126xSetStandby( STDBY_RC );
     SX126xSetStandby( STDBY_XOSC );
+
+    if (RADIO_READ_DIO1_PIN())
+    {
+        // there is still a pending interrupt: clear it
+        SX126xClearIrqStatus( IRQ_RADIO_ALL );
+        IrqFired = false;
+    }
 }
 
 void RadioRx( )
@@ -1306,12 +1313,18 @@ void RadioIrqProcess( void )
 {
     if( IrqFired == true )
     {
-        CRITICAL_SECTION_BEGIN( );
         IrqFired = false;
-        CRITICAL_SECTION_END( );
 
         uint16_t irqRegs = SX126xGetIrqStatus( );
-        SX126xClearIrqStatus( irqRegs );
+        SX126xClearIrqStatus( irqRegs );    // takes ~20us
+
+        // if DIO1 is still high, then most likely another radio interrupt has just occurred -> read registers again
+        if (RADIO_READ_DIO1_PIN())
+        {
+            uint16_t irqRegs2 = SX126xGetIrqStatus( );
+            SX126xClearIrqStatus( irqRegs2 );
+            irqRegs |= irqRegs2;
+        }
 
         if( ( irqRegs & IRQ_TX_DONE ) == IRQ_TX_DONE )
         {
