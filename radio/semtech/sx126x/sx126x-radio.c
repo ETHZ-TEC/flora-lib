@@ -1319,7 +1319,7 @@ void RadioIrqProcess( void )
         SX126xClearIrqStatus( irqRegs );    // takes ~20us
 
         // if DIO1 is still high, then most likely another radio interrupt has just occurred -> read registers again
-        if (RADIO_READ_DIO1_PIN())
+        while (RADIO_READ_DIO1_PIN())
         {
             uint16_t irqRegs2 = SX126xGetIrqStatus( );
             SX126xClearIrqStatus( irqRegs2 );
