@@ -24,7 +24,6 @@ static const double radio_lora_symb_times[3][8] = { { 32.768, 16.384, 8.192, 4.0
 
 volatile static uint8_t lora_last_payload_size = 0;
 volatile static uint8_t current_modulation = 0;
-volatile static int32_t override_preamble_length = -1;
 volatile static uint8_t channel_free = 0;       // set in the CAD callback
 
 radio_message_t* last_message_list = NULL;
@@ -223,10 +222,6 @@ void radio_set_config_rx(uint8_t modulation_index,
 
   if (preamble_length == -1) {
     preamble_length = radio_modulations[current_modulation].preambleLen;
-    override_preamble_length = preamble_length;
-  }
-  else {
-    override_preamble_length = -1;
   }
 
   if (bandwidth == -1) {
@@ -326,25 +321,6 @@ void radio_set_config_rxtx(bool lora_mode,
   );
 
   SX126xSetStopRxTimerOnPreambleDetect(true);
-}
-
-
-// calculate the RX timeout in hs ticks
-uint32_t radio_calculate_timeout(bool with_preamble, uint8_t modulation)
-{
-  if (modulation >= RADIO_NUM_MODULATIONS) return 0;
-
-  if (with_preamble) {
-    if (override_preamble_length != -1) {
-      return ((uint64_t) radio_get_preamble_toa(override_preamble_length, modulation))  * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
-    }
-    else {
-      return ((uint64_t) radio_get_preamble_toa(0, modulation)) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
-    }
-  }
-  else {
-    return radio_get_toa_hs(0, modulation) * 2.0 + (85.2 + 100.0) * HS_TIMER_FREQUENCY_US;
-  }
 }
 
 
