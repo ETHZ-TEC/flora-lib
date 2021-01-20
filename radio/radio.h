@@ -18,9 +18,9 @@
 
 
 typedef enum {
-  FALSE = 0,
-  COLD = 1,
-  WARM = 2,
+  RADIO_SLEEPING_FALSE = 0,
+  RADIO_SLEEPING_COLD = 1,
+  RADIO_SLEEPING_WARM = 2,
 } radio_sleeping_t;
 
 typedef enum {

@@ -108,39 +108,36 @@ void radio_set_payload_chunk(uint8_t* buffer, uint8_t offset, uint8_t size, bool
 void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size)
 {
   if (size > 0) {
-    uint8_t margin = 16;
-    uint32_t preamble_toa = radio_get_preamble_toa(SX126x.PacketParams.Params.LoRa.PreambleLength, current_modulation);
-    uint32_t header_toa = radio_get_toa_hs(0, current_modulation);
-    uint32_t start_time = (uint32_t) hs_timer_get_schedule_timestamp() + preamble_toa + header_toa + RADIO_TIME_STBY_RC_TO_TX * HS_TIMER_FREQUENCY_US;
-    volatile uint32_t toa = radio_get_toa_hs(lora_last_payload_size, current_modulation) - preamble_toa - header_toa - RADIO_TIME_STBY_RC_TO_TX * HS_TIMER_FREQUENCY_US; // - lora_get_header_toa(current_modulation);
+    uint8_t  margin       = 16;
+    uint32_t preamble_toa = radio_get_preamble_toa_hs(SX126x.PacketParams.Params.LoRa.PreambleLength, current_modulation);
+    uint32_t header_toa   = radio_get_toa_hs(0, current_modulation);
+    uint32_t overhead     = preamble_toa + header_toa + RADIO_TIME_STBY_RC_TO_TX * HS_TIMER_FREQUENCY_US;
+    uint32_t start_time   = (uint32_t) hs_timer_get_schedule_timestamp() + overhead;
+    uint32_t toa          = radio_get_toa_hs(lora_last_payload_size, current_modulation) - overhead;
     uint32_t toa_per_byte = toa / lora_last_payload_size;
 
     radio_set_packet_params_and_size(size);
 
-    while (true) {
-      volatile uint32_t difference = ((uint32_t) hs_timer_get_current_timestamp()) - start_time;
-      if (difference < ((uint32_t) 2^31)) {
-        break;
-      }
-    }
+    // busy wait for the start time
+    int32_t difference;
+    do {
+      difference = (int32_t)(((uint32_t) hs_timer_get_current_timestamp()) - start_time);
+    } while (difference < 0);
 
     uint16_t i = 0;
     while (i < size)
     {
       volatile uint32_t current_time = (uint32_t) hs_timer_get_current_timestamp();
-      volatile uint32_t bytes = (current_time - start_time) / toa_per_byte;
+      volatile uint32_t sent_bytes   = (current_time - start_time) / toa_per_byte;
 
       if ((current_time - start_time) > toa) {
         SX126xWriteBuffer(i, buffer + i, size - i);
         break;
       }
-      else if (bytes >= (i + margin)){
-        uint8_t size_to_transfer = ((size - i) >= margin) ? margin : (size-i);
+      else if (sent_bytes >= (i + margin)) {
+        uint8_t size_to_transfer = ((size - i) >= margin) ? margin : (size - i);
         SX126xWriteBuffer(i, buffer + i, size_to_transfer);
         i += size_to_transfer;
-      }
-      else {
-        __NOP();
       }
     }
   }
@@ -154,7 +151,7 @@ void radio_set_config_tx(uint8_t modulation_index,
                          uint8_t band_index,
                          int8_t power,
                          int32_t bandwidth,     // DSB
-                         int32_t bitrate,
+                         int32_t datarate,
                          int32_t preamble_length,
                          bool implicit,
                          bool crc)
@@ -178,11 +175,11 @@ void radio_set_config_tx(uint8_t modulation_index,
 
   uint32_t fdev = radio_modulations[current_modulation].fdev;
 
-  if (bitrate == -1) {
-    bitrate = radio_modulations[current_modulation].datarate;
+  if (datarate == -1) {
+    datarate = radio_modulations[current_modulation].datarate;
   }
   else {
-    fdev = (bandwidth - bitrate) / 2;
+    fdev = (bandwidth - datarate) / 2;
   }
 
   Radio.Standby();
@@ -192,7 +189,7 @@ void radio_set_config_tx(uint8_t modulation_index,
       power,
       (radio_modulations[current_modulation].modem == MODEM_FSK) ? fdev : 0, // FSK frequency deviation
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? bandwidth : 0,
-      bitrate,
+      datarate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
       preamble_length,
       implicit, // explicit header mode
@@ -208,7 +205,7 @@ void radio_set_config_tx(uint8_t modulation_index,
 void radio_set_config_rx(uint8_t modulation_index,
                          uint8_t band_index,
                          int32_t bandwidth,           // DSB
-                         int32_t bitrate,
+                         int32_t datarate,
                          int32_t preamble_length,
                          uint16_t timeout,
                          bool implicit,
@@ -223,15 +220,14 @@ void radio_set_config_rx(uint8_t modulation_index,
   if (preamble_length == -1) {
     preamble_length = radio_modulations[current_modulation].preambleLen;
   }
-
   if (bandwidth == -1) {
     bandwidth = radio_modulations[current_modulation].bandwidth;
   }
-  uint32_t afc_bandwidth = 2 * (bandwidth / 2 + radio_bands[band_index].centerFrequency) / RADIO_CLOCK_DRIFT;
-  int32_t bandwidth_rx = bandwidth + afc_bandwidth;
 
-  if (bitrate == -1) {
-    bitrate = radio_modulations[current_modulation].datarate;
+  int32_t bandwidth_rx = radio_get_rx_bandwidth(radio_bands[band_index].centerFrequency, bandwidth);
+
+  if (datarate == -1) {
+    datarate = radio_modulations[current_modulation].datarate;
   }
 
   Radio.Standby();
@@ -241,7 +237,7 @@ void radio_set_config_rx(uint8_t modulation_index,
   Radio.SetRxConfig(
       radio_modulations[current_modulation].modem,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? bandwidth : bandwidth_rx,
-      bitrate,
+      datarate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
       0,        // AFC Bandwidth (FSK only, not used with SX126x!)
       preamble_length,
@@ -274,14 +270,12 @@ void radio_set_config_rxtx(bool lora_mode,
   if (band_index >= RADIO_NUM_BANDS) return;
 
   // determine fdev from bandwidth and datarate
-  // NOTE: according to the datasheet afc_bandwidth (automated frequency control bandwidth) variable represents the frequency error (2x crystal frequency error)
-  uint32_t fdev = 0;
+  uint32_t fdev         = 0;
   int32_t  bandwidth_rx = 0;
-  uint32_t freq = radio_bands[band_index].centerFrequency;
+  uint32_t freq         = radio_bands[band_index].centerFrequency;
   if (!lora_mode) {
-    uint32_t afc_bandwidth = 2 * (bandwidth / 2 + freq) / RADIO_CLOCK_DRIFT;
-    fdev = (bandwidth - datarate) / 2;
-    bandwidth_rx = bandwidth + afc_bandwidth;
+    fdev         = (bandwidth - datarate) / 2;
+    bandwidth_rx = radio_get_rx_bandwidth(freq, bandwidth);
   }
 
   Radio.Standby();
@@ -325,20 +319,20 @@ void radio_set_config_rxtx(bool lora_mode,
 
 
 // symbol TOA in hs ticks
-uint32_t radio_get_symbol_toa(uint16_t length, uint8_t modulation)
+uint32_t radio_get_symbol_toa_hs(uint16_t length, uint8_t modulation)
 {
   if (modulation >= RADIO_NUM_MODULATIONS) return 0;
 
   if (radio_modulations[modulation].modem == MODEM_LORA) {
-    return length * radio_lora_symb_times[radio_modulations[modulation].bandwidth][12 - radio_modulations[modulation].datarate] * HS_TIMER_FREQUENCY_MS;
+    return length * radio_lora_symb_times[radio_modulations[modulation].bandwidth][RADIO_LORA_SF_TO_MODULATION_INDEX(radio_modulations[modulation].datarate)] * HS_TIMER_FREQUENCY_MS;
   }
   else {
-    return rint( 8 * ( length / radio_modulations[modulation].datarate ) * HS_TIMER_FREQUENCY);
+    return HS_TIMER_FREQUENCY * 8 * (uint32_t)length / radio_modulations[modulation].datarate;
   }
 }
 
 
-uint32_t radio_get_preamble_toa(uint16_t length, uint8_t modulation)
+uint32_t radio_get_preamble_toa_hs(uint16_t length, uint8_t modulation)
 {
   if (modulation >= RADIO_NUM_MODULATIONS) return 0;
 
@@ -348,14 +342,14 @@ uint32_t radio_get_preamble_toa(uint16_t length, uint8_t modulation)
 
   if (radio_modulations[modulation].modem == MODEM_LORA) {
     if (radio_modulations[modulation].datarate == 6 || radio_modulations[modulation].datarate == 5) {
-      return radio_get_symbol_toa(length + 6.25, modulation);
+      return radio_get_symbol_toa_hs(length + 6.25, modulation);
     }
     else {
-      return radio_get_symbol_toa(length + 4.25, modulation);
+      return radio_get_symbol_toa_hs(length + 4.25, modulation);
     }
   }
   else {
-    return rint((double) 8 * (length + 3.0) / (double) radio_modulations[modulation].datarate * HS_TIMER_FREQUENCY);
+    return HS_TIMER_FREQUENCY * 8 * ((uint32_t)length + 3) / radio_modulations[modulation].datarate;
   }
 }
 
@@ -483,7 +477,7 @@ void radio_set_cad(uint8_t modulation, bool rx, bool use_timeout)
   if (modulation <= RADIO_NUM_CAD_PARAMS) {
     radio_cad_params_t params = radio_cad_params[modulation];
     if (use_timeout) {
-      uint32_t timeout = ((uint64_t) radio_get_toa(0, modulation)*1000U / RADIO_TIMER_PERIOD_NS);
+      uint32_t timeout = ((uint64_t) radio_get_toa(0, modulation) * 1000U / RADIO_TIMER_PERIOD_NS);
       SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, rx, timeout);
     }
     else {
@@ -503,11 +497,9 @@ static void radio_channel_free_cb(bool detected)
 bool radio_is_channel_free(uint8_t modulation, uint32_t timeout_ms)
 {
   if (modulation <= RADIO_NUM_CAD_PARAMS) {
-    radio_cad_params_t params = radio_cad_params[modulation];
-    SX126xSetCadParams(params.symb_num, params.cad_det_peak, params.cad_det_min, LORA_CAD_ONLY, 0);   // no timeout needed since we do not want to receive the packet
-    radio_set_cad_callback(radio_channel_free_cb);
     channel_free = 0xff;
-    SX126xSetCad();
+    radio_set_cad_callback(radio_channel_free_cb);
+    radio_set_cad(modulation, LORA_CAD_ONLY, false);      // no timeout needed since we do not want to receive the packet
     if (timeout_ms) {
       while ((channel_free == 0xff) && timeout_ms) {     // variable will be updated in the CAD done ISR
         delay_us(1000);
@@ -595,6 +587,7 @@ uint32_t radio_get_toa_arb(RadioModems_t modem, uint32_t bandwidth,
                           crcOn);
 }
 
+
 uint32_t radio_get_toa(uint8_t payload_len, uint8_t modulation)
 {
   if (modulation >= RADIO_NUM_MODULATIONS) return 0;
@@ -613,5 +606,13 @@ uint32_t radio_get_toa(uint8_t payload_len, uint8_t modulation)
 
 uint32_t radio_get_toa_hs(uint8_t payload_len, uint8_t modulation)
 {
-  return ((uint64_t) radio_get_toa(payload_len, modulation))*HS_TIMER_FREQUENCY/1000000UL;
+  return ((uint64_t) radio_get_toa(payload_len, modulation)) * HS_TIMER_FREQUENCY / 1000000UL;
+}
+
+
+uint32_t radio_get_rx_bandwidth(uint32_t freq, uint32_t tx_bandwidth)
+{
+  // NOTE: according to the datasheet afc_bandwidth (automated frequency control bandwidth) variable represents the frequency error (2x crystal frequency error)
+
+  return tx_bandwidth + 2 * (tx_bandwidth / 2 + freq) / (1000000 / RADIO_CLOCK_DRIFT_PPM);
 }

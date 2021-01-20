@@ -36,9 +36,9 @@
 #define RADIO_DEFAULT_BAND              0
 #endif
 
-#define RADIO_CLOCK_DRIFT               100000 // 1/(+-10ppm)
+#define RADIO_CLOCK_DRIFT_PPM           10      // +-10ppm
 #define RADIO_TIMER_PERIOD_NS           15625U
-#define RADIO_TIMER_FREQUENCY           64000 // Hz
+#define RADIO_TIMER_FREQUENCY           64000   // Hz
 
 
 #define RADIO_LORA_SF_TO_MODULATION_INDEX(sf)     ((sf >= 5 && sf <= 12) ? (12 - sf) : 0)

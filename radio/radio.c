@@ -16,9 +16,8 @@ extern radio_message_t* last_message_list;
 volatile bool radio_irq_direct = false;
 
 /* internal state */
-static volatile radio_sleeping_t  radio_sleeping = false;
+static volatile radio_sleeping_t  radio_sleeping = RADIO_SLEEPING_FALSE;
 static volatile lora_irq_mode_t   radio_mode;
-static volatile bool              radio_command_scheduled = false;
 static uint64_t                   radio_last_sync_timestamp = 0;
 static uint8_t                    preamble_detected_counter = 0;
 static uint8_t                    sync_detected_counter = 0;
@@ -224,11 +223,12 @@ void radio_sleep(bool warm)
   if (!radio_sleeping) {
     if (warm) {
       Radio.Sleep();
+      radio_sleeping = RADIO_SLEEPING_WARM;
     }
     else {
       Radio.ColdSleep();
+      radio_sleeping = RADIO_SLEEPING_COLD;
     }
-    radio_sleeping = warm + 1;
     RADIO_TX_STOP_IND();
     RADIO_RX_STOP_IND();
     dcstat_stop(&radio_dc_rx);
@@ -251,11 +251,11 @@ bool radio_wakeup(void)
 {
   if (radio_sleeping) {
     SX126xWakeup();
-    if (radio_sleeping == COLD) {
+    if (radio_sleeping == RADIO_SLEEPING_COLD) {
       /* radio config is lost and must be restored */
       radio_restore_config();
     }
-    radio_sleeping = false;
+    radio_sleeping = RADIO_SLEEPING_FALSE;
     return true;
   }
   return false;
@@ -411,14 +411,13 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
 
 void radio_rx_error_cb(void)
 {
-  RADIO_TX_STOP_IND();
   RADIO_RX_STOP_IND();
+  dcstat_stop(&radio_dc_rx);
 
 #if !RADIO_USE_HW_TIMEOUT
   hs_timer_timeout_stop();
 #endif /* RADIO_USE_HW_TIMEOUT */
 
-  dcstat_stop(&radio_dc_rx);
   radio_timeout_cb_t tmp = radio_timeout_callback;
   radio_timeout_callback = 0;
   if(tmp) {
@@ -469,6 +468,8 @@ void radio_rx_sync_cb(void)
 void radio_rx_preamble_cb(void)
 {
   RADIO_RX_STOP_IND();
+  __NOP();
+  __NOP();
   RADIO_RX_START_IND();
   if (preamble_detected_counter < 255) {
     preamble_detected_counter++;
@@ -525,7 +526,6 @@ static void radio_execute(void)
       break;
   }
   hs_timer_schedule_stop();
-  radio_command_scheduled = false;
 }
 
 
@@ -551,7 +551,6 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_t
     radio_set_payload(buffer, size);
   }
   SX126xSetTxWithoutExecute(0);
-  radio_command_scheduled = true;
 
   hs_timer_schedule(schedule_timestamp, &radio_execute);
 }
@@ -559,8 +558,8 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_t
 
 void radio_execute_manually(int64_t timer)
 {
-  if (radio_command_scheduled) {
-    if (timer == -1) {
+  if (RADIO_READ_NSS_PIN() == 0) {    // command scheduled?
+    if (timer < 0) {
       hs_timer_set_schedule_timestamp(hs_timer_get_counter());
       radio_execute();
     }
@@ -590,7 +589,6 @@ void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t t
   else {
     SX126xSetRxWithoutExecute(timeout);
   }
-  radio_command_scheduled = true;
 
   hs_timer_schedule(schedule_timestamp, &radio_execute);
 }
@@ -624,17 +622,12 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  rx = (uint64_t) rx; // in 15.625 us steps
-  sleep = (uint64_t) sleep; // in 15.625 us steps (see Figure 13-2: "RX Duty Cycle Energy Profile" in SX1262 datasheet)
-
   if (schedule) {
     SX126xSetRxDutyCycleWithoutExecute(rx, sleep);
-    radio_command_scheduled = true;
   }
   else {
     Radio.SetRxDutyCycle(rx, sleep);
   }
-
 }
 
 

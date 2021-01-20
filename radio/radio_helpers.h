@@ -15,8 +15,8 @@ void      radio_update_cli(void);
 
 void      radio_set_lora_syncword(radio_lora_syncword_t syncword);
 uint16_t  radio_get_syncword(void);
-void      radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, uint16_t timeout, bool implicit, uint8_t implicit_length, bool crc, bool stop_rx_on_preamble);
-void      radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t power, int32_t bandwidth, int32_t bitrate, int32_t preamble_length, bool implicit, bool crc);
+void      radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int32_t bandwidth, int32_t datarate, int32_t preamble_length, uint16_t timeout, bool implicit, uint8_t implicit_length, bool crc, bool stop_rx_on_preamble);
+void      radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t power, int32_t bandwidth, int32_t datarate, int32_t preamble_length, bool implicit, bool crc);
 void      radio_set_config_rxtx(bool lora_mode, uint8_t band_index, int32_t datarate, int8_t power, int32_t bandwidth, int32_t preamble_length, uint8_t coderate, uint16_t timeout, bool implicit,  uint8_t implicit_length, bool crc);
 void      radio_set_continuous_preamble(void);
 
@@ -33,14 +33,14 @@ void      radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size);
  * \param [IN] modulation        Modulation index (see radio_constants.c)
  * \retval airTime               Time-on-air in hs_timer ticks
  */
-uint32_t  radio_get_symbol_toa(uint16_t length, uint8_t modulation);
+uint32_t  radio_get_symbol_toa_hs(uint16_t length, uint8_t modulation);
 /*!
  * \brief Calculates the time-on-air of the preamble
  * \param [IN] length            Number of symbols (LoRa) / Bytes (FSK)
  * \param [IN] modulation        Modulation index (see radio_constants.c)
  * \retval airTime               Time-on-air in hs_timer ticks
  */
-uint32_t  radio_get_preamble_toa(uint16_t length, uint8_t modulation);
+uint32_t  radio_get_preamble_toa_hs(uint16_t length, uint8_t modulation);
 
 
 void      radio_set_packet_params_and_size(uint8_t size);
@@ -104,6 +104,10 @@ uint32_t  radio_get_toa(uint8_t payload_len, uint8_t modulation);
 */
 uint32_t  radio_get_toa_hs(uint8_t payload_len, uint8_t modulation);
 
+/**
+ * \brief           Calculate the required RX bandwidth for a given frequency and TX bandwidth
+ */
+uint32_t  radio_get_rx_bandwidth(uint32_t freq, uint32_t tx_bandwidth);
 
 
 #endif /* RADIO_RADIO_HELPERS_H_ */
