@@ -53,29 +53,33 @@ void SX126xReset( void )
 
 void SX126xWaitOnBusy( void )
 {
-    if (RADIO_READ_NSS_PIN() == 0) {
-      RADIO_SET_NSS_PIN();    // make sure the pin is high
-      delay_us(1);            // 600ns max required between two NSS edges
+    if (RADIO_READ_NSS_PIN() == 0)
+    {
+        RADIO_SET_NSS_PIN();    // make sure the pin is high
+        delay_us(1);            // 600ns max required between two NSS edges
     }
     while( RADIO_READ_BUSY_PIN( ) );
 }
 
 void SX126xWakeup( void )
 {
-    CRITICAL_SECTION_BEGIN( );
+    ENTER_CRITICAL_SECTION( );
 
     tmp = RADIO_GET_STATUS;
 
     do
     {
-    RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, &zero, 1, 100);
-    RADIO_SET_NSS_PIN();
+        RADIO_CLR_NSS_PIN();
+        HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
+        HAL_SPI_Transmit(&RADIO_SPI, &zero, 1, 100);
+        RADIO_SET_NSS_PIN();
     }
     while ( RADIO_READ_BUSY_PIN ( ) );
 
-    CRITICAL_SECTION_END( );
+    // make sure the antenna switch is turned on
+    SX126xAntSwOn( );
+
+    LEAVE_CRITICAL_SECTION( );
 }
 
 void SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size )
@@ -112,7 +116,7 @@ void SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size 
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
     for( uint16_t i = 0; i < size; i++ )
     {
-      HAL_SPI_TransmitReceive(&RADIO_SPI, (uint8_t*) (buffer + i), &tmp, 1, 100);
+        HAL_SPI_TransmitReceive(&RADIO_SPI, (uint8_t*) (buffer + i), &tmp, 1, 100);
         buffer[i] = tmp;
     }
     RADIO_SET_NSS_PIN();
@@ -167,7 +171,7 @@ uint8_t SX126xReadRegister( uint16_t address )
 
 void SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 {
-  tmp = RADIO_WRITE_BUFFER;
+    tmp = RADIO_WRITE_BUFFER;
 
     SX126xCheckDeviceReady( );
 
@@ -182,7 +186,7 @@ void SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 
 void SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 {
-  tmp = RADIO_READ_BUFFER;
+    tmp = RADIO_READ_BUFFER;
 
     SX126xCheckDeviceReady( );
 
@@ -204,7 +208,7 @@ void SX126xSetRfTxPower( int8_t power )
 uint8_t SX126xGetPaSelect( uint32_t channel )
 {
 #ifndef DEVKIT
-  return SX1262;
+    return SX1262;
 #else
     if( HAL_GPIO_ReadPin(DEVKIT_DEVICE_SEL_GPIO_Port, DEVKIT_DEVICE_SEL_Pin) == 1 )
     {
@@ -220,31 +224,20 @@ uint8_t SX126xGetPaSelect( uint32_t channel )
 void SX126xAntSwOn( void )
 {
 #ifndef DEVKIT
-  HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_RESET);
 #else
-  HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_SET);
 #endif
 }
 
 void SX126xAntSwOff( void )
 {
 #ifndef DEVKIT
-  // DEBUG BEGIN: ANT_SWITCH
-  HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_SET);
-  // DEBUG END: ANT_SWITCH
+    // DEBUG BEGIN: ANT_SWITCH
+    HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_SET);
+    // DEBUG END: ANT_SWITCH
 #else
-  HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(RADIO_ANT_SW_GPIO_Port, RADIO_ANT_SW_Pin, GPIO_PIN_RESET);
 #endif
 }
 
-bool SX126xCheckRfFrequency( uint32_t frequency )
-{
-#ifndef DEVKIT
-  if (frequency > 863E6 || frequency < 870E6)
-    return true;
-  else
-    return false;
-#else
-    return true;
-#endif
-}

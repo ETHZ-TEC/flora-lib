@@ -433,7 +433,6 @@ struct Radio_s
 
 
 /* include all radio files by semtech */
-#include "radio/semtech/boards/utilities.h"
 #include "radio/semtech/sx126x/sx126x.h"
 #include "radio/semtech/boards/sx126x-board.h"
 

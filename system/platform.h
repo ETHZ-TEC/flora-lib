@@ -23,6 +23,9 @@
 #define FLASH_MEM_PAGE_SIZE 2048        // = FLASH_PAGE_SIZE
 #define FLASH_MEM_PAGES     (FLASH_MEM_SIZE / FLASH_MEM_PAGE_SIZE)    // 128
 
+// unique 96-bit device ID consisting of the X/Y coordinates on the wafer (32 bits), wafer number (8 bits) and lot number (56 bits)
+#define DEVICE_ID_REG       0x1FFF7590
+
 
 #ifndef DEVKIT
 #define RADIO_SPI hspi2

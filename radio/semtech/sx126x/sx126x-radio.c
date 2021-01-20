@@ -29,7 +29,7 @@
 #include "flora_lib.h"
 
 
-uint8_t MaxPayloadRead = 0xFF;
+#define RADIO_MAX_PAYLOAD_SIZE      255       // max. number of payload bytes (must not exceed 255!)
 
 
 /*!
@@ -472,7 +472,7 @@ bool RxContinuous = false;
 
 
 PacketStatus_t RadioPktStatus;
-uint8_t RadioRxPayload[256] = { 0 };
+uint8_t RadioRxPayload[RADIO_MAX_PAYLOAD_SIZE + 1] = { 0 };
 
 bool IrqFired = false;
 
@@ -579,7 +579,7 @@ RadioState_t RadioGetStatus( void )
             return RF_TX_RUNNING;
         case MODE_RX:
             return RF_RX_RUNNING;
-        case RF_CAD:
+        case MODE_CAD:
             return RF_CAD;
         default:
             return RF_IDLE;
@@ -588,9 +588,6 @@ RadioState_t RadioGetStatus( void )
 
 void RadioSetModem( RadioModems_t modem )
 {
-
-  // sprintf(char_buff, "modem: %d", modem);
-  // print(1, char_buff);
     switch( modem )
     {
     default:
@@ -649,7 +646,6 @@ bool RadioIsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh,
 
 uint32_t RadioRandom( void )
 {
-    uint8_t i;
     uint32_t rnd = 0;
 
     /*
@@ -658,17 +654,10 @@ uint32_t RadioRandom( void )
     // Set LoRa modem ON
     RadioSetModem( MODEM_LORA );
 
-    // Set radio in continuous reception
-    SX126xSetRx( 0 );
+    // Disable LoRa modem interrupts
+    SX126xSetDioIrqParams( IRQ_RADIO_NONE, IRQ_RADIO_NONE, IRQ_RADIO_NONE, IRQ_RADIO_NONE );
 
-    for( i = 0; i < 32; i++ )
-    {
-        rtc_delay(1);
-        // Unfiltered RSSI value reading. Only takes the LSB value
-        rnd |= ( ( uint32_t )SX126xGetRssiInst( ) & 0x01 ) << i;
-    }
-
-    RadioSleep( );
+    rnd = SX126xGetRandom( );
 
     return rnd;
 }
@@ -684,6 +673,10 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
 
     RxContinuous = rxContinuous;
 
+    if( rxContinuous == true )
+    {
+        symbTimeout = 0;
+    }
     if( fixLen == true )
     {
         MaxPayloadLength = payloadLen;
@@ -708,8 +701,6 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX126x.PacketParams.Params.Gfsk.PreambleMinDetect = RADIO_PREAMBLE_DETECTOR_08_BITS;
             SX126x.PacketParams.Params.Gfsk.SyncWordLength = GfskSyncWordLength << 3; // convert byte into bit
             SX126x.PacketParams.Params.Gfsk.AddrComp = RADIO_ADDRESSCOMP_FILT_OFF;
-//            SX126x.PacketParams.Params.Gfsk.AddrComp = RADIO_ADDRESSCOMP_FILT_NODE;
-//            SX126x.PacketParams.Params.Gfsk.AddrComp = RADIO_ADDRESSCOMP_FILT_NODE_BROAD;
             SX126x.PacketParams.Params.Gfsk.HeaderType = ( fixLen == true ) ? RADIO_PACKET_FIXED_LENGTH : RADIO_PACKET_VARIABLE_LENGTH;
             SX126x.PacketParams.Params.Gfsk.PayloadLength = MaxPayloadLength;
             if( crcOn == true )
@@ -729,7 +720,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX126xSetSyncWord( GfskSyncWord );
             SX126xSetWhiteningSeed( 0x01FF );
 
-            RxTimeout = ( uint32_t )( symbTimeout * ( ( 1.0 / ( double )datarate ) * 8.0 ) * 1000 );
+            RxTimeout = ( uint32_t )symbTimeout * 8000UL / datarate;
             break;
 
         case MODEM_LORA:
@@ -784,6 +775,19 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX126xSetPacketParams( &SX126x.PacketParams );
             SX126xSetLoRaSymbNumTimeout( symbTimeout );
 
+            // WORKAROUND - Optimizing the Inverted IQ Operation, see DS_SX1261-2_V1.2 datasheet chapter 15.4
+            if( SX126x.PacketParams.Params.LoRa.InvertIQ == LORA_IQ_INVERTED )
+            {
+                // RegIqPolaritySetup = @address 0x0736
+                SX126xWriteRegister( 0x0736, SX126xReadRegister( 0x0736 ) & ~( 1 << 2 ) );
+            }
+            else
+            {
+                // RegIqPolaritySetup @address 0x0736
+                SX126xWriteRegister( 0x0736, SX126xReadRegister( 0x0736 ) | ( 1 << 2 ) );
+            }
+            // WORKAROUND END
+
             // Timeout Max, Timeout handled directly in SetRx function
             RxTimeout = 0x0;
 
@@ -797,10 +801,6 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                         bool fixLen, bool crcOn, bool freqHopOn,
                         uint8_t hopPeriod, bool iqInverted, uint32_t timeout )
 {
-
-//  sprintf(char_buff, "tx conf: %d, %d, %lu, %lu, %lu, %d, %d, %d, %d, %d, %d, %d, %lu",
-//      modem, power, fdev, bandwidth, datarate, coderate, preambleLen, fixLen, crcOn, freqHopOn, hopPeriod, iqInverted, timeout);
-//  print(1, char_buff);
 
     switch( modem )
     {
@@ -817,8 +817,6 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
             SX126x.PacketParams.Params.Gfsk.PreambleMinDetect = RADIO_PREAMBLE_DETECTOR_08_BITS;
             SX126x.PacketParams.Params.Gfsk.SyncWordLength = GfskSyncWordLength << 3 ; // convert byte into bit
             SX126x.PacketParams.Params.Gfsk.AddrComp = RADIO_ADDRESSCOMP_FILT_OFF;
-//            SX126x.PacketParams.Params.Gfsk.AddrComp = RADIO_ADDRESSCOMP_FILT_NODE;
-//            SX126x.PacketParams.Params.Gfsk.AddrComp = RADIO_ADDRESSCOMP_FILT_NODE_BROAD;
             SX126x.PacketParams.Params.Gfsk.HeaderType = ( fixLen == true ) ? RADIO_PACKET_FIXED_LENGTH : RADIO_PACKET_VARIABLE_LENGTH;
 
             if( crcOn == true )
@@ -886,6 +884,20 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
             SX126xSetPacketParams( &SX126x.PacketParams );
             break;
     }
+
+    // WORKAROUND - Modulation Quality with 500 kHz LoRa Bandwidth, see DS_SX1261-2_V1.2 datasheet chapter 15.1
+    if( ( modem == MODEM_LORA ) && ( SX126x.ModulationParams.Params.LoRa.Bandwidth == LORA_BW_500 ) )
+    {
+        // RegTxModulation = @address 0x0889
+        SX126xWriteRegister( 0x0889, SX126xReadRegister( 0x0889 ) & ~( 1 << 2 ) );
+    }
+    else
+    {
+        // RegTxModulation = @address 0x0889
+        SX126xWriteRegister( 0x0889, SX126xReadRegister( 0x0889 ) | ( 1 << 2 ) );
+    }
+    // WORKAROUND END
+
     SX126xSetRfTxPower( power );
     TxTimeout = timeout;
 }
@@ -941,7 +953,6 @@ static uint32_t RadioGetGfskTimeOnAirNumerator( uint32_t datarate, uint8_t coder
                               bool crcOn )
 {
     const RadioAddressComp_t addrComp = RADIO_ADDRESSCOMP_FILT_OFF;
-    // const uint8_t syncWordLength = 3;
 
     return ( preambleLen << 3 ) +
            ( ( fixLen == false ) ? 8 : 0 ) +
@@ -1091,7 +1102,6 @@ void RadioColdSleep( void )
 
 void RadioStandby( void )
 {
-    // SX126xSetStandby( STDBY_RC );
     SX126xSetStandby( STDBY_XOSC );
 
     if (RADIO_READ_DIO1_PIN())
@@ -1155,6 +1165,7 @@ void RadioSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime )
 
 void RadioStartCad( void )
 {
+    SX126xSetDioIrqParams( IRQ_CAD_DONE | IRQ_CAD_ACTIVITY_DETECTED, IRQ_CAD_DONE | IRQ_CAD_ACTIVITY_DETECTED, IRQ_RADIO_NONE, IRQ_RADIO_NONE );
     SX126xSetCad( );
 }
 
@@ -1173,20 +1184,12 @@ void RadioSetTxContinuousWave( uint32_t freq, int8_t power )
 void RadioSetXoscTrim( void )
 {
 #ifndef USE_TCXO
-    // // debug
-    // volatile uint8_t xtaTrim1 = SX126xReadRegister(REG_XTA_TRIM);
-    // volatile uint8_t xtbTrim1 = SX126xReadRegister(REG_XTB_TRIM);
-
     // Internal state machine of SX1262 overwrites trim values when switching to XOSC (happens whenever in Tx/Rx) -> set XOSC beforehand
-    SX126xSetRxTxFallbackMode( 0x30 ); // always fallback to XOSC (not RC since state change overwrites trim values)
-    SX126xSetStandby( STDBY_XOSC ); // set XOSC mode now
+    SX126xSetRxTxFallbackMode( 0x30 );  // always fallback to XOSC (not RC since state change overwrites trim values)
+    SX126xSetStandby( STDBY_XOSC );     // set XOSC mode now
     // set values for XTAL trimming caps (calibration)
     SX126xWriteRegister( REG_XTA_TRIM, 0x0E );
     SX126xWriteRegister( REG_XTB_TRIM, 0x0F );
-
-    // // debug
-    // volatile uint8_t xtaTrim2 = SX126xReadRegister(REG_XTA_TRIM);
-    // volatile uint8_t xtbTrim2 = SX126xReadRegister(REG_XTB_TRIM);
 #endif
 }
 
@@ -1355,7 +1358,7 @@ void RadioIrqProcess( void )
         {
             bool crc_error = (irqRegs & IRQ_CRC_ERROR) == IRQ_CRC_ERROR || (irqRegs & IRQ_HEADER_ERROR) == IRQ_HEADER_ERROR;
             uint8_t size;
-            SX126xGetPayload( RadioRxPayload, &size , MaxPayloadRead );
+            SX126xGetPayload( RadioRxPayload, &size, RADIO_MAX_PAYLOAD_SIZE );
             SX126xGetPacketStatus( &RadioPktStatus );
             if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS)
             {

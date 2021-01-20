@@ -105,23 +105,11 @@ void SX126xAntSwOn( void );
 void SX126xAntSwOff( void );
 
 /*!
- * \brief Checks if the given RF frequency is supported by the hardware
- *
- * \param [IN] frequency RF frequency to be checked
- * \retval isSupported [true: supported, false: unsupported]
- */
-bool SX126xCheckRfFrequency( uint32_t frequency );
-
-/*!
  * \brief Gets the Defines the time required for the TCXO to wakeup [ms].
  *
  * \retval time Board TCXO wakeup time in ms.
  */
 uint32_t SX126xGetBoardTcxoWakeupTime( void );
 
-/*!
- * Radio hardware and global parameters
- */
-extern SX126x_t SX126x;
 
 #endif // __SX126x_BOARD_H__
