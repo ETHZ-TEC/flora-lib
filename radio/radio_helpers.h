@@ -7,8 +7,8 @@
  *      Author: marku
  */
 
-#ifndef RADIO_HELPERS_H_
-#define RADIO_HELPERS_H_
+#ifndef RADIO_RADIO_HELPERS_H_
+#define RADIO_RADIO_HELPERS_H_
 
 
 void      radio_update_cli(void);
@@ -108,4 +108,4 @@ uint32_t  radio_get_toa_hs(uint8_t payload_len, uint8_t modulation);
 
 
 
-#endif /* RADIO_HELPERS_H_ */
+#endif /* RADIO_RADIO_HELPERS_H_ */

@@ -7,8 +7,8 @@
  *      Author: marku
  */
 
-#ifndef RADIO_FLORA_RADIO_H_
-#define RADIO_FLORA_RADIO_H_
+#ifndef RADIO_RADIO_H_
+#define RADIO_RADIO_H_
 
 
 /* whether to use the hardware timeout of the radio chip in receive mode; if set to 0, a software timeout will be used instead (hs timer) */
@@ -94,4 +94,4 @@ void      radio_dc_counter_reset(void);
 uint32_t  radio_get_prr(bool reset);      /* returns the packet reception rate in [% * 10^2] */
 
 
-#endif /* RADIO_FLORA_RADIO_H_ */
+#endif /* RADIO_RADIO_H_ */
