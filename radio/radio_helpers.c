@@ -330,18 +330,20 @@ void radio_set_config_rxtx(bool lora_mode,
 
 
 // calculate the RX timeout in hs ticks
-uint32_t radio_calculate_timeout(bool preamble)
+uint32_t radio_calculate_timeout(bool with_preamble, uint8_t modulation)
 {
-  if (preamble) {
+  if (modulation >= RADIO_NUM_MODULATIONS) return 0;
+
+  if (with_preamble) {
     if (override_preamble_length != -1) {
-      return ((uint64_t) radio_get_preamble_toa(override_preamble_length, current_modulation))  * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
+      return ((uint64_t) radio_get_preamble_toa(override_preamble_length, modulation))  * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
     }
     else {
-      return ((uint64_t) radio_get_preamble_toa(0, current_modulation)) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
+      return ((uint64_t) radio_get_preamble_toa(0, modulation)) * 1000 / HS_TIMER_FREQUENCY_US / RADIO_TIMER_PERIOD_NS;
     }
   }
   else {
-    return radio_get_toa_hs(0, current_modulation) * 2.0 + (85.2 + 100.0) * HS_TIMER_FREQUENCY_US;
+    return radio_get_toa_hs(0, modulation) * 2.0 + (85.2 + 100.0) * HS_TIMER_FREQUENCY_US;
   }
 }
 
@@ -624,7 +626,7 @@ uint32_t radio_get_toa(uint8_t payload_len, uint8_t modulation)
   return Radio.TimeOnAir( radio_modulations[modulation].modem,
                           radio_modulations[modulation].bandwidth,
                           radio_modulations[modulation].datarate,
-                          radio_modulations[modulation].coderate - 4,
+                          radio_modulations[modulation].coderate,
                           radio_modulations[modulation].preambleLen,
                           false, // fixLen
                           payload_len,

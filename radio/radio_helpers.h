@@ -20,7 +20,7 @@ void      radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8
 void      radio_set_config_rxtx(bool lora_mode, uint8_t band_index, int32_t datarate, int8_t power, int32_t bandwidth, int32_t preamble_length, uint8_t coderate, uint16_t timeout, bool implicit,  uint8_t implicit_length, bool crc);
 void      radio_set_continuous_preamble(void);
 
-uint32_t  radio_calculate_timeout(bool preamble);     // calculates the RX timeout in hs ticks
+uint32_t  radio_calculate_timeout(bool with_preamble, uint8_t modulation);     // calculates the RX timeout in hs ticks
 
 void      radio_get_payload(uint8_t* buffer, uint8_t* offset, uint8_t* size);
 uint8_t   radio_get_payload_size(void);
