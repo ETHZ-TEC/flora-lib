@@ -314,7 +314,7 @@ void radio_set_config_rxtx(bool lora_mode,
       false                                   // not continuous rx
   );
 
-  SX126xSetStopRxTimerOnPreambleDetect(true);
+  //SX126xSetStopRxTimerOnPreambleDetect(true);
 }
 
 

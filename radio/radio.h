@@ -16,6 +16,10 @@
 #define RADIO_USE_HW_TIMEOUT      1
 #endif /* RADIO_USE_HW_TIMEOUT */
 
+#define RADIO_RX_TIMEOUT_NONE         0x0
+#define RADIO_RX_TIMEOUT_MAX          0xFFFFFE
+#define RADIO_RX_TIMEOUT_CONTINUOUS   0xFFFFFF
+
 
 typedef enum {
   RADIO_SLEEPING_FALSE = 0,
@@ -76,9 +80,11 @@ void radio_set_cad_callback(radio_cad_cb_t callback);
 void radio_set_timeout_callback(radio_timeout_cb_t callback);
 void radio_set_tx_callback(radio_tx_cb_t callback);
 
+void radio_set_rx_gain(bool rx_boost);
+
 void radio_transmit(uint8_t* buffer, uint8_t size);
 void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_timestamp);  // timestamp in hs ticks (absolute)
-void radio_receive(bool boost, uint32_t timeout);                                           // timeout in hs_timer ticks (relative)
+void radio_receive(uint32_t timeout);                                                       // timeout in hs_timer ticks (relative), set timeout to 0xFFFFFF for continuous RX
 void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout);    // timestamp (absolute) and timeout (relative) in hs ticks
 void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule);
 void radio_execute_manually(int64_t timer);

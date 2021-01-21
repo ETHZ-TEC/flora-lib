@@ -578,6 +578,8 @@ RadioState_t RadioGetStatus( void )
         case MODE_TX:
             return RF_TX_RUNNING;
         case MODE_RX:
+        case MODE_RX_DC:
+        case MODE_RX_CONTINUOUS:
             return RF_RX_RUNNING;
         case MODE_CAD:
             return RF_CAD;
@@ -670,7 +672,6 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                          bool crcOn, bool freqHopOn, uint8_t hopPeriod,
                          bool iqInverted, bool rxContinuous )
 {
-
     RxContinuous = rxContinuous;
 
     if( rxContinuous == true )
@@ -714,7 +715,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX126x.PacketParams.Params.Gfsk.DcFree = GfskWhitening;
 
             RadioStandby( );
-            RadioSetModem( ( SX126x.ModulationParams.PacketType == PACKET_TYPE_GFSK ) ? MODEM_FSK : MODEM_LORA );
+            RadioSetModem( MODEM_FSK );
             SX126xSetModulationParams( &SX126x.ModulationParams );
             SX126xSetPacketParams( &SX126x.PacketParams );
             SX126xSetSyncWord( GfskSyncWord );
@@ -731,7 +732,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX126x.ModulationParams.Params.LoRa.CodingRate = ( RadioLoRaCodingRates_t )coderate;
 
             if( ( ( bandwidth == 0 ) && ( ( datarate == 11 ) || ( datarate == 12 ) ) ) ||
-            ( ( bandwidth == 1 ) && ( datarate == 12 ) ) )
+                ( ( bandwidth == 1 ) && ( datarate == 12 ) ) )
             {
                 SX126x.ModulationParams.Params.LoRa.LowDatarateOptimize = 0x01;
             }
@@ -742,24 +743,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
 
             SX126x.PacketParams.PacketType = PACKET_TYPE_LORA;
 
-            /*
-            if( ( SX126x.ModulationParams.Params.LoRa.SpreadingFactor == LORA_SF5 ) ||
-                ( SX126x.ModulationParams.Params.LoRa.SpreadingFactor == LORA_SF6 ) )
-            {
-                if( preambleLen < 12 )
-                {
-                    SX126x.PacketParams.Params.LoRa.PreambleLength = 12;
-                }
-                else
-                {
-                    SX126x.PacketParams.Params.LoRa.PreambleLength = preambleLen;
-                }
-            }
-            else
-            {
-                SX126x.PacketParams.Params.LoRa.PreambleLength = preambleLen;
-            }
-            */
+            // NOTE: do not increase preamble length to 12 for SF5 and SF6 if it is below 12
 
             SX126x.PacketParams.Params.LoRa.PreambleLength = preambleLen;
 
@@ -770,7 +754,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX126x.PacketParams.Params.LoRa.InvertIQ = ( RadioLoRaIQModes_t )iqInverted;
 
             RadioStandby( );
-            RadioSetModem( ( SX126x.ModulationParams.PacketType == PACKET_TYPE_GFSK ) ? MODEM_FSK : MODEM_LORA );
+            RadioSetModem( MODEM_LORA );
             SX126xSetModulationParams( &SX126x.ModulationParams );
             SX126xSetPacketParams( &SX126x.PacketParams );
             SX126xSetLoRaSymbNumTimeout( symbTimeout );
@@ -801,7 +785,6 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                         bool fixLen, bool crcOn, bool freqHopOn,
                         uint8_t hopPeriod, bool iqInverted, uint32_t timeout )
 {
-
     switch( modem )
     {
         case MODEM_FSK:
@@ -830,7 +813,7 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
             SX126x.PacketParams.Params.Gfsk.DcFree = GfskWhitening;
 
             RadioStandby( );
-            RadioSetModem( ( SX126x.ModulationParams.PacketType == PACKET_TYPE_GFSK ) ? MODEM_FSK : MODEM_LORA );
+            RadioSetModem( MODEM_FSK );
             SX126xSetModulationParams( &SX126x.ModulationParams );
             SX126xSetPacketParams( &SX126x.PacketParams );
             SX126xSetSyncWord( GfskSyncWord );
@@ -844,7 +827,7 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
             SX126x.ModulationParams.Params.LoRa.CodingRate= ( RadioLoRaCodingRates_t )coderate;
 
             if( ( ( bandwidth == 0 ) && ( ( datarate == 11 ) || ( datarate == 12 ) ) ) ||
-            ( ( bandwidth == 1 ) && ( datarate == 12 ) ) )
+                ( ( bandwidth == 1 ) && ( datarate == 12 ) ) )
             {
                 SX126x.ModulationParams.Params.LoRa.LowDatarateOptimize = 0x01;
             }
@@ -855,23 +838,9 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
 
             SX126x.PacketParams.PacketType = PACKET_TYPE_LORA;
 
-            /* Do not automatically alter preamble length since SetRxConfig does not do the same thing and this if condition makes the Tx and Rx incompatible */
-            // if( ( SX126x.ModulationParams.Params.LoRa.SpreadingFactor == LORA_SF5 ) ||
-            //     ( SX126x.ModulationParams.Params.LoRa.SpreadingFactor == LORA_SF6 ) )
-            // {
-            //     if( preambleLen < 12 )
-            //     {
-            //         SX126x.PacketParams.Params.LoRa.PreambleLength = 12;
-            //     }
-            //     else
-            //     {
-            //         SX126x.PacketParams.Params.LoRa.PreambleLength = preambleLen;
-            //     }
-            // }
-            // else
-            // {
-                SX126x.PacketParams.Params.LoRa.PreambleLength = preambleLen;
-            // }
+            // NOTE: do not increase preamble length to 12 for SF5 and SF6 if it is below 12
+
+            SX126x.PacketParams.Params.LoRa.PreambleLength = preambleLen;
 
             SX126x.PacketParams.Params.LoRa.HeaderType = ( RadioLoRaPacketLengthsMode_t )fixLen;
             SX126x.PacketParams.Params.LoRa.PayloadLength = MaxPayloadLength;
@@ -879,7 +848,7 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
             SX126x.PacketParams.Params.LoRa.InvertIQ = ( RadioLoRaIQModes_t )iqInverted;
 
             RadioStandby( );
-            RadioSetModem( ( SX126x.ModulationParams.PacketType == PACKET_TYPE_GFSK ) ? MODEM_FSK : MODEM_LORA );
+            RadioSetModem( MODEM_LORA );
             SX126xSetModulationParams( &SX126x.ModulationParams );
             SX126xSetPacketParams( &SX126x.PacketParams );
             break;

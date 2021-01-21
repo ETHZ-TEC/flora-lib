@@ -18,6 +18,7 @@ volatile bool radio_irq_direct = false;
 /* internal state */
 static volatile radio_sleeping_t  radio_sleeping = RADIO_SLEEPING_FALSE;
 static volatile lora_irq_mode_t   radio_mode;
+static bool                       rx_boosted = true;
 static uint64_t                   radio_last_sync_timestamp = 0;
 static uint8_t                    preamble_detected_counter = 0;
 static uint8_t                    sync_detected_counter = 0;
@@ -67,6 +68,11 @@ static void radio_restore_config(void)
   // sets the center frequency and performs image calibration if necessary -> can take up to 2ms (see datasheet p.56)
   // NOTE: Image calibration is valid for the whole frequency band (863 - 870MHz), no recalibration necessary if another frequency within this band is selected later on
   Radio.SetChannel(radio_bands[RADIO_DEFAULT_BAND].centerFrequency);
+
+  // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
+  if (rx_boosted) {
+    radio_set_rx_gain(true);
+  }
 }
 
 
@@ -239,21 +245,26 @@ void radio_sleep(bool warm)
 
 void radio_reset(void)
 {
-  SX126xReset();
   RADIO_RX_STOP_IND();
   RADIO_TX_STOP_IND();
   dcstat_stop(&radio_dc_rx);
   dcstat_stop(&radio_dc_tx);
+  radio_restore_config();     // calls Radio.Init() and performs a radio chip reset
 }
 
 
 bool radio_wakeup(void)
 {
   if (radio_sleeping) {
-    SX126xWakeup();
     if (radio_sleeping == RADIO_SLEEPING_COLD) {
       /* radio config is lost and must be restored */
       radio_restore_config();
+    } else {
+      SX126xWakeup();
+      /* restore config that gets lost also in warm sleep */
+      if (rx_boosted) {
+        radio_set_rx_gain(true);
+      }
     }
     radio_sleeping = RADIO_SLEEPING_FALSE;
     return true;
@@ -265,7 +276,9 @@ bool radio_wakeup(void)
 /* puts the radio into idle mode */
 void radio_standby(void)
 {
-  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+  if (radio_sleeping) {
+    radio_wakeup();       // wake radio if it is still in sleep mode
+  }
 
   Radio.Standby();
 
@@ -594,9 +607,13 @@ void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t t
 }
 
 
-void radio_receive(bool boost, uint32_t timeout)
+void radio_receive(uint32_t timeout)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
+  if (timeout > RADIO_RX_TIMEOUT_CONTINUOUS) {
+    timeout = RADIO_RX_TIMEOUT_MAX;     // set to max. timeout (NOTE: 0xFFFFFF = RX continuous!)
+  }
 
 #if RADIO_USE_HW_TIMEOUT
   timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
@@ -607,12 +624,8 @@ void radio_receive(bool boost, uint32_t timeout)
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 
-  if (boost) {
-    SX126xSetRxBoosted(timeout);
-  }
-  else {
-    SX126xSetRx(timeout);
-  }
+  SX126xSetRx(timeout);
+
   RADIO_RX_START_IND();
   dcstat_start(&radio_dc_rx);
 }
@@ -627,6 +640,17 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
   }
   else {
     Radio.SetRxDutyCycle(rx, sleep);
+  }
+}
+
+
+void radio_set_rx_gain(bool rx_boost)
+{
+  rx_boosted = rx_boost;
+  if (rx_boosted) {
+    SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
+  } else {
+    SX126xWriteRegister( REG_RX_GAIN, 0x94 ); // default gain
   }
 }
 

@@ -223,7 +223,7 @@ static void gloria_radio_setup_callback() {
     else {
       // start receiving immediately
       rx_timeout_ts = hs_timer_get_current_timestamp() + current_flood->rx_timeout;
-      radio_receive(true, (uint64_t) current_flood->rx_timeout);
+      radio_receive((uint64_t) current_flood->rx_timeout);
     }
     break;
 
@@ -283,7 +283,7 @@ static void gloria_radio_continue_rx() {
       if (rx_timeout_ts > (now + GLORIA_MIN_RX_TIME)) {
         radio_set_rx_callback(&gloria_radio_rx_callback);
         radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
-        radio_receive(true, (rx_timeout_ts - now));
+        radio_receive(rx_timeout_ts - now);
       }
       else {
         rx_callback(NULL, 0);
@@ -292,7 +292,7 @@ static void gloria_radio_continue_rx() {
     else {
       radio_set_rx_callback(&gloria_radio_rx_callback);
       radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
-      radio_receive(true, 0);
+      radio_receive(0);
     }
   }
   else {
