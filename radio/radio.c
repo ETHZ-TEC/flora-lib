@@ -556,7 +556,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size)
 }
 
 
-void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_timestamp)
+void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_timestamp_hs)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
@@ -565,19 +565,19 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_t
   }
   SX126xSetTxWithoutExecute(0);
 
-  hs_timer_schedule(schedule_timestamp, &radio_execute);
+  hs_timer_schedule(schedule_timestamp_hs, &radio_execute);
 }
 
 
-void radio_execute_manually(int64_t timer)
+void radio_execute_manually(int64_t timestamp_hs)
 {
   if (RADIO_READ_NSS_PIN() == 0) {    // command scheduled?
-    if (timer < 0) {
+    if (timestamp_hs < 0) {
       hs_timer_set_schedule_timestamp(hs_timer_get_counter());
       radio_execute();
     }
     else {
-      hs_timer_schedule(timer, &radio_execute);
+      hs_timer_schedule(timestamp_hs, &radio_execute);
     }
   }
 }
@@ -607,24 +607,32 @@ void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t t
 }
 
 
-void radio_receive(uint32_t timeout)
+void radio_receive(uint32_t timeout_hs)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  if (timeout > RADIO_RX_TIMEOUT_CONTINUOUS) {
-    timeout = RADIO_RX_TIMEOUT_MAX;     // set to max. timeout (NOTE: 0xFFFFFF = RX continuous!)
-  }
-
 #if RADIO_USE_HW_TIMEOUT
-  timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
+  // convert to radio timer ticks
+  timeout_hs = (uint64_t)timeout_hs * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout) {
-    hs_timer_timeout(hs_timer_get_current_timestamp() + timeout, &radio_timeout_cb);
+    hs_timer_timeout(hs_timer_get_current_timestamp() + timeout_hs, &radio_timeout_cb);
     timeout = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 
-  SX126xSetRx(timeout);
+  SX126xSetRx(timeout_hs);
+
+  RADIO_RX_START_IND();
+  dcstat_start(&radio_dc_rx);
+}
+
+
+void radio_receive_continuously(void)
+{
+  if (radio_sleeping) return;      // abort if radio is still in sleep mode
+
+  SX126xSetRx(0xFFFFFF);
 
   RADIO_RX_START_IND();
   dcstat_start(&radio_dc_rx);
