@@ -375,7 +375,9 @@ void radio_rx_done_cb(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr
     radio_set_timeout_callback(NULL);
 
     radio_rx_cb_t tmp = radio_rx_callback;
-    radio_rx_callback = 0;
+    if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS) {
+      radio_rx_callback = 0;
+    }
 
     if (tmp) {
       tmp(payload, size, rssi, snr, crc_error);
@@ -432,7 +434,9 @@ void radio_rx_error_cb(void)
 #endif /* RADIO_USE_HW_TIMEOUT */
 
   radio_timeout_cb_t tmp = radio_timeout_callback;
-  radio_timeout_callback = 0;
+  if (SX126xGetOperatingMode() != MODE_RX_CONTINUOUS) {
+    radio_timeout_callback = 0;
+  }
   if(tmp) {
     tmp(true);
   }
@@ -614,6 +618,9 @@ void radio_receive(uint32_t timeout_hs)
 #if RADIO_USE_HW_TIMEOUT
   // convert to radio timer ticks
   timeout_hs = (uint64_t)timeout_hs * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
+  if (timeout_hs > 0xFFFFFF) {
+    timeout_hs = 0xFFFFFE;         // set to max. allowed value
+  }
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout) {
     hs_timer_timeout(hs_timer_get_current_timestamp() + timeout_hs, &radio_timeout_cb);
