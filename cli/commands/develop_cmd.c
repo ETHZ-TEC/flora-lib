@@ -633,7 +633,6 @@ command_return_t develop_radioconfig_command_handler(command_execution_t executi
 
 command_return_t develop_linktestmode_command_handler(command_execution_t execution) {
   current_command = CMD_LINKTESTMODE;
-  bool boost = true;
   uint32_t timeout = 0;
 
   // prepare for rx
@@ -641,7 +640,7 @@ command_return_t develop_linktestmode_command_handler(command_execution_t execut
   radio_set_rx_callback(&develop_radio_rx_callback);
 
   // start rx
-  radio_receive(false, boost, timeout, 0);
+  radio_receive(timeout);
   if (cli_interactive_mode) {
     cli_log_inline("Listening for linktest messages.", CLI_LOG_LEVEL_DEBUG, true, true, true);
   }
@@ -808,7 +807,6 @@ static void testlink_rx_callback(uint8_t* payload, uint8_t size) {
 
 
 static void linktestmode_tx_callback() {
-  bool boost = true;
   uint32_t timeout = 0;
   // TODO: check for correct state
 
@@ -817,7 +815,7 @@ static void linktestmode_tx_callback() {
   radio_set_rx_callback(&develop_radio_rx_callback);
 
   // start rx
-  radio_receive(false, boost, timeout, 0);
+  radio_receive(timeout);
   if (cli_interactive_mode) {
     cli_log_inline("Listening for linktest messages AGAIN.", CLI_LOG_LEVEL_DEBUG, true, true, true);
   }
@@ -827,7 +825,6 @@ static void linktestmode_tx_callback() {
 }
 
 static void testlink_tx_callback() {
-  bool boost = true;
   uint32_t timeout = 0;
 
   // prepare for rx
@@ -835,7 +832,7 @@ static void testlink_tx_callback() {
   radio_set_rx_callback(&develop_radio_rx_callback);
 
   // start rx
-  radio_receive(false, boost, timeout, 0);
+  radio_receive(timeout);
   if (cli_interactive_mode) {
     cli_log_inline("Listening for linktest reply...", CLI_LOG_LEVEL_DEBUG, true, true, true);
   }

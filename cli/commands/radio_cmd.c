@@ -1241,13 +1241,19 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
     compare = command_cast_parameter_to_bool(compare_param);
   }
 
+  if (boost) {
+    radio_set_rx_gain(true);
+  } else {
+    radio_set_rx_gain(false);
+  }
+
   if (!count) {
     if (execute_offset) {
       if (compare) {
-        radio_receive_scheduled(boost, hs_timer_get_compare_timestamp() + execute_offset, timeout);
+        radio_receive_scheduled(hs_timer_get_compare_timestamp() + execute_offset, timeout);
       }
       else {
-        radio_receive_scheduled(boost, hs_timer_get_current_timestamp() + execute_offset, timeout);
+        radio_receive_scheduled(hs_timer_get_current_timestamp() + execute_offset, timeout);
       }
 
       if (cli_interactive_mode) {
@@ -1258,7 +1264,7 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
       }
     }
     else if (command_get_parameter(&execution, 's')) {
-      radio_receive_scheduled(boost, ?, timeout);   //FIXME
+      radio_receive_scheduled(?, timeout);   //FIXME
       if (cli_interactive_mode) {
         cli_log_inline("Listening for one message until radio is set into another mode (e.g. standby, sleep or Tx) or MCU timeout gets triggered after execution", CLI_LOG_LEVEL_DEBUG, true, true, true);
         cli_log_inline("Operation is scheduled.", CLI_LOG_LEVEL_DEBUG, true, true, true);
@@ -1268,7 +1274,7 @@ command_return_t radio_receive_command_handler(command_execution_t execution) {
       }
     }
     else {
-      radio_receive(boost, timeout);
+      radio_receive(timeout);
 
       if (cli_interactive_mode) {
         cli_log_inline("Listening for messages repeatedly until radio is set into another mode (e.g. standby, sleep or Tx)", CLI_LOG_LEVEL_DEBUG, true, true, true);

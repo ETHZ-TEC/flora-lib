@@ -637,7 +637,7 @@ void radio_receive_continuously(void)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  SX126xSetRx(0xFFFFFF);
+  SX126xSetRx(RADIO_TIMER_RX_CONTINUOUS);
 
   RADIO_RX_START_IND();
   dcstat_start(&radio_dc_rx);
