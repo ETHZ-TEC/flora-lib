@@ -36,7 +36,7 @@ void gpio_check_baseboard(void)
   }
   if (c == 0) {
     /* comboard is most likely installed on a baseboard! */
-    const char* error_msg = "baseboard detected, but compiled without flag 'BASEBOARD'!\n";
+    const char* error_msg = "baseboard detected, but compiled without flag 'BASEBOARD'!" LOG_NEWLINE;
     LOG_PRINT_FUNC((char*)error_msg, strlen(error_msg));
     led_on(LED_EVENT);
     delay_us(10000000);

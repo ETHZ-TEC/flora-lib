@@ -39,9 +39,13 @@
 #define RADIO_CLOCK_DRIFT_PPM           10      // +-10ppm
 #define RADIO_TIMER_PERIOD_NS           15625U
 #define RADIO_TIMER_FREQUENCY           64000   // Hz
-
+#define RADIO_TIMER_NO_TIMEOUT          0x0
+#define RADIO_TIMER_MAX_TIMEOUT         0xFFFFFE
+#define RADIO_TIMER_RX_CONTINUOUS       0xFFFFFF
 
 #define RADIO_LORA_SF_TO_MODULATION_INDEX(sf)     ((sf >= 5 && sf <= 12) ? (12 - sf) : 0)
+
+#define RADIO_HSTICKS_TO_RADIOTIMER(t)            (uint32_t)((uint64_t)(t) * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY)  // convert from hs ticks to radio timer ticks
 
 
 typedef enum

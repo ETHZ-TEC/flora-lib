@@ -212,13 +212,13 @@ static void gloria_radio_setup_callback() {
     if (current_flood->msg_received || current_flood->lp_listening) {
       // if a msg has been received listen for predefined timeout
       uint32_t radio_rx_timeout = gloria_calculate_rx_timeout(current_flood);
-      radio_receive_scheduled(true, current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood), radio_rx_timeout);
+      radio_receive_scheduled(current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood), radio_rx_timeout);
     }
     else if (current_flood->marker) {
       // if the flood marker is not 0 start listening at the expected flood time
       uint64_t schedule_ts = current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood);
       rx_timeout_ts = schedule_ts + current_flood->rx_timeout;
-      radio_receive_scheduled(true, schedule_ts, (uint64_t) current_flood->rx_timeout);
+      radio_receive_scheduled(schedule_ts, (uint64_t) current_flood->rx_timeout);
     }
     else {
       // start receiving immediately

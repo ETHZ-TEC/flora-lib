@@ -587,27 +587,25 @@ void radio_execute_manually(int64_t timestamp_hs)
 }
 
 
-void radio_receive_scheduled(bool boost, uint64_t schedule_timestamp, uint32_t timeout)
+void radio_receive_scheduled(uint64_t schedule_timestamp_hs, uint32_t timeout_hs)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
 #if RADIO_USE_HW_TIMEOUT
-  timeout = (uint64_t)timeout * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;   // convert to radio timer ticks
+  timeout_hs = RADIO_HSTICKS_TO_RADIOTIMER(timeout_hs); // convert to radio timer ticks
+  if (timeout_hs > RADIO_TIMER_MAX_TIMEOUT) {
+    timeout_hs = RADIO_TIMER_MAX_TIMEOUT;               // set to max. allowed value
+  }
 #else  /* RADIO_USE_HW_TIMEOUT */
-  if (timeout) {
-    hs_timer_timeout(schedule_timestamp + timeout, &radio_timeout_cb);
-    timeout = 0;
+  if (timeout_hs) {
+    hs_timer_timeout(schedule_timestamp_hs + timeout_hs, &radio_timeout_cb);
+    timeout_hs = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 
-  if (boost) {
-    SX126xSetRxBoostedWithoutExecute(timeout);
-  }
-  else {
-    SX126xSetRxWithoutExecute(timeout);
-  }
+  SX126xSetRxWithoutExecute(timeout_hs);
 
-  hs_timer_schedule(schedule_timestamp, &radio_execute);
+  hs_timer_schedule(schedule_timestamp_hs, &radio_execute);
 }
 
 
@@ -617,14 +615,14 @@ void radio_receive(uint32_t timeout_hs)
 
 #if RADIO_USE_HW_TIMEOUT
   // convert to radio timer ticks
-  timeout_hs = (uint64_t)timeout_hs * RADIO_TIMER_FREQUENCY / HS_TIMER_FREQUENCY;
-  if (timeout_hs > 0xFFFFFF) {
-    timeout_hs = 0xFFFFFE;         // set to max. allowed value
+  timeout_hs = RADIO_HSTICKS_TO_RADIOTIMER(timeout_hs); // convert to radio timer ticks
+  if (timeout_hs > RADIO_TIMER_MAX_TIMEOUT) {
+    timeout_hs = RADIO_TIMER_MAX_TIMEOUT;               // set to max. allowed value
   }
 #else  /* RADIO_USE_HW_TIMEOUT */
-  if (timeout) {
+  if (timeout_hs) {
     hs_timer_timeout(hs_timer_get_current_timestamp() + timeout_hs, &radio_timeout_cb);
-    timeout = 0;
+    timeout_hs = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 
