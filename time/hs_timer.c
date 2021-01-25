@@ -17,12 +17,9 @@ extern TIM_HandleTypeDef htim2;
 
 #if HS_TIMER_COMPENSATE_DRIFT
 double_t hs_timer_offset = 0;
-double_t hs_timer_drift = 1;
+double_t hs_timer_drift  = 1;
 #endif /* HS_TIMER_COMPENSATE_DRIFT */
 
-bool      hs_timer_recovered_by_rtc     = false;
-uint64_t  hs_timer_scheduled_timestamp  = 0;
-bool      hs_timer_scheduled            = false;
 
 static hs_timer_cb_t schedule_callback = NULL;
 static hs_timer_cb_t timeout_callback  = NULL;
@@ -31,6 +28,8 @@ static hs_timer_cb_t capture_callback  = NULL;
 static hs_timer_cb_t generic_callback  = NULL;
 #endif /* BOLT_ENABLE */
 
+static uint64_t hs_timer_scheduled_timestamp        = 0;
+static uint64_t hs_timer_timeout_timestamp          = 0;
 static uint32_t hs_timer_counter_extension          = 0;
 static uint32_t hs_timer_capture_counter_extension  = 0;
 static uint32_t hs_timer_schedule_counter_extension = 0;
@@ -39,14 +38,11 @@ static uint32_t hs_timer_timeout_counter_extension  = 0;
 static uint32_t hs_timer_generic_counter_extension  = 0;
 #endif /* BOLT_ENABLE */
 
-static uint64_t timeout_timestamp = 0;
-
 
 
 void hs_timer_init(void)
 {
 #if HS_TIMER_INIT_FROM_RTC
-  hs_timer_recovered_by_rtc = true;
   uint64_t timestamp = rtc_get_timestamp(false);
   hs_timer_set_counter(timestamp);
 #else
@@ -64,7 +60,6 @@ void hs_timer_set_offset(double_t offset)
 
 void hs_timer_adapt_offset(double_t delta)
 {
-  hs_timer_recovered_by_rtc = false;
   hs_timer_offset += delta;
 }
 
@@ -119,7 +114,7 @@ void hs_timer_set_schedule_timestamp(uint64_t timestamp)
 }
 
 
-void hs_timer_set_timeout_timestamp(uint64_t timestamp)
+void hs_timer_set_hs_timer_timeout_timestamp(uint64_t timestamp)
 {
 #if HS_TIMER_COMPENSATE_DRIFT
   uint64_t ts = (uint64_t) round((timestamp - hs_timer_offset) / hs_timer_drift);
@@ -227,7 +222,7 @@ uint64_t hs_timer_get_compare_timestamp(void)
 }
 
 
-uint64_t hs_timer_get_timeout_timestamp(void)
+uint64_t hs_timer_get_hs_timer_timeout_timestamp(void)
 {
   uint64_t timestamp;
   timestamp = htim2.Instance->CCR3;
@@ -288,7 +283,6 @@ void hs_timer_schedule(uint64_t timestamp, hs_timer_cb_t callback)
     hs_timer_scheduled_timestamp = timestamp;
     schedule_callback = callback;
     hs_timer_set_schedule_timestamp(timestamp);
-    hs_timer_scheduled = true;
 #ifndef DEVKIT
     __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC2);
     HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
@@ -303,9 +297,9 @@ void hs_timer_schedule(uint64_t timestamp, hs_timer_cb_t callback)
 void hs_timer_timeout(uint64_t timeout, hs_timer_cb_t callback)
 {
   timeout_callback  = callback;
-  timeout_timestamp = timeout;
-  if (timeout_timestamp) {
-    hs_timer_set_timeout_timestamp(timeout);
+  hs_timer_timeout_timestamp = timeout;
+  if (hs_timer_timeout_timestamp) {
+    hs_timer_set_hs_timer_timeout_timestamp(timeout);
     //__HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC3);
     HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_3);
   } else {
@@ -351,7 +345,7 @@ void hs_timer_schedule_stop(void)
 
 void hs_timer_timeout_stop(void)
 {
-  timeout_timestamp = 0;
+  hs_timer_timeout_timestamp = 0;
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
   __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC3);
 }
@@ -393,8 +387,8 @@ void hs_timer_handle_overflow(TIM_HandleTypeDef *htim)
 // TIM2 output compare interrupt handler
 void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim->Instance == TIM2)
-  {
+  if (htim->Instance == TIM2) {
+
 #ifndef DEVKIT
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
@@ -410,10 +404,10 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
       }
   #endif /* BOLT_ENABLE */
     }
+
 #else /* DEVKIT */
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-      if((hs_timer_scheduled_timestamp >> 32) == hs_timer_counter_extension) {
-        hs_timer_scheduled = false;
+      if ((hs_timer_scheduled_timestamp >> 32) == hs_timer_counter_extension) {
         HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_1);
         if (schedule_callback) {
           schedule_callback();
@@ -429,9 +423,10 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
   #endif /* BOLT_ENABLE */
     }
 #endif /* DEVKIT */
+
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
-      timeout_timestamp = 0;
+      hs_timer_timeout_timestamp = 0;
       if (timeout_callback) {
         timeout_callback();
       }

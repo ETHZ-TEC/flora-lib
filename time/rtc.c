@@ -16,7 +16,6 @@ static void (*rtc_alarm_callback)(void) = NULL;
 extern RTC_HandleTypeDef hrtc;
 extern bool     hs_timer_scheduled;
 extern uint64_t hs_timer_scheduled_timestamp;
-extern bool     hs_timer_recovered_by_rtc;
 extern double_t hs_timer_offset;
 
 
@@ -455,16 +454,6 @@ void rtc_delay(uint32_t delay)
   {
     __NOP();
     //HAL_PWR_EnterSLEEPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFE);
-  }
-}
-
-
-void rtc_try_to_sleep()
-{
-  if (hs_timer_scheduled && (hs_timer_scheduled_timestamp - hs_timer_get_current_timestamp()) >= HS_TIMER_FREQUENCY_MS * 4 && (hs_timer_scheduled_timestamp - hs_timer_get_current_timestamp()) <= INT64_MAX) {
-    hs_timer_recovered_by_rtc = true;
-    rtc_set_alarm(hs_timer_scheduled_timestamp - HS_TIMER_FREQUENCY_MS * 2, NULL);
-    system_sleep(false);
   }
 }
 

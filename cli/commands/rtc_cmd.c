@@ -14,7 +14,6 @@
 
 extern RTC_HandleTypeDef hrtc;
 extern bool rtc_initialized;
-extern bool hs_timer_recovered_by_rtc;
 extern RTC_TimeTypeDef rtc_time;
 extern RTC_DateTypeDef rtc_date;
 
@@ -175,7 +174,6 @@ static command_return_t rtc_sleep_command_handler(command_execution_t execution)
     uint32_t offset = strtol(execution.values[0].value, NULL, 10);
     uint64_t sleep_until_timestamp = hs_timer_get_current_timestamp() + offset;
 
-    hs_timer_recovered_by_rtc = true;
     rtc_set_alarm(sleep_until_timestamp, NULL);
     system_sleep(false);
 
