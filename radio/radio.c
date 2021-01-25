@@ -470,10 +470,6 @@ void radio_rx_timeout_cb(void)
 
 void radio_rx_sync_cb(void)
 {
-  RADIO_RX_STOP_IND();
-  __NOP();
-  __NOP();
-  RADIO_RX_START_IND();
   radio_last_sync_timestamp = hs_timer_get_capture_timestamp();
   if (sync_detected_counter < 255) {
     sync_detected_counter++;
@@ -484,10 +480,6 @@ void radio_rx_sync_cb(void)
 
 void radio_rx_preamble_cb(void)
 {
-  RADIO_RX_STOP_IND();
-  __NOP();
-  __NOP();
-  RADIO_RX_START_IND();
   if (preamble_detected_counter < 255) {
     preamble_detected_counter++;
   }

@@ -300,7 +300,7 @@ void hs_timer_timeout(uint64_t timeout, hs_timer_cb_t callback)
   hs_timer_timeout_timestamp = timeout;
   if (hs_timer_timeout_timestamp) {
     hs_timer_set_hs_timer_timeout_timestamp(timeout);
-    //__HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC3);
+    __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC3);
     HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_3);
   } else {
     HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);

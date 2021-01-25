@@ -82,8 +82,8 @@ const gloria_timings_t gloria_timings[] = {
         .txSync = 3034, // 379.25 us (updated 20200812)
     },
     { // 10 (FSK 250k)
-        .slotOverhead = 26400, // 3.3 ms (copied from 9)
-        .slotAckOverhead = 26400, // 3.3 ms (copied from 9)
+        .slotOverhead = 14000, // 1.75 ms
+        .slotAckOverhead = 14000, // 1.75 ms
         .floodInitOverhead = 18000, // 2.25 ms
         .rxOffset = 2560, // 320.000 us (copy from 9)
         .txSync = 3140, // 392.5 us (updated 20200814)
