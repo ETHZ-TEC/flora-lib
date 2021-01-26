@@ -73,6 +73,7 @@ void SX126xWakeup( void )
         HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
         HAL_SPI_Transmit(&RADIO_SPI, &zero, 1, 100);
         RADIO_SET_NSS_PIN();
+        delay_us(1);          // wait at least 600ns before continuing
     }
     while ( RADIO_READ_BUSY_PIN ( ) );
 
@@ -90,6 +91,7 @@ void SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
     RADIO_SET_NSS_PIN();
+    delay_us(1);          // wait at least 600ns before continuing
 
     if( command != RADIO_SET_SLEEP )
     {
@@ -120,6 +122,7 @@ void SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size 
         buffer[i] = tmp;
     }
     RADIO_SET_NSS_PIN();
+    delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
 }
@@ -136,6 +139,7 @@ void SX126xWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
     HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address), 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
     RADIO_SET_NSS_PIN();
+    delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
 }
@@ -158,6 +162,7 @@ void SX126xReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
     HAL_SPI_Receive(&RADIO_SPI, buffer, size, 1000);
     RADIO_SET_NSS_PIN();
+    delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
 }
@@ -180,6 +185,7 @@ void SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &offset, 1, 100);
     HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
     RADIO_SET_NSS_PIN();
+    delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
 }
@@ -196,6 +202,7 @@ void SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
     HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
     HAL_SPI_Receive(&RADIO_SPI, buffer, 255, 1000);
     RADIO_SET_NSS_PIN();
+    delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
 }

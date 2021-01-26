@@ -1,6 +1,6 @@
 
-#ifndef __DISCOSYNC_RADIO_H
-#define __DISCOSYNC_RADIO_H
+#ifndef PROTOCOL_DISCOSYNC_DISCOSYNC_H_
+#define PROTOCOL_DISCOSYNC_DISCOSYNC_H_
 
 
 // Config
@@ -78,4 +78,4 @@ uint64_t discosync_get_t_ref(void);       // returns the reference time (start o
 uint8_t  discosync_get_rx_cnt(void);
 
 
-#endif /* __DISCOSYNC_RADIO_H */
+#endif /* PROTOCOL_DISCOSYNC_DISCOSYNC_H_ */
