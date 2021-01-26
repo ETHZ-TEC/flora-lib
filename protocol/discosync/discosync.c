@@ -168,7 +168,7 @@ void discosync_start_rx_tx(void)
       }
 
     } else {
-      //radio_standby();
+      radio_standby();
 
       // Set radio config and callbacks
       radio_set_rx_callback(&discosync_rx_done);

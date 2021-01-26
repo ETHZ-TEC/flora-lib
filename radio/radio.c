@@ -528,6 +528,7 @@ static void radio_execute(void)
       dcstat_start(&radio_dc_rx);
       break;
     case RF_TX_RUNNING:
+      RADIO_RX_STOP_IND();
       RADIO_TX_START_IND();
       dcstat_start(&radio_dc_tx);
       break;
@@ -547,6 +548,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size)
   }
   SX126xSetTx(0);
   hs_timer_set_schedule_timestamp(hs_timer_get_counter());
+  RADIO_RX_STOP_IND();
   RADIO_TX_START_IND();
   dcstat_start(&radio_dc_tx);
 }
