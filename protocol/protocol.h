@@ -17,6 +17,7 @@
 #define PROTOCOL_ID_GLORIA                0x1
 #define PROTOCOL_ID_DOZER                 0x2
 #define PROTOCOL_ID_CHAOS                 0x3
+#define PROTOCOL_ID_DISCOSYNC             0x4
 
 #define PROTOCOL_ID_CUSTOM                0xc     /* reserved ID for user-defined protocols (not part of the Flora lib) -> each protocol must have a unique 4-bit sub-ID (see table below) */
 #define PROTOCOL_ID_CUSTOM2               0xd
@@ -47,6 +48,7 @@
 #if ELWB_ENABLE
 #include "protocol/elwb/elwb.h"
 #endif /* ELWB_ENABLE */
+#include "protocol/discosync/discosync.h"
 
 
 #endif /* PROTOCOL_PROTOCOL_H_ */
