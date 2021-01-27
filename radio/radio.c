@@ -11,6 +11,7 @@
 extern void (*RadioOnDioIrqCallback)(void);
 extern const struct Radio_s Radio;
 extern radio_message_t* last_message_list;
+extern void RadioSetXoscTrim(void);
 
 /* shared state */
 volatile bool radio_irq_direct = false;
@@ -280,6 +281,9 @@ void radio_standby(void)
     radio_wakeup();       // wake radio if it is still in sleep mode
   }
 
+  // temporarily force into RC mode (bug workaround)
+  SX126xSetStandby( STDBY_RC );     // if TCXO not used, STDBY_XOSC will be entered in RadioSetXoscTrim()
+  RadioSetXoscTrim();
   Radio.Standby();
 
   RADIO_RX_STOP_IND();
