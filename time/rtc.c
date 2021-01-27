@@ -14,8 +14,6 @@ RTC_DateTypeDef rtc_date = {0};
 static void (*rtc_alarm_callback)(void) = NULL;
 
 extern RTC_HandleTypeDef hrtc;
-extern bool     hs_timer_scheduled;
-extern uint64_t hs_timer_scheduled_timestamp;
 extern double_t hs_timer_offset;
 
 
