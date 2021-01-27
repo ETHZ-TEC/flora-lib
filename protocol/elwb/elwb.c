@@ -109,6 +109,8 @@ static void*              re_tx_queue  = 0;
 static bool               elwb_running = false;
 static uint32_t           host_id      = 0;
 static void               (*listen_timeout_cb)(void);
+static elwb_schedule_t    schedule;
+static uint_fast8_t       schedule_len;
 
 
 /* private (not exposed) scheduler functions */
@@ -211,7 +213,6 @@ static bool elwb_is_schedule_valid(elwb_schedule_t* schedule)
 
 static void elwb_run(void)
 {
-  static elwb_schedule_t  schedule;
   static elwb_time_t      start_of_next_round;
   static elwb_time_t      t_start;
   static uint32_t         t_slot;
@@ -223,7 +224,6 @@ static void elwb_run(void)
   static bool             call_preprocess = false;
 
   /* variables specific to the host node */
-  static uint_fast8_t     schedule_len;
 #if ELWB_CONF_DATA_ACK
   static uint8_t          data_ack[(ELWB_CONF_MAX_DATA_SLOTS + 7) / 8] = { 0 };
 #endif /* ELWB_CONF_DATA_ACK */
@@ -232,24 +232,13 @@ static void elwb_run(void)
 #if ELWB_CONF_CONT_USE_HFTIMER
   static elwb_time_t      t_ref_hf;
 #endif /* ELWB_CONF_CONT_USE_HFTIMER */
-  static elwb_syncstate_t sync_state;
+  static elwb_syncstate_t sync_state      = BOOTSTRAP;
   static uint_fast16_t    period_idle;        /* last base period */
-  static uint_fast8_t     rand_backoff = 0;
-  static bool             node_registered;
+  static uint_fast8_t     rand_backoff    = 0;
+  static bool             node_registered = false;
 #if ELWB_CONF_DATA_ACK
   static uint_fast16_t    my_slots = 0;
 #endif /* ELWB_CONF_DATA_ACK */
-
-  /* --- INIT --- */
-  if (ELWB_IS_HOST()) {
-    schedule_len = elwb_sched_init(&schedule);
-    if (!schedule_len) {
-      LOG_ERROR("schedule has length 0");
-    }
-  } else {
-    sync_state      = BOOTSTRAP;
-    node_registered = false;
-  }
 
   start_of_next_round = ELWB_TIMER_NOW();
 
@@ -813,8 +802,14 @@ void elwb_init(void* elwb_task,
   ELWB_QUEUE_CLEAR(re_tx_queue);
 #endif /* ELWB_CONF_DATA_ACK */
 
-
   memset(&stats, 0, sizeof(elwb_stats_t));
+
+  if (ELWB_IS_HOST()) {
+    schedule_len = elwb_sched_init(&schedule);
+    if (!schedule_len) {
+      LOG_ERROR("schedule has length 0");
+    }
+  }
 }
 
 
