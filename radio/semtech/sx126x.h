@@ -189,6 +189,7 @@ typedef enum
     MODE_RX_DC,                                             //! The radio is in receive duty cycle mode
     MODE_CAD,                                               //! The radio is in channel activity detection mode
     MODE_RX_CONTINUOUS,                                     //! The radio is in continuous receive mode
+    MODE_INVALID                            = 0xff
 }RadioOperatingModes_t;
 
 /*!

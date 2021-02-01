@@ -67,15 +67,11 @@ void SX126xWakeup( void )
 
     tmp = RADIO_GET_STATUS;
 
-    do
-    {
-        RADIO_CLR_NSS_PIN();
-        HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
-        HAL_SPI_Transmit(&RADIO_SPI, &zero, 1, 100);
-        RADIO_SET_NSS_PIN();
-        delay_us(1);          // wait at least 600ns before continuing
-    }
-    while ( RADIO_READ_BUSY_PIN ( ) );
+    RADIO_CLR_NSS_PIN();      // falling edge will trigger the radio wake-up
+    delay_us(100);
+    SX126xWaitOnBusy( );
+
+    SX126xSetOperatingMode(MODE_STDBY_RC);
 
     // make sure the antenna switch is turned on
     SX126xAntSwOn( );
