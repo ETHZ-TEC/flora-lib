@@ -49,26 +49,34 @@ void radio_rx_preamble_cb(void);
 
 
 // restore basic radio configuration (e.g. after cold sleep)
-static void radio_restore_config(void)
+static void radio_restore_config(bool reset)
 {
   static RadioEvents_t radio_events;
 
-  // assign callback functions for radio driver
-  radio_events.CadDone    = radio_cad_done_cb;
-  radio_events.RxDone     = radio_rx_done_cb;
-  radio_events.RxError    = radio_rx_error_cb;
-  radio_events.RxTimeout  = radio_rx_timeout_cb;
-  radio_events.TxDone     = radio_tx_done_cb;
-  radio_events.TxTimeout  = radio_tx_timeout_cb;
-  radio_events.RxSync     = radio_rx_sync_cb;
-  radio_events.RxPreamble = radio_rx_preamble_cb;
+  // perform a full radio reset?
+  if (reset) {
 
-  // NOTE: Radio.Init() performs a hard reset of the SX1262 chip
-  Radio.Init(&radio_events);
+    // assign callback functions for radio driver
+    radio_events.CadDone    = radio_cad_done_cb;
+    radio_events.RxDone     = radio_rx_done_cb;
+    radio_events.RxError    = radio_rx_error_cb;
+    radio_events.RxTimeout  = radio_rx_timeout_cb;
+    radio_events.TxDone     = radio_tx_done_cb;
+    radio_events.TxTimeout  = radio_tx_timeout_cb;
+    radio_events.RxSync     = radio_rx_sync_cb;
+    radio_events.RxPreamble = radio_rx_preamble_cb;
 
-  // sets the center frequency and performs image calibration if necessary -> can take up to 2ms (see datasheet p.56)
-  // NOTE: Image calibration is valid for the whole frequency band (863 - 870MHz), no recalibration necessary if another frequency within this band is selected later on
-  Radio.SetChannel(radio_bands[RADIO_DEFAULT_BAND].centerFrequency);
+    // NOTE: Radio.Init() performs a hard reset of the SX1262 chip
+    Radio.Init(&radio_events);
+
+    // sets the center frequency and performs image calibration if necessary -> can take up to 2ms (see datasheet p.56)
+    // NOTE: Image calibration is valid for the whole frequency band (863 - 870MHz), no recalibration necessary if another frequency within this band is selected later on
+    Radio.SetChannel(radio_bands[RADIO_DEFAULT_BAND].centerFrequency);
+
+  } else {
+    // make sure the radio is in STDBY_XOSC mode and set crystal trim values
+    RadioSetXoscTrim();
+  }
 
   // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
   if (rx_boosted) {
@@ -82,7 +90,7 @@ void radio_init(void)
   if (RADIO_READ_DIO1_PIN()) {
     LOG_WARNING("SX1262 DIO1 pin is high");
   }
-  radio_restore_config();
+  radio_restore_config(true);
 
   hs_timer_capture(&radio_irq_capture_cb);
   radio_set_irq_direct(true);
@@ -250,7 +258,7 @@ void radio_reset(void)
   RADIO_TX_STOP_IND();
   dcstat_stop(&radio_dc_rx);
   dcstat_stop(&radio_dc_tx);
-  radio_restore_config();     // calls Radio.Init() and performs a radio chip reset
+  radio_restore_config(true);   // calls Radio.Init() and performs a radio chip reset
 }
 
 
@@ -259,13 +267,10 @@ bool radio_wakeup(void)
   if (radio_sleeping) {
     if (radio_sleeping == RADIO_SLEEPING_COLD) {
       /* radio config is lost and must be restored */
-      radio_restore_config();
+      radio_restore_config(true);
     } else {
       SX126xWakeup();
-      /* restore config that gets lost also in warm sleep */
-      if (rx_boosted) {
-        radio_set_rx_gain(true);
-      }
+      radio_restore_config(false);
     }
     radio_sleeping = RADIO_SLEEPING_FALSE;
     return true;

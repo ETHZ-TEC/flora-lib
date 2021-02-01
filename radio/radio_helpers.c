@@ -194,10 +194,10 @@ void radio_set_config_tx(uint8_t modulation_index,
       preamble_length,
       implicit, // explicit header mode
       crc,      // CRC on
-      false,    // no FHSS
-      0,        // no FHSS
-      0,        // no FHSS
-      0         // no timeout
+      false,    // FHSS
+      0,        // FHSS period
+      false,    // iqInverted
+      0         // timeout
   );
 }
 
@@ -245,10 +245,10 @@ void radio_set_config_rx(uint8_t modulation_index,
       implicit, // explicit header mode
       (implicit ? implicit_length : 0), // no fixed payload length (as it is explicit header mode / variable packet length)
       crc,      // CRC on
-      false,    // no FHSS
-      0,        // no FHSS
-      false,    // no FHSS
-      false     // not continuous rx
+      false,    // FHSS
+      0,        // FHSS period
+      false,    // iqInverted
+      false     // continuous RX
   );
 
   SX126xSetStopRxTimerOnPreambleDetect(stop_rx_on_preamble);
@@ -291,10 +291,10 @@ void radio_set_config_rxtx(bool lora_mode,
       preamble_length,                        // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
       implicit,                               // Fixed length packets [0: variable, 1: fixed]
       crc,                                    // CRC on
-      false,                                  // no FHSS
-      0,                                      // no FHSS
-      0,                                      // no FHSS
-      0                                       // no timeout
+      false,                                  // FHSS
+      0,                                      // FHSS period
+      false,                                  // iqInverted
+      0                                       // timeout
   );
 
   Radio.SetRxConfig(
@@ -308,10 +308,10 @@ void radio_set_config_rxtx(bool lora_mode,
       implicit,                               // Fixed length packets [0: variable, 1: fixed]
       (implicit ? implicit_length : 0),       // no fixed payload length (as it is explicit header mode / variable packet length)
       crc,                                    // CRC on
-      false,                                  // no FHSS
-      0,                                      // no FHSS
-      false,                                  // no FHSS
-      false                                   // not continuous rx
+      false,                                  // FHSS
+      0,                                      // FHSS period
+      false,                                  // iqInverted
+      false                                   // continuous RX
   );
 
   //SX126xSetStopRxTimerOnPreambleDetect(true);
@@ -555,9 +555,23 @@ RadioState_t radio_get_status(void)
 }
 
 
-RadioOperatingModes_t radio_get_opmode(void)
+RadioOperatingModes_t radio_read_status(void)
 {
-  return SX126xGetOperatingMode();
+  uint8_t chipmode = SX126xGetStatus().Fields.ChipMode;
+  switch (chipmode) {
+  case 0x2:
+    return MODE_STDBY_RC;
+  case 0x3:
+    return MODE_STDBY_XOSC;
+  case 0x4:
+    return MODE_FS;
+  case 0x5:
+    return MODE_RX;
+  case 0x6:
+    return MODE_TX;
+  default:
+    return MODE_INVALID;
+  }
 }
 
 

@@ -55,7 +55,7 @@ uint32_t  radio_get_last_pkt_snr(void);
 int32_t   radio_get_rssi(void);
 
 RadioState_t          radio_get_status(void);
-RadioOperatingModes_t radio_get_opmode(void);
+RadioOperatingModes_t radio_read_status(void);      // reads the current status (chip mode) from the radio
 void                  radio_print_status(void);
 
 /*!
