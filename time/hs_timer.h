@@ -24,6 +24,17 @@
 #endif /* HS_TIMER_INIT_FROM_RTC */
 
 
+#define HS_TIMER_TICKS_TO_LPTIMER(hs_ticks)   ((hs_ticks) * HS_TIMER_FREQUENCY / LPTIMER_FREQUENCY)
+#define HS_TIMER_TICKS_TO_S(hs_ticks)         ((hs_ticks) / HS_TIMER_FREQUENCY)
+#define HS_TIMER_TICKS_TO_MS(hs_ticks)        ((hs_ticks) / HS_TIMER_FREQUENCY_MS)
+#define HS_TIMER_TICKS_TO_US(hs_ticks)        ((hs_ticks) / HS_TIMER_FREQUENCY_US)
+#define HS_TIMER_TICKS_TO_NS(hs_ticks)        ((hs_ticks) * 1000 / HS_TIMER_FREQUENCY_US)
+#define HS_TIMER_S_TO_TICKS(s)                ((s) * HS_TIMER_FREQUENCY)
+#define HS_TIMER_MS_TO_TICKS(ms)              ((s) * HS_TIMER_FREQUENCY_MS)
+#define HS_TIMER_US_TO_TICKS(us)              ((s) * HS_TIMER_FREQUENCY_US)
+#define HS_TIMER_NS_TO_TICKS(ns)              ((s) * HS_TIMER_FREQUENCY_US / 1000)
+
+
 typedef void (* hs_timer_cb_t)(void);
 
 

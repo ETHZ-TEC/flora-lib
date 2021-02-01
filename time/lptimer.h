@@ -9,7 +9,8 @@
 #define TIME_LPTIMER_H_
 
 
-#define LPTIMER_SECOND      32768UL       /* ticks per second */
+#define LPTIMER_SECOND            32768UL         /* ticks per second */
+#define LPTIMER_FREQUENCY         LPTIMER_SECOND
 
 #ifndef LPTIMER_RESET_WDG_ON_OVF
 #define LPTIMER_RESET_WDG_ON_OVF  0     /* reset watchdog inside the timer overflow interrupt? (only works if watchdog configured and enabled) */
