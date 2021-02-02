@@ -186,7 +186,7 @@ void discosync_start_rx_tx(void)
 
       if (force_tx || tx_slots[current_slot]) {
         // Tx slot
-        uint64_t tx_time = start_time + DISCOSYNC_SLOT_TIME * pkt.slot_idx + DISCOSYNC_TX_OFS;
+        uint64_t tx_time = start_time + DISCOSYNC_SLOT_TIME * pkt.slot_idx + DISCOSYNC_TX_OFS - DISCOSYNC_TX_TRIGGER_DELAY;
   #if DISCOSYNC_MAX_RAND_TX_OFS
         tx_time -= rand() % DISCOSYNC_MAX_RAND_TX_OFS;
   #endif /* DISCOSYNC_MAX_RAND_TX_OFS */
@@ -273,15 +273,12 @@ void discosync_rx_done(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t sn
 
     uint64_t estimated_start_time = radio_get_last_sync_timestamp() -
                                     gloria_timings[DISCOSYNC_MODULATION].txSync -
-                                    36 -      // Magic!
                                     DISCOSYNC_TX_OFS -
                                     DISCOSYNC_SLOT_TIME * rcvd_pkt->slot_idx;
     if (rcvd_pkt->slot_idx >= pkt.slot_idx) {
       // Sync to this node
       pkt.slot_idx = rcvd_pkt->slot_idx;
-      if (estimated_start_time < start_time) {
-        start_time = estimated_start_time;
-      }
+      start_time = estimated_start_time;
       // Adjust the start time of the next slot
       SCHEDULE_NEXT_SLOT();
     }

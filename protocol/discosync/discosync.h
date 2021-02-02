@@ -55,6 +55,10 @@
 #error "invalid DISCOSYNC_MAX_RAND_TX_OFS"
 #endif
 
+#ifndef DISCOSYNC_TX_TRIGGER_DELAY
+#define DISCOSYNC_TX_TRIGGER_DELAY  36      // TX trigger delay in hs timer ticks, implementation dependent
+#endif /* DISCOSYNC_TX_TRIGGER_DELAY */
+
 
 // Defines & macros
 
