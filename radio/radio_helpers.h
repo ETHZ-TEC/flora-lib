@@ -22,6 +22,7 @@ void      radio_set_continuous_preamble(void);
 
 void      radio_get_payload(uint8_t* buffer, uint8_t* offset, uint8_t* size);
 uint8_t   radio_get_payload_size(void);
+void      radio_set_payload_size(uint8_t size);
 void      radio_set_payload(uint8_t* buffer, uint8_t size);
 void      radio_set_payload_chunk(uint8_t* buffer, uint8_t offset, uint8_t size, bool last_chunk);    // the last chunk of the payload must be the one with the largest offset
 void      radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size);
@@ -42,8 +43,6 @@ uint32_t  radio_get_symbol_toa_hs(uint16_t length, uint8_t modulation);
  */
 uint32_t  radio_get_preamble_toa_hs(uint16_t length, uint8_t modulation);
 
-
-void      radio_set_packet_params_and_size(uint8_t size);
 
 void      radio_print_message(radio_message_t* message);
 

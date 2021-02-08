@@ -11,14 +11,13 @@
 extern void (*RadioOnDioIrqCallback)(void);
 extern const struct Radio_s Radio;
 extern radio_message_t* last_message_list;
-extern void RadioSetXoscTrim(void);
 
 /* shared state */
 volatile bool radio_irq_direct = false;
 
 /* internal state */
 static volatile radio_sleeping_t  radio_sleeping = RADIO_SLEEPING_FALSE;
-static volatile lora_irq_mode_t   radio_mode;
+static volatile uint16_t          radio_irq_mask = IRQ_RADIO_ALL;
 static bool                       rx_boosted = true;
 static uint64_t                   radio_last_sync_timestamp = 0;
 static uint8_t                    preamble_detected_counter = 0;
@@ -75,7 +74,7 @@ static void radio_restore_config(bool reset)
 
   } else {
     // make sure the radio is in STDBY_XOSC mode and set crystal trim values
-    RadioSetXoscTrim();
+    Radio.SetXoscTrim();
   }
 
   // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
@@ -115,91 +114,55 @@ void radio_set_irq_callback(void (*callback)())
 
 void radio_set_irq_mode(lora_irq_mode_t mode)
 {
-  radio_mode = mode;
-
   switch (mode)
   {
   case IRQ_MODE_ALL:
-    SX126xSetDioIrqParams( IRQ_RADIO_ALL,
-                           IRQ_RADIO_ALL,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_RADIO_ALL;
     break;
   case IRQ_MODE_TX:
-    SX126xSetDioIrqParams( IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT,
-                           IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT;
     break;
   case IRQ_MODE_RX:
-    SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0);
     break;
   case IRQ_MODE_RX_CRC:
-    SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
-                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
-      break;
+    radio_irq_mask = IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR;
+    break;
   case IRQ_MODE_RX_CRC_PREAMBLE:
-    SX126xSetDioIrqParams( IRQ_PREAMBLE_DETECTED | IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
-                           IRQ_PREAMBLE_DETECTED | IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
-      break;
+    radio_irq_mask = IRQ_PREAMBLE_DETECTED | IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR;
+    break;
   case IRQ_MODE_RX_PREAMBLE:
-    SX126xSetDioIrqParams( IRQ_PREAMBLE_DETECTED | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_PREAMBLE_DETECTED | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_PREAMBLE_DETECTED | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0);
     break;
   case IRQ_MODE_RX_ONLY:
-    SX126xSetDioIrqParams( IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0);
+    break;
   case IRQ_MODE_SYNC_RX_VALID:
-    SX126xSetDioIrqParams( IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE,
-                           IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE;
     break;
   case IRQ_MODE_SYNC_ONLY:
-    SX126xSetDioIrqParams( IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID,
-                           IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID;
     break;
   case IRQ_MODE_CAD:
-    SX126xSetDioIrqParams( IRQ_CAD_ACTIVITY_DETECTED | IRQ_CAD_DONE,
-                           IRQ_CAD_ACTIVITY_DETECTED | IRQ_CAD_DONE,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_CAD_ACTIVITY_DETECTED | IRQ_CAD_DONE;
     break;
   case IRQ_MODE_CAD_RX:
-    SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
+    radio_irq_mask = IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_RX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0);
     break;
   case IRQ_MODE_RX_TX:
-    SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0),
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
-      break;
+    radio_irq_mask = IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0);
+    break;
   case IRQ_MODE_RX_TX_CRC:
-    SX126xSetDioIrqParams( IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
-                           IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR,
-                           IRQ_RADIO_NONE,
-                           IRQ_RADIO_NONE );
-      break;
-
+    radio_irq_mask = IRQ_HEADER_ERROR | IRQ_HEADER_VALID | IRQ_SYNCWORD_VALID | IRQ_RX_DONE | IRQ_TX_DONE | (RADIO_USE_HW_TIMEOUT ? IRQ_RX_TX_TIMEOUT : 0) | IRQ_CRC_ERROR;
+    break;
   default:
     break;
   }
+
+  SX126xSetDioIrqParams(radio_irq_mask,
+                        radio_irq_mask,
+                        IRQ_RADIO_NONE,
+                        IRQ_RADIO_NONE);
 }
 
 
@@ -288,7 +251,7 @@ void radio_standby(void)
 
   // temporarily force into RC mode (bug workaround)
   SX126xSetStandby( STDBY_RC );     // if TCXO not used, STDBY_XOSC will be entered in RadioSetXoscTrim()
-  RadioSetXoscTrim();
+  Radio.SetXoscTrim();
   Radio.Standby();
 
   RADIO_RX_STOP_IND();
@@ -555,7 +518,7 @@ void radio_transmit(uint8_t* buffer, uint8_t size)
   if (buffer) {
     radio_set_payload(buffer, size);
   }
-  SX126xSetTx(0);
+  Radio.Tx(0, false);
   hs_timer_set_schedule_timestamp(hs_timer_get_counter());
   RADIO_RX_STOP_IND();
   RADIO_TX_START_IND();
@@ -570,8 +533,7 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_t
   if (buffer) {
     radio_set_payload(buffer, size);
   }
-  SX126xSetTxWithoutExecute(0);
-
+  Radio.Tx(0, true);
   hs_timer_schedule(schedule_timestamp_hs, &radio_execute);
 }
 
@@ -592,21 +554,23 @@ void radio_execute_manually(int64_t timestamp_hs)
 
 void radio_receive_scheduled(uint64_t schedule_timestamp_hs, uint32_t timeout_hs)
 {
+  uint32_t timeout_ms = 0;
+
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
 #if RADIO_USE_HW_TIMEOUT
-  timeout_hs = RADIO_HSTICKS_TO_RADIOTIMER(timeout_hs); // convert to radio timer ticks
-  if (timeout_hs > RADIO_TIMER_MAX_TIMEOUT) {
-    timeout_hs = RADIO_TIMER_MAX_TIMEOUT;               // set to max. allowed value
+  // convert to milliseconds
+  timeout_ms = HS_TIMER_TICKS_TO_MS(timeout_hs);
+  if (timeout_ms > RADIO_TIMER_MAX_TIMEOUT_MS) {
+    timeout_ms = RADIO_TIMER_MAX_TIMEOUT_MS;        // set to max. allowed value
   }
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout_hs) {
     hs_timer_timeout(schedule_timestamp_hs + timeout_hs, &radio_timeout_cb);
-    timeout_hs = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 
-  SX126xSetRxWithoutExecute(timeout_hs);
+  Radio.Rx(timeout_ms, false, true);
 
   hs_timer_schedule(schedule_timestamp_hs, &radio_execute);
 }
@@ -614,23 +578,23 @@ void radio_receive_scheduled(uint64_t schedule_timestamp_hs, uint32_t timeout_hs
 
 void radio_receive(uint32_t timeout_hs)
 {
+  uint32_t timeout_ms = 0;
+
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
 #if RADIO_USE_HW_TIMEOUT
-  // convert to radio timer ticks
-  timeout_hs = RADIO_HSTICKS_TO_RADIOTIMER(timeout_hs); // convert to radio timer ticks
-  if (timeout_hs > RADIO_TIMER_MAX_TIMEOUT) {
-    timeout_hs = RADIO_TIMER_MAX_TIMEOUT;               // set to max. allowed value
+  // convert to milliseconds
+  timeout_ms = HS_TIMER_TICKS_TO_MS(timeout_hs);
+  if (timeout_ms > RADIO_TIMER_MAX_TIMEOUT_MS) {
+    timeout_ms = RADIO_TIMER_MAX_TIMEOUT_MS;        // set to max. allowed value
   }
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout_hs) {
     hs_timer_timeout(hs_timer_get_current_timestamp() + timeout_hs, &radio_timeout_cb);
-    timeout_hs = 0;
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 
-  SX126xSetRx(timeout_hs);
-
+  Radio.Rx(timeout_ms, false, false);
   RADIO_RX_START_IND();
   dcstat_start(&radio_dc_rx);
 }
@@ -640,8 +604,7 @@ void radio_receive_continuously(void)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  SX126xSetRx(RADIO_TIMER_RX_CONTINUOUS);
-
+  Radio.Rx(0, true, false);
   RADIO_RX_START_IND();
   dcstat_start(&radio_dc_rx);
 }
@@ -651,12 +614,7 @@ void radio_receive_duty_cycle(uint32_t rx, uint32_t sleep, bool schedule)
 {
   if (radio_sleeping) return;      // abort if radio is still in sleep mode
 
-  if (schedule) {
-    SX126xSetRxDutyCycleWithoutExecute(rx, sleep);
-  }
-  else {
-    Radio.SetRxDutyCycle(rx, sleep);
-  }
+  Radio.SetRxDutyCycle(rx, sleep, schedule);
 }
 
 

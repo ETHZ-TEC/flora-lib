@@ -201,8 +201,6 @@ struct Radio_s
      * \param [IN] iqInverted   Inverts IQ signals (LoRa only)
      *                          FSK : N/A ( set to 0 )
      *                          LoRa: [0: not inverted, 1: inverted]
-     * \param [IN] rxContinuous Sets the reception in continuous mode
-     *                          [false: single mode, true: continuous mode]
      */
     void    ( *SetRxConfig )( RadioModems_t modem, uint32_t bandwidth,
                               uint32_t datarate, uint8_t coderate,
@@ -210,7 +208,7 @@ struct Radio_s
                               uint16_t symbTimeout, bool fixLen,
                               uint8_t payloadLen,
                               bool crcOn, bool freqHopOn, uint8_t hopPeriod,
-                              bool iqInverted, bool rxContinuous );
+                              bool iqInverted );
     /*!
      * \brief Sets the transmission parameters
      *
@@ -310,16 +308,20 @@ struct Radio_s
     void    ( *Standby )( void );
     /*!
      * \brief Sets the radio in reception mode for the given time
-     * \param [IN] timeout Reception timeout [ms]
-     *                     [0: continuous, others timeout]
+     * \param [IN] timeout Reception timeout in ms (0 = no timeout)
+     * \param [IN] continuous Set to true for RX continuous mode.
+     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
      */
-    void    ( *Rx )( uint32_t timeout );
+    void    ( *Rx )( uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!
      * \brief Sets the radio in reception mode for the given time with configuring
      *        the radio interrupts by the mask
      * \param [IN] mask Mask to enable/disable radio interrupts
+     * \param [IN] timeout_ms Timeout in milliseconds (0 = no timeout).
+     * \param [IN] continuous Set to true for RX continuous mode.
+     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
      */
-    void    ( *RxMask )( uint16_t mask );
+    void    ( *RxMask )( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!
      * \brief Start a Channel Activity Detection
      */
@@ -370,10 +372,9 @@ struct Radio_s
     /*!
      * \brief Sets the maximum payload length.
      *
-     * \param [IN] modem      Radio modem to be used [0: FSK, 1: LoRa]
      * \param [IN] max        Maximum payload length in bytes
      */
-    void    ( *SetMaxPayloadLength )( RadioModems_t modem, uint8_t max );
+    void    ( *SetMaxPayloadLength )( uint8_t max );
     /*!
      * \brief Sets the network to public or private. Updates the sync byte.
      *
@@ -402,16 +403,21 @@ struct Radio_s
      *
      * \param [IN] timeout Reception timeout [ms]
      *                     [0: continuous, others timeout]
+     * \param [IN] continuous Set to true for RX continuous mode.
+     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
      */
-    void    ( *RxBoosted )( uint32_t timeout );
+    void    ( *RxBoosted )( uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!
      * \brief Sets the radio in reception mode with Max LNA gain for the given time
      *
      * \remark Available on SX126x radios only.
      *
      * \param [IN] mask Mask to enable/disable radio interrupts
+     * \param [IN] timeout_ms Timeout in milliseconds (0 = no timeout).
+     * \param [IN] continuous Set to true for RX continuous mode.
+     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
      */
-    void    ( *RxBoostedMask )( uint16_t mask );
+    void    ( *RxBoostedMask )( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!
      * \brief Sets the Rx duty cycle management parameters
      *
@@ -419,8 +425,20 @@ struct Radio_s
      *
      * \param [in]  rxTime        Structure describing reception timeout value
      * \param [in]  sleepTime     Structure describing sleep timeout value
+     * \param [in]  scheduled     Whether this is a scheduled command (= w/o execute)
      */
-    void ( *SetRxDutyCycle ) ( uint32_t rxTime, uint32_t sleepTime );
+    void ( *SetRxDutyCycle ) ( uint32_t rxTime, uint32_t sleepTime, bool scheduled );
+    /*!
+     * \brief Sets the trim values for the external crystal oscillator
+     */
+    void ( *SetXoscTrim ) ( void );
+    /*!
+     * \brief Set the radio into TX mode
+     *
+     * \param [IN] timeout_ms Timeout in milliseconds (0 = no timeout).
+     * \param [in] schedule   Whether this is a scheduled command (= w/o execute)
+     */
+    void ( *Tx ) ( uint32_t timeout_ms, bool scheduled );
 };
 
 /*!

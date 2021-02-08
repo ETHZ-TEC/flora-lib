@@ -62,11 +62,6 @@ static RadioOperatingModes_t OperatingMode;
 static RadioPacketTypes_t PacketType;
 
 /*!
- * \brief Stores the last frequency error measured on LoRa received packet
- */
-volatile uint32_t FrequencyError = 0;
-
-/*!
  * \brief Hold the status of the Image calibration
  */
 static bool ImageCalibrated = false;
@@ -489,7 +484,7 @@ void SX126xSetLoRaSymbNumTimeout( uint8_t symbNum )
 
 void SX126xSetRegulatorMode( RadioRegulatorMode_t mode )
 {
-    SX126xSetStandby( STDBY_RC ); // explicitely set to STDBY_RC since regulator mode should be set only in STDBY_RC mode
+    SX126xSetStandby( STDBY_RC ); // explicitly set to STDBY_RC since regulator mode should be set only in STDBY_RC mode
     SX126xWriteCommand( RADIO_SET_REGULATORMODE, ( uint8_t* )&mode, 1 );
     RadioSetXoscTrim( ); // necessary since writing calibration values apparently resets standby mode to STDBY_RC which overwrites external XTAL trim calibration values
 }
@@ -529,7 +524,6 @@ void SX126xCalibrateImage( uint32_t freq )
         calFreq[1] = 0x6F;
     }
     SX126xWriteCommand( RADIO_CALIBRATEIMAGE, calFreq, 2 );
-    RadioSetXoscTrim( ); // necessary since writing calibration values apparently resets standby mode to STDBY_RC which overwrites external XTAL trim calibration values
 }
 
 void SX126xSetPaConfig( uint8_t paDutyCycle, uint8_t hpMax, uint8_t deviceSel, uint8_t paLut )
@@ -762,8 +756,8 @@ void SX126xSetPacketParams( PacketParams_t *packetParams )
     case PACKET_TYPE_NONE:
         return;
     }
+
     SX126xWriteCommand( RADIO_SET_PACKETPARAMS, buf, n );
-    RadioSetXoscTrim( ); // necessary since writing calibration values apparently resets standby mode to STDBY_RC which overwrites external XTAL trim calibration values
 }
 
 void SX126xSetCadParams( RadioLoRaCadSymbols_t cadSymbolNum, uint8_t cadDetPeak, uint8_t cadDetMin, RadioCadExitModes_t cadExitMode, uint32_t cadTimeout )
@@ -850,7 +844,7 @@ void SX126xGetPacketStatus( PacketStatus_t *pktStatus )
             // Returns SNR value [dB] rounded to the nearest integer value
             pktStatus->Params.LoRa.SnrPkt = ( ( ( int8_t )status[1] ) + 2 ) >> 2;
             pktStatus->Params.LoRa.SignalRssiPkt = -status[2] >> 1;
-            pktStatus->Params.LoRa.FreqError = FrequencyError;
+            pktStatus->Params.LoRa.FreqError = 0;
             break;
 
         default:

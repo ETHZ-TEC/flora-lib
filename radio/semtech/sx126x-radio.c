@@ -120,8 +120,6 @@ uint32_t RadioRandom( void );
  * \param [IN] iqInverted   Inverts IQ signals (LoRa only)
  *                          FSK : N/A ( set to 0 )
  *                          LoRa: [0: not inverted, 1: inverted]
- * \param [IN] rxContinuous Sets the reception in continuous mode
- *                          [false: single mode, true: continuous mode]
  */
 void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                           uint32_t datarate, uint8_t coderate,
@@ -129,7 +127,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                           uint16_t symbTimeout, bool fixLen,
                           uint8_t payloadLen,
                           bool crcOn, bool FreqHopOn, uint8_t HopPeriod,
-                          bool iqInverted, bool rxContinuous );
+                          bool iqInverted );
 
 /*!
  * \brief Sets the transmission parameters
@@ -236,19 +234,23 @@ void RadioStandby( void );
 /*!
  * \brief Sets the radio in reception mode for the given time
  */
-void RadioRx( );
+void RadioRx( uint32_t timeout_ms, bool continuous, bool scheduled );
 
 /*!
  * \brief Sets the radio in reception mode for the given time with configuring
  *        the radio interrupts by the mask
- * \param [IN] mask Mask to enable/disable radio interrupts
  */
-void RadioRxMask( uint16_t mask );
+void RadioRxMask( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled );
 
 /*!
  * \brief Start a Channel Activity Detection
  */
 void RadioStartCad( void );
+
+/*!
+ * \brief Sets the radio into TX mode
+ */
+void RadioTx( uint32_t timeout_ms, bool scheduled );
 
 /*!
  * \brief Sets the radio in continuous wave transmission mode
@@ -307,10 +309,9 @@ void RadioReadBuffer( uint16_t addr, uint8_t *buffer, uint8_t size );
 /*!
  * \brief Sets the maximum payload length.
  *
- * \param [IN] modem      Radio modem to be used [0: FSK, 1: LoRa]
  * \param [IN] max        Maximum payload length in bytes
  */
-void RadioSetMaxPayloadLength( RadioModems_t modem, uint8_t max );
+void RadioSetMaxPayloadLength( uint8_t max );
 
 /*!
  * \brief Sets the whitening mode.
@@ -357,21 +358,17 @@ void RadioIrqProcess( void );
 /*!
  * \brief Sets the radio in reception mode with Max LNA gain for the given time
  */
-void RadioRxBoosted( );
+void RadioRxBoosted( uint32_t timeout_ms, bool continuous, bool scheduled );
 
 /*!
  * \brief Sets the radio in reception mode with Max LNA gain for the given time
- * \param [IN] mask    Mask to enable/disable radio interrupts
  */
-void RadioRxBoostedMask( uint16_t mask );
+void RadioRxBoostedMask( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled );
 
 /*!
  * \brief Sets the Rx duty cycle management parameters
- *
- * \param [in]  rxTime        Structure describing reception timeout value
- * \param [in]  sleepTime     Structure describing sleep timeout value
  */
-void RadioSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime );
+void RadioSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime, bool scheduled );
 
 /*!
  * Radio driver structure initialization
@@ -408,7 +405,10 @@ const struct Radio_s Radio =
     // Available on SX126x only
     RadioRxBoosted,
     RadioRxBoostedMask,
-    RadioSetRxDutyCycle
+    RadioSetRxDutyCycle,
+
+    RadioSetXoscTrim,
+    RadioTx
 };
 
 /*
@@ -465,13 +465,6 @@ uint8_t GfskSyncWordLength = 3;
 
 uint8_t GfskSyncWord[8] = { 0xC1, 0x94, 0xC1, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-uint32_t TxTimeout = 0;
-uint32_t RxTimeout = 0;
-
-bool RxContinuous = false;
-
-
-PacketStatus_t RadioPktStatus;
 uint8_t RadioRxPayload[RADIO_MAX_PAYLOAD_SIZE + 1] = { 0 };
 
 bool IrqFired = false;
@@ -525,7 +518,7 @@ static RadioEvents_t* RadioEvents;
 /*!
  * Radio hardware and global parameters
  */
-SX126x_t SX126x;
+static SX126x_t SX126x;
 
 
 /*!
@@ -626,7 +619,7 @@ bool RadioIsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh,
     RadioSetModem( modem );
     RadioSetChannel( freq );
 
-    RadioRx( 0 );
+    RadioRx( 0, false, false );
 
     rtc_delay(30);
 
@@ -670,14 +663,8 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                          uint16_t symbTimeout, bool fixLen,
                          uint8_t payloadLen,
                          bool crcOn, bool freqHopOn, uint8_t hopPeriod,
-                         bool iqInverted, bool rxContinuous )
+                         bool iqInverted )
 {
-    RxContinuous = rxContinuous;
-
-    if( rxContinuous == true )
-    {
-        symbTimeout = 0;
-    }
     if( fixLen == true )
     {
         MaxPayloadLength = payloadLen;
@@ -721,7 +708,6 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             SX126xSetSyncWord( GfskSyncWord );
             SX126xSetWhiteningSeed( 0x01FF );
 
-            RxTimeout = ( uint32_t )symbTimeout * 8000UL / datarate;
             break;
 
         case MODEM_LORA:
@@ -771,9 +757,6 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                 SX126xWriteRegister( 0x0736, SX126xReadRegister( 0x0736 ) | ( 1 << 2 ) );
             }
             // WORKAROUND END
-
-            // Timeout Max, Timeout handled directly in SetRx function
-            RxTimeout = 0x0;
 
             break;
     }
@@ -868,7 +851,6 @@ void RadioSetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
     // WORKAROUND END
 
     SX126xSetRfTxPower( power );
-    TxTimeout = timeout;
 }
 
 bool RadioCheckRfFrequency( uint32_t frequency )
@@ -1081,55 +1063,74 @@ void RadioStandby( void )
     }
 }
 
-void RadioRx( )
+void RadioRx( uint32_t timeout_ms, bool continuous, bool scheduled )
 {
-    RadioRxMask( (IRQ_RADIO_ALL) );
+    if( continuous )
+    {
+        timeout_ms = 0xFFFFFF;
+    }
+    else
+    {
+        timeout_ms <<= 6;
+    }
+    if( scheduled)
+    {
+        SX126xSetRxWithoutExecute( timeout_ms << 6 );
+    }
+    else
+    {
+        SX126xSetRx( timeout_ms << 6 );
+    }
 }
 
-void RadioRxMask( uint16_t mask )
+void RadioRxMask( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled )
 {
     SX126xSetDioIrqParams( mask,
                            mask,
                            IRQ_RADIO_NONE,
                            IRQ_RADIO_NONE );
+    RadioRx( timeout_ms, continuous, scheduled );
+}
 
-    if( RxContinuous == true )
+void RadioRxBoosted( uint32_t timeout_ms, bool continuous, bool scheduled )
+{
+    if( continuous )
     {
-        SX126xSetRx( 0xFFFFFF ); // Rx Continuous
+        timeout_ms = 0xFFFFFF;
     }
     else
     {
-        SX126xSetRx( RxTimeout << 6 );
+        timeout_ms <<= 6;
+    }
+    if( scheduled)
+    {
+        SX126xSetRxBoostedWithoutExecute( timeout_ms << 6 );
+    }
+    else
+    {
+        SX126xSetRxBoosted( timeout_ms << 6 );
     }
 }
 
-void RadioRxBoosted( )
-{
-    RadioRxBoostedMask( (IRQ_RADIO_ALL) );
-}
-
-void RadioRxBoostedMask( uint16_t mask )
+void RadioRxBoostedMask( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled )
 {
     SX126xSetDioIrqParams( mask,
                            mask,
                            IRQ_RADIO_NONE,
                            IRQ_RADIO_NONE );
+    RadioRxBoosted( timeout_ms, continuous, scheduled );
+}
 
-    if( RxContinuous == true )
+void RadioSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime, bool scheduled )
+{
+    if( scheduled )
     {
-        SX126xSetRxBoosted( 0xFFFFFF ); // Rx Continuous
+        SX126xSetRxDutyCycleWithoutExecute( rxTime, sleepTime );
     }
     else
     {
-        SX126xSetRxBoosted( RxTimeout << 6 );
+        SX126xSetRxDutyCycle( rxTime, sleepTime );
     }
-}
-
-
-
-void RadioSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime )
-{
-    SX126xSetRxDutyCycle( rxTime, sleepTime );
 }
 
 void RadioStartCad( void )
@@ -1138,9 +1139,16 @@ void RadioStartCad( void )
     SX126xSetCad( );
 }
 
-void RadioTx( uint32_t timeout )
+void RadioTx( uint32_t timeout_ms, bool scheduled )
 {
-    SX126xSetTx( timeout << 6 );
+    if( scheduled )
+    {
+        SX126xSetTxWithoutExecute( timeout_ms << 6 );
+    }
+    else
+    {
+        SX126xSetTx( timeout_ms << 6 );
+    }
 }
 
 void RadioSetTxContinuousWave( uint32_t freq, int8_t power )
@@ -1197,9 +1205,9 @@ void RadioReadFifo( uint8_t *buffer, uint8_t size )
     SX126xReadBuffer( 0, buffer, size );
 }
 
-void RadioSetMaxPayloadLength( RadioModems_t modem, uint8_t max )
+void RadioSetMaxPayloadLength( uint8_t max )
 {
-    if( modem == MODEM_LORA )
+    if( SX126xGetPacketType( ) == PACKET_TYPE_LORA )
     {
         SX126x.PacketParams.Params.LoRa.PayloadLength = MaxPayloadLength = max;
         SX126xSetPacketParams( &SX126x.PacketParams );
@@ -1325,6 +1333,7 @@ void RadioIrqProcess( void )
 
         if( ( irqRegs & IRQ_RX_DONE ) == IRQ_RX_DONE )
         {
+            static PacketStatus_t RadioPktStatus;
             bool crc_error = (irqRegs & IRQ_CRC_ERROR) == IRQ_CRC_ERROR || (irqRegs & IRQ_HEADER_ERROR) == IRQ_HEADER_ERROR;
             uint8_t size;
             SX126xGetPayload( RadioRxPayload, &size, RADIO_MAX_PAYLOAD_SIZE );

@@ -84,9 +84,16 @@ uint8_t radio_get_payload_size()
 }
 
 
+void radio_set_payload_size(uint8_t size)
+{
+  lora_last_payload_size = size;
+  Radio.SetMaxPayloadLength(size);
+}
+
+
 void radio_set_payload(uint8_t* buffer, uint8_t size)
 {
-  radio_set_packet_params_and_size(size);
+  radio_set_payload_size(size);
   if (buffer && size) {
     SX126xWriteBuffer(0, buffer, size);
   }
@@ -97,7 +104,7 @@ void radio_set_payload(uint8_t* buffer, uint8_t size)
 void radio_set_payload_chunk(uint8_t* buffer, uint8_t offset, uint8_t size, bool last_chunk)
 {
   if (last_chunk) {
-    radio_set_packet_params_and_size(offset + size);
+    radio_set_payload_size(offset + size);
   }
   if (buffer && size) {
     SX126xWriteBuffer(offset, buffer, size);
@@ -116,7 +123,7 @@ void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size)
     uint32_t toa          = radio_get_toa_hs(lora_last_payload_size, current_modulation) - overhead;
     uint32_t toa_per_byte = toa / lora_last_payload_size;
 
-    radio_set_packet_params_and_size(size);
+    radio_set_payload_size(size);
 
     // busy wait for the start time
     int32_t difference;
@@ -142,7 +149,7 @@ void radio_set_payload_while_transmit(uint8_t* buffer, uint8_t size)
     }
   }
   else {
-    radio_set_packet_params_and_size(0);
+    radio_set_payload_size(0);
   }
 }
 
@@ -247,8 +254,7 @@ void radio_set_config_rx(uint8_t modulation_index,
       crc,      // CRC on
       false,    // FHSS
       0,        // FHSS period
-      false,    // iqInverted
-      false     // continuous RX
+      false     // iqInverted
   );
 
   SX126xSetStopRxTimerOnPreambleDetect(stop_rx_on_preamble);
@@ -310,8 +316,7 @@ void radio_set_config_rxtx(bool lora_mode,
       crc,                                    // CRC on
       false,                                  // FHSS
       0,                                      // FHSS period
-      false,                                  // iqInverted
-      false                                   // continuous RX
+      false                                   // iqInverted
   );
 
   //SX126xSetStopRxTimerOnPreambleDetect(true);
@@ -351,21 +356,6 @@ uint32_t radio_get_preamble_toa_hs(uint16_t length, uint8_t modulation)
   else {
     return HS_TIMER_FREQUENCY * 8 * ((uint32_t)length + 3) / radio_modulations[modulation].datarate;
   }
-}
-
-
-void radio_set_packet_params_and_size(uint8_t size)
-{
-  lora_last_payload_size = size;
-
-  if( SX126xGetPacketType( ) == PACKET_TYPE_LORA ) {
-    SX126x.PacketParams.Params.LoRa.PayloadLength = size;
-  }
-  else {
-    SX126x.PacketParams.Params.Gfsk.PayloadLength = size;
-  }
-
-  SX126xSetPacketParams( &SX126x.PacketParams );
 }
 
 
