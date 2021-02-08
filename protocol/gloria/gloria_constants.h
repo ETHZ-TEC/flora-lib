@@ -4,13 +4,16 @@
 #define PROTOCOL_GLORIA_GLORIA_CONSTANTS_H_
 
 
-#define GLORIA_PHY_MAX_PAYLOAD        255       // max lenght of the physical layer payload (given by the hardware)
+#define GLORIA_PHY_MAX_PAYLOAD        255       // max length of the physical layer payload (given by the hardware)
 #define GLORIA_HEADER_LENGTH          4         // length of the gloria header
 #define GLORIA_HEADER_LENGTH_MIN      2         // length of the gloria header without ACK mode
 #define GLORIA_MAX_PAYLOAD_LENGTH     (GLORIA_PHY_MAX_PAYLOAD - GLORIA_HEADER_LENGTH)      // length of the gloria header
 #define GLORIA_ACK_LENGTH             2         // length of the gloria ack message
 #define GLORIA_TIMESTAMP_LENGTH       8         // length of the timestamp to send with sync floods
+
+#ifndef GLORIA_SCHEDULE_GRANULARITY
 #define GLORIA_SCHEDULE_GRANULARITY   1         // sync timestamps get divided by the granularity. can be used to send less bytes for the sync ts.
+#endif /* GLORIA_SCHEDULE_GRANULARITY */
 
 #define GLORIA_RADIO_SLEEP_TIME       2000      // 250us  TODO: calculate min sleep time for which it's worth going into warm sleep mode
 #define GLORIA_RADIO_SLEEP_TIME_COLD  240000000 // 30s    TODO: calculate min sleep time for which it's worth going into cold sleep mode

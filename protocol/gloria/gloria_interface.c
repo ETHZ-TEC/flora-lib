@@ -29,8 +29,9 @@ static uint8_t                internal_band = GLORIA_INTERFACE_RF_BAND;         
 static bool                   internal_enable_flood_printing = false;             // enable printing of finished (i.e. completely received/transmitted) floods
 static gloria_flood_cb_t      flood_cb = 0;                                       // user-defined callback; only called if flood participation terminates before gloria_stop() is called
 static gloria_pkt_filter_cb_t pkt_filter_cb = 0;                                  // a user-defined packet filter callback function
+static uint64_t               tx_start_timestamp = 0;                             // an optional user-defined TX start marker
 #if GLORIA_INTERFACE_APPEND_TIMESTAMP
-static uint8_t               last_timestamp[GLORIA_TIMESTAMP_LENGTH];             // last received 64-bit hstimer timestamp
+static uint8_t                last_timestamp[GLORIA_TIMESTAMP_LENGTH];            // last received 64-bit hstimer timestamp
 #endif /* GLORIA_INTERFACE_APPEND_TIMESTAMP */
 
 /* variables to store gloria_start arguments */
@@ -115,7 +116,14 @@ void gloria_start(bool is_initiator,
 
   if (is_initiator) {
     // send flood
-    flood.marker        = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;     // marker (timestamp when flood shall start) must be set on the initiator
+    // set the TX marker (timestamp when flood shall start) must be set on the initiator
+    if (tx_start_timestamp && (tx_start_timestamp > hs_timer_get_current_timestamp())) {
+      // user-defined start time
+      flood.marker      = tx_start_timestamp;
+    } else {
+      // use current timestamp
+      flood.marker      = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
+    }
     flood.initial       = true;       // this node is the initator
     flood.payload       = gloria_payload;
     flood.payload_size  = payload_len;
@@ -199,11 +207,12 @@ uint8_t gloria_stop(void)
     }
 
     /* clear arg variables */
-    arg_is_initiator = false;
-    arg_payload_ptr  = NULL;
-    arg_sync_slot    = false;
-    flood_cb         = NULL;
-    pkt_filter_cb    = NULL;
+    arg_is_initiator   = false;
+    arg_payload_ptr    = NULL;
+    arg_sync_slot      = false;
+    flood_cb           = NULL;
+    pkt_filter_cb      = NULL;
+    tx_start_timestamp = 0;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
     /* re-enable other interrupts */
@@ -344,6 +353,12 @@ void gloria_register_flood_callback(gloria_flood_cb_t cb)
 void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb)
 {
   pkt_filter_cb = filter_cb;
+}
+
+
+void gloria_set_tx_marker(uint64_t timestamp_hs)
+{
+  tx_start_timestamp = timestamp_hs;
 }
 
 

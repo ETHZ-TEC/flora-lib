@@ -289,6 +289,12 @@ void gloria_register_flood_callback(gloria_flood_cb_t cb);
 void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb);
 
 /**
+ * \brief           Set the transmission start time (TX marker) for the initiator.
+ * \param           Start time in hs timer ticks.
+ */
+void gloria_set_tx_marker(uint64_t timestamp_hs);
+
+/**
  * \brief           Get the RSSI value of the last received packet.
  * \return          RSSI value in dBm
  */
