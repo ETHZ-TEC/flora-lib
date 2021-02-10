@@ -38,6 +38,7 @@
 #define LPTIMER_TICKS_TO_US(t)    ((uint64_t)(t) * 1000000UL / LPTIMER_SECOND)
 #define LPTIMER_TICKS_TO_MS(t)    ((uint64_t)(t) * 1000UL / LPTIMER_SECOND)
 #define LPTIMER_TICKS_TO_S(t)     ((uint64_t)(t) / LPTIMER_SECOND)
+#define LPTIMER_US_TO_TICKS(us)   ((uint64_t)(us) * LPTIMER_SECOND / 1000000UL)
 #define LPTIMER_MS_TO_TICKS(ms)   ((uint64_t)(ms) * LPTIMER_SECOND / 1000UL)
 #define LPTIMER_S_TO_TICKS(s)     ((uint64_t)(s) * LPTIMER_SECOND)
 

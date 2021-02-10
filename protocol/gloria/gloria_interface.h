@@ -70,6 +70,16 @@
 #define GLORIA_INTERFACE_APPEND_TIMESTAMP   0
 #endif /* GLORIA_INTERFACE_APPEND_TIMESTAMP */
 
+/**
+ * If enabled, gloria_stop() will wait for the current TX slot to finish before
+ * forcing the radio into standby mode.
+ * NOTE: If enabled, gloria_stop() must not be called from an interrupt that
+ *       has the same or higher priority than the hs_timer / radio interrupt.
+ */
+#ifndef GLORIA_INTERFACE_WAIT_TX_FINISHED
+#define GLORIA_INTERFACE_WAIT_TX_FINISHED   0
+#endif /* GLORIA_INTERFACE_WAIT_TX_FINISHED */
+
 
 /* CONFIG CHECKS **************************************************************/
 

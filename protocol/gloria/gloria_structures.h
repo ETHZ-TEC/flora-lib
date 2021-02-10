@@ -80,6 +80,7 @@ typedef struct {
   uint16_t flood_idx;                     // allows to assign the flood an id
 
   bool     radio_no_sleep;                // true: don't put radio into sleep mode even if tx marker is far in the future
+  bool     stop;                          // if set to true, the flood will be stopped at the end of the current slot
 
   uint16_t node_id;
 

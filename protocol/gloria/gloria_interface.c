@@ -158,12 +158,18 @@ uint8_t gloria_stop(void)
 {
   // only stop if flood is not terminated yet
   if (flood_running) {
-    if (!flood_completed) {
-      if (arg_is_initiator) {
-        // If this node is initiator, we can detect if flood did not terminate and warn the user
-        LOG_WARNING("Stopping glossy while flood sending is still ongoing!");
-      }
+
+    if (!flood_completed && arg_is_initiator) {
+      // If this node is initiator, we can detect if flood did not terminate and warn the user
+      LOG_WARNING("Stopping glossy while flood sending is still ongoing!");
     }
+
+#if GLORIA_INTERFACE_WAIT_TX_FINISHED
+    // if a transmission is ongoing, wait for it to complete
+    flood.stop = true;
+    while ((radio_get_status() == RF_TX_RUNNING) && !flood_completed);
+#endif /* GLORIA_INTERFACE_WAIT_TX_FINISHED */
+
 
     // Stop gloria timers
     hs_timer_schedule_stop();
