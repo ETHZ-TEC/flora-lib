@@ -167,7 +167,7 @@
 #endif /* ELWB_CONF_CONT_TH */
 
 #ifndef ELWB_CONF_STARTUP_DELAY
-#define ELWB_CONF_STARTUP_DELAY   1000   /* delay in milliseconds */
+#define ELWB_CONF_STARTUP_DELAY   1000   /* delay in milliseconds from the start of the MCU */
 #endif /* ELWB_CONF_STARTUP_DELAY */
 
 /* use more accurate high frequency reference clock to schedule the contention slot
@@ -296,6 +296,10 @@
 #endif /* ELWB_RCV_PKT_FILTER */
 #define ELWB_PAYLOAD_LEN(msg)           (DPP_MSG_LEN((dpp_message_t*)msg))
 
+/* hook for user-defined stats collection after a communication slot (contention slots and invalid packets will be ignored) */
+#ifndef ELWB_COLLECT_STATS
+#define ELWB_COLLECT_STATS(initiator_id)
+#endif /* ELWB_COLLECT_STATS */
 /*---------------------------------------------------------------------------*/
 
 /* structs and typedefs */

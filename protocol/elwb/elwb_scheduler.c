@@ -245,7 +245,7 @@ bool elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots)
 
 bool elwb_sched_add_node(uint16_t node_id)
 {
-  if (node_id == 0 || node_id == 0xffff) {
+  if (node_id == 0 || node_id == 0xffff || node_id == NODE_ID) {
     return false;     /* invalid argument */
   }
   if (n_nodes >= ELWB_CONF_MAX_NODES) {
