@@ -200,7 +200,7 @@ bool RadioCheckRfFrequency( uint32_t frequency );
  * \param [IN] payloadLen   Sets payload length when fixed length is used
  * \param [IN] crcOn        Enables/Disables the CRC [0: OFF, 1: ON]
  *
- * \retval airTime          Computed airTime (ms) for the given packet payload length
+ * \retval airTime          Computed airTime (us) for the given packet payload length
  */
 uint32_t RadioTimeOnAir( RadioModems_t modem, uint32_t bandwidth,
                               uint32_t datarate, uint8_t coderate,
