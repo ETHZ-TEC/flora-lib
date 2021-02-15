@@ -636,6 +636,7 @@ command_return_t develop_linktestmode_command_handler(command_execution_t execut
   uint32_t timeout = 0;
 
   // prepare for rx
+  radio_set_rx_gain(true);
   radio_set_irq_mode(IRQ_MODE_RX);
   radio_set_rx_callback(&develop_radio_rx_callback);
 
@@ -811,6 +812,7 @@ static void linktestmode_tx_callback() {
   // TODO: check for correct state
 
   // prepare for rx
+  radio_set_rx_gain(true);
   radio_set_irq_mode(IRQ_MODE_RX);
   radio_set_rx_callback(&develop_radio_rx_callback);
 
@@ -828,6 +830,7 @@ static void testlink_tx_callback() {
   uint32_t timeout = 0;
 
   // prepare for rx
+  radio_set_rx_gain(true);
   radio_set_irq_mode(IRQ_MODE_RX);
   radio_set_rx_callback(&develop_radio_rx_callback);
 

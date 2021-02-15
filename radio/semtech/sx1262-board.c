@@ -65,8 +65,6 @@ void SX126xWakeup( void )
 {
     ENTER_CRITICAL_SECTION( );
 
-    tmp = RADIO_GET_STATUS;
-
     RADIO_CLR_NSS_PIN();      // falling edge will trigger the radio wake-up
     delay_us(100);
     SX126xWaitOnBusy( );
