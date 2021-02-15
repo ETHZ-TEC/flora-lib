@@ -221,6 +221,7 @@ void RadioSendPayload( uint8_t *buffer, uint8_t size );
  *        the radio in transmission mode with configuring
  *        the radio interrupts by the mask
  *
+ * \param [IN]: mask       Mask to enable/disable radio interrupts
  * \param [IN]: buffer     Buffer pointer
  * \param [IN]: size       Buffer size
  */
