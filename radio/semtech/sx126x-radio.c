@@ -209,12 +209,22 @@ uint32_t RadioTimeOnAir( RadioModems_t modem, uint32_t bandwidth,
 
 /*!
  * \brief Sends the buffer of size. Prepares the packet to be sent and sets
- *        the radio in transmission
+ *        the radio in transmission mode
  *
  * \param [IN]: buffer     Buffer pointer
  * \param [IN]: size       Buffer size
  */
-void RadioSend( uint8_t *buffer, uint8_t size );
+void RadioSendPayload( uint8_t *buffer, uint8_t size );
+
+/*!
+ * \brief Sends the buffer of size. Prepares the packet to be sent and sets
+ *        the radio in transmission mode with configuring
+ *        the radio interrupts by the mask
+ *
+ * \param [IN]: buffer     Buffer pointer
+ * \param [IN]: size       Buffer size
+ */
+void RadioSendPayloadMask( uint16_t mask, uint8_t *buffer, uint8_t size );
 
 /*!
  * \brief Sets the radio in sleep mode
@@ -251,6 +261,12 @@ void RadioStartCad( void );
  * \brief Sets the radio into TX mode
  */
 void RadioTx( uint32_t timeout_ms, bool scheduled );
+
+/*!
+ * \brief Sets the radio into TX mode with configuring
+ *        the radio interrupts by the mask
+ */
+void RadioTxMask( uint16_t mask, uint32_t timeout_ms, bool scheduled );
 
 /*!
  * \brief Sets the radio in continuous wave transmission mode
@@ -385,7 +401,8 @@ const struct Radio_s Radio =
     RadioSetTxConfig,
     RadioCheckRfFrequency,
     RadioTimeOnAir,
-    RadioSend,
+    RadioSendPayload,
+    RadioSendPayloadMask,
     RadioSleep,
     RadioColdSleep,
     RadioStandby,
@@ -408,7 +425,8 @@ const struct Radio_s Radio =
     RadioSetRxDutyCycle,
 
     RadioSetXoscTrim,
-    RadioTx
+    RadioTx,
+    RadioTxMask
 };
 
 /*
@@ -1012,10 +1030,16 @@ uint32_t RadioTimeOnAir( RadioModems_t modem, uint32_t bandwidth,
     return ( numerator + denominator - 1 ) / denominator;
 }
 
-void RadioSend( uint8_t *buffer, uint8_t size )
+void RadioSendPayload( uint8_t *buffer, uint8_t size )
 {
-    SX126xSetDioIrqParams( IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT,
-                           IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT,
+    uint16_t mask = IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT;
+    RadioSendPayloadMask(mask, buffer, size);
+}
+
+void RadioSendPayloadMask( uint16_t mask, uint8_t *buffer, uint8_t size )
+{
+    SX126xSetDioIrqParams( mask,
+                           mask,
                            IRQ_RADIO_NONE,
                            IRQ_RADIO_NONE );
 
@@ -1141,6 +1165,25 @@ void RadioStartCad( void )
 
 void RadioTx( uint32_t timeout_ms, bool scheduled )
 {
+    // FIXME: explicitly set default irq mask & call RadioTxMask()
+
+    if( scheduled )
+    {
+        SX126xSetTxWithoutExecute( timeout_ms << 6 );
+    }
+    else
+    {
+        SX126xSetTx( timeout_ms << 6 );
+    }
+}
+
+void RadioTxMask( uint16_t mask, uint32_t timeout_ms, bool scheduled )
+{
+    SX126xSetDioIrqParams( mask,
+                           mask,
+                           IRQ_RADIO_NONE,
+                           IRQ_RADIO_NONE );
+
     if( scheduled )
     {
         SX126xSetTxWithoutExecute( timeout_ms << 6 );
