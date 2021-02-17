@@ -176,6 +176,11 @@
 #define ELWB_CONF_CONT_USE_HFTIMER  0
 #endif /* ELWB_CONF_CONT_USE_HFTIMER */
 
+/* max. number of rounds for random backoff */
+#ifndef ELWB_CONF_RAND_BACKOFF
+#define ELWB_CONF_RAND_BACKOFF    4
+#endif /* ELWB_CONF_RAND_BACKOFF */
+
 
 /* --------------- END OF CONFIG, do not change values below --------------- */
 
@@ -283,23 +288,18 @@
   #define ELWB_SUSPENDED()
 #endif /* ELWB_RESUMED */
 
-/* misc */
-#ifndef ELWB_IS_HOST
-#define ELWB_IS_HOST()                  (host_id == NODE_ID)      /* note: host_id is a state variable inside eLWB */
-#endif /* ELWB_IS_HOST */
+/* whether the node is a sink (by default, a host node is a sink node) */
 #ifndef ELWB_IS_SINK
-#define ELWB_IS_SINK()                  ELWB_IS_HOST()
+#define ELWB_IS_SINK()                  is_host
 #endif /* ELWB_IS_SINK */
+
 /* a custom packet filter (if expression evaluates to 'true', the packet will be forwarded to the application layer) */
 #ifndef ELWB_RCV_PKT_FILTER
-#define ELWB_RCV_PKT_FILTER()    0
+#define ELWB_RCV_PKT_FILTER()           0
 #endif /* ELWB_RCV_PKT_FILTER */
+
 #define ELWB_PAYLOAD_LEN(msg)           (DPP_MSG_LEN((dpp_message_t*)msg))
 
-/* hook for user-defined stats collection after a communication slot (contention slots and invalid packets will be ignored) */
-#ifndef ELWB_COLLECT_STATS
-#define ELWB_COLLECT_STATS(initiator_id, elwb_phase)
-#endif /* ELWB_COLLECT_STATS */
 /*---------------------------------------------------------------------------*/
 
 /* structs and typedefs */
@@ -342,14 +342,15 @@ typedef struct {
   uint16_t net_id : 15;   /* network ID and packet type indicator */
 } elwb_header_t;
 
-#define ELWB_SCHED_HDR_LEN   14
+#define ELWB_SCHED_HDR_LEN   16
 #define ELWB_SCHED_MAX_SLOTS ((ELWB_CONF_MAX_PKT_LEN - ELWB_SCHED_HDR_LEN - ELWB_SCHED_CRC_LEN) / 2)
 /* note: ELWB_SCHED_MAX_SLOTS != ELWB_CONF_MAX_DATA_SLOTS */
 typedef struct {
   elwb_header_t header;
   uint16_t      n_slots;
-  uint64_t      time;          /* current time in microseconds */
+  uint16_t      host_id;
   uint16_t      period;
+  uint64_t      time;          /* current time in microseconds */
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
   uint16_t      slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2 + 1];
@@ -377,6 +378,10 @@ typedef struct {
 #pragma pack()
 
 
+typedef void (* elwb_timeout_cb_t)(void);
+typedef void (* elwb_slot_cb_t)(uint16_t, elwb_phases_t, elwb_packet_t*);      // initiator ID, eLWB phase, pointer to the packet buffer
+
+
 _Static_assert(sizeof(elwb_packet_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_packet_t size is invalid!");
 _Static_assert(sizeof(elwb_schedule_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_schedule_t size is invalid!");
 
@@ -396,17 +401,20 @@ _Static_assert(sizeof(elwb_schedule_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_schedule_
 
 void     elwb_notify(void);
 
-void     elwb_init(void* elwb_task,
+bool     elwb_init(void* elwb_task,
                    void* pre_elwb_task,
                    void* post_elwb_task,
                    void* in_queue_handle,
                    void* out_queue_handle,         /* queue data type must be dpp_message_t */
                    void* retransmit_queue_handle,  /* buffer to queue packets for retransmission */
-                   void* listen_timeout_callback);
-void     elwb_start(uint32_t _host_id);
+                   elwb_timeout_cb_t listen_timeout_cb);
+void     elwb_start(bool host);
 void     elwb_stop(void);
 
 void     elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp);
+
+/* register a custom callback function that will be executed after each communication slot, can e.g. be used to collect stats */
+void     elwb_register_slot_callback(elwb_slot_cb_t cb);
 
 /* if argument is given, converts the timestamp (in ELWB timer ticks) to global network time
  * returns the current network time if no argument is given */
@@ -423,9 +431,6 @@ bool     elwb_sched_set_period(uint32_t period);
 elwb_time_t elwb_sched_get_time(void);
 void     elwb_sched_set_time(elwb_time_t new_time);
 bool     elwb_sched_add_node(uint16_t node_id);
-
-/* user-defined stats collection after a communication slot */
-void collect_radio_stats(uint16_t initiator_id, elwb_phases_t elwb_phase);
 
 /*---------------------------------------------------------------------------*/
 

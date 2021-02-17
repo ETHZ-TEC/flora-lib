@@ -70,8 +70,9 @@ static void*              rx_queue     = 0;
 static void*              tx_queue     = 0;
 static void*              re_tx_queue  = 0;
 static bool               elwb_running = false;
-static uint32_t           host_id      = 0;
-static void               (*listen_timeout_cb)(void);
+static bool               is_host      = 0;
+static elwb_timeout_cb_t  timeout_cb   = 0;
+static elwb_slot_cb_t     slot_cb      = 0;
 static elwb_schedule_t    schedule;
 static uint_fast8_t       schedule_len;
 
@@ -131,7 +132,7 @@ void elwb_wait_until(elwb_time_t timeout)
 }
 
 
-void schedule_received_callback(void)
+void elwb_schedule_received_callback(void)
 {
   ELWB_TIMER_SET(0, 0);   /* cancel timer */
   elwb_notify();
@@ -180,6 +181,12 @@ void elwb_set_drift(int32_t drift_ppm)
 }
 
 
+void elwb_register_slot_callback(elwb_slot_cb_t cb)
+{
+  slot_cb = cb;
+}
+
+
 static void elwb_update_rssi_snr(void)
 {
   int32_t rssi_curr = gloria_get_rssi();
@@ -220,7 +227,7 @@ static void elwb_bootstrap(void)
     LOG_INFO("bootstrap");
     /* synchronize first! wait for the first schedule... */
     do {
-      gloria_register_flood_callback(schedule_received_callback);
+      gloria_register_flood_callback(elwb_schedule_received_callback);
       gloria_start(false, (uint8_t*)&schedule, 0, ELWB_CONF_N_TX, 1);
       elwb_wait_until(ELWB_TIMER_NOW() + ELWB_CONF_T_SCHED);
       gloria_stop();
@@ -239,8 +246,8 @@ static void elwb_bootstrap(void)
     if (post_task) {
       ELWB_TASK_NOTIFY(post_task);
     }
-    if (listen_timeout_cb) {
-      listen_timeout_cb();
+    if (timeout_cb) {
+      timeout_cb();
     }
     elwb_wait_until(ELWB_TIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
   }
@@ -262,6 +269,10 @@ static void elwb_send_schedule(elwb_time_t start_of_round)
     stats.ref_ofs = (stats.ref_ofs + (gloria_get_t_ref() - start_of_round)) / 2;
     elwb_sched_set_time_offset(stats.ref_ofs);
   }
+
+  if (slot_cb) {
+    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, &packet);
+  }
 }
 
 
@@ -270,6 +281,10 @@ static void elwb_receive_schedule(elwb_time_t start_of_round)
   gloria_start(false, (uint8_t*)&schedule, 0, ELWB_CONF_N_TX, 1);
   elwb_wait_until(start_of_round + ELWB_CONF_T_SCHED + ELWB_CONF_T_GUARD_ROUND);
   gloria_stop();
+
+  if (slot_cb) {
+    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, &packet);
+  }
 }
 
 
@@ -324,12 +339,9 @@ static elwb_time_t elwb_sync(elwb_time_t start_of_round, bool expected_first_sch
       network_time = schedule.time;
       last_synced  = t_ref;
 
-      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_SCHED1);
-
     } else {
       /* just use the previous wakeup time as start time */
       t_ref = start_of_round + ELWB_CONF_T_GUARD_ROUND;
-      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_SCHED2);
     }
     /* update stats */
     elwb_update_rssi_snr();
@@ -369,7 +381,7 @@ static void elwb_send_packet(elwb_time_t slot_start, uint32_t slot_length, uint3
   if (ELWB_QUEUE_SIZE(tx_queue) > 0) {
     uint8_t packet_len;
     /* request round? -> only relevant for the source node */
-    if (!ELWB_IS_HOST() && !data_packet) {
+    if (!is_host && !data_packet) {
       packet_len = ELWB_REQ_PKT_LEN;
       /* request as many data slots as there are packets in the queue */
       packet.req.num_slots = ELWB_QUEUE_SIZE(tx_queue);
@@ -391,7 +403,7 @@ static void elwb_send_packet(elwb_time_t slot_start, uint32_t slot_length, uint3
       packet_len += ELWB_PKT_HDR_LEN;
 #if ELWB_CONF_DATA_ACK
       /* only source nodes receive a D-ACK */
-      if (!ELWB_IS_HOST() && data_packet) {
+      if (!is_host && data_packet) {
         if (my_slots == 0xffff) {
           my_slots = (slot_idx << 8);   /* store the index of the first assigned slot in the upper 8 bytes */
         }
@@ -417,6 +429,10 @@ static void elwb_send_packet(elwb_time_t slot_start, uint32_t slot_length, uint3
   } else if (data_packet) {
     LOG_VERBOSE("no message to send (data slot ignored)");
   }
+
+  if (slot_cb) {
+    slot_cb(schedule.slot[slot_idx], data_packet ? ELWB_PHASE_DATA : ELWB_PHASE_REQ, &packet);
+  }
 }
 
 
@@ -441,9 +457,9 @@ static void elwb_receive_packet(elwb_time_t slot_start, uint32_t slot_length, ui
     if (data_packet) {
       /* check whether to keep this packet */
       bool keep_packet = ELWB_IS_SINK() || ELWB_RCV_PKT_FILTER();
-      if (!ELWB_IS_HOST()) {
+      if (!is_host) {
         /* source nodes keep all packets received from the host */
-        keep_packet |= (schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK) || (schedule.slot[slot_idx] == host_id);
+        keep_packet |= (schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK) || (schedule.slot[slot_idx] == schedule.host_id);
       }
       if (keep_packet) {
         LOG_VERBOSE("data received from node %u (%lub)", schedule.slot[slot_idx], packet_len);
@@ -460,17 +476,19 @@ static void elwb_receive_packet(elwb_time_t slot_start, uint32_t slot_length, ui
       } else {
         stats.pkt_dropped++;
       }
-      ELWB_COLLECT_STATS(schedule.slot[slot_idx], ELWB_PHASE_DATA);
 
-    } else if (ELWB_IS_HOST() && (packet_len == (ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN))) {
+    } else if (is_host && (packet_len == (ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN))) {
       /* this is a request packet */
       elwb_sched_process_req(schedule.slot[slot_idx], packet.req.num_slots);
-      ELWB_COLLECT_STATS(schedule.slot[slot_idx], ELWB_PHASE_REQ);
     }
     stats.pkt_rx_all++;
 
   } else if (data_packet) {
     LOG_VERBOSE("no data received from node %u", schedule.slot[slot_idx]);
+  }
+
+  if (slot_cb) {
+    slot_cb(schedule.slot[slot_idx], data_packet ? ELWB_PHASE_DATA : ELWB_PHASE_REQ, &packet);
   }
 }
 
@@ -480,7 +498,7 @@ static void elwb_data_ack(elwb_time_t slot_start)
 {
   uint8_t packet_len = 0;
 
-  if (ELWB_IS_HOST()) {
+  if (is_host) {
     /* acknowledge each received packet of the last round */
     packet_len = (ELWB_SCHED_N_SLOTS(&schedule) + 7) / 8;
     if (packet_len) {
@@ -531,7 +549,6 @@ static void elwb_data_ack(elwb_time_t slot_start)
           }
         }
         stats.pkt_rx_all++;
-        ELWB_COLLECT_STATS(host_id, ELWB_PHASE_DACK);
 
       } else {
         /* requeue all packets */
@@ -547,9 +564,12 @@ static void elwb_data_ack(elwb_time_t slot_start)
 
     } else if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(&packet)) {
       stats.pkt_rx_all++;
-      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_DACK);
     }
     ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
+  }
+
+  if (slot_cb) {
+    slot_cb(schedule.host_id, ELWB_PHASE_DACK, &packet);
   }
 }
 
@@ -560,7 +580,7 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
   packet.cont.node_id = 0;
 
   /* if there is data in the output buffer, then request a slot */
-  if (!ELWB_IS_HOST() &&
+  if (!is_host &&
       (ELWB_QUEUE_SIZE(tx_queue) >= ELWB_CONF_CONT_TH) &&
       rand_backoff == 0) {
     /* node not yet registered? -> include node ID in the request */
@@ -583,7 +603,7 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
     elwb_wait_until(slot_start + ELWB_CONF_T_CONT);
     gloria_stop();
     /* set random backoff time between 0 and 3 */
-    rand_backoff = (rand() & 0x0003);
+    rand_backoff = (rand() % ELWB_CONF_RAND_BACKOFF);
 
   } else {
 
@@ -595,7 +615,7 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
     if (rand_backoff) {
       rand_backoff--;
     }
-    if (ELWB_IS_HOST()) {
+    if (is_host) {
       if (gloria_get_rx_cnt() &&
           ELWB_IS_PKT_HEADER_VALID(&packet) &&
           (gloria_get_payload_len() == (ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN)) &&
@@ -617,13 +637,18 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
       elwb_update_rssi_snr();
     }
   }
+
+  if (slot_cb) {
+    slot_cb(packet.cont.node_id, ELWB_PHASE_CONT, &packet);
+  }
 }
 
 
 static void elwb_send_rcv_sched2(elwb_time_t slot_start)
 {
   uint8_t packet_len = ELWB_2ND_SCHED_LEN + ELWB_PKT_HDR_LEN;
-  if (ELWB_IS_HOST()) {
+
+  if (is_host) {
     /* note: packet content is set above during the contention slot */
     ELWB_SET_PKT_HEADER(&packet);
     elwb_wait_until(slot_start);
@@ -646,18 +671,21 @@ static void elwb_send_rcv_sched2(elwb_time_t slot_start)
         schedule.n_slots = 0;
       } /* else: all good, no need to change anything */
       stats.pkt_rx_all++;
-      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_SCHED2);
 
     } else {
       LOG_WARNING("2nd schedule missed");
     }
+  }
+
+  if (slot_cb) {
+    slot_cb(schedule.host_id, ELWB_PHASE_SCHED2, &packet);
   }
 }
 
 
 static void elwb_print_stats(void)
 {
-  if (ELWB_IS_HOST()) {
+  if (is_host) {
     LOG_INFO("%llu | T: %lus, slots: %u, rx/tx/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu, rssi: %ddBm",
              network_time,
              elwb_sched_get_period(),
@@ -713,7 +741,7 @@ static void elwb_run(void)
 
     /* --- ROUND STARTS --- */
 
-    if (ELWB_IS_HOST()) {
+    if (is_host) {
       /* --- SEND SCHEDULE --- */
       elwb_send_schedule(start_of_round);
 
@@ -766,7 +794,7 @@ static void elwb_run(void)
         uint32_t slot_idx;
         for (slot_idx = 0; slot_idx < ELWB_SCHED_N_SLOTS(&schedule); slot_idx++) {
           /* note: slots with node ID 0 belong to the host */
-          bool is_initiator = (schedule.slot[slot_idx] == NODE_ID) || (ELWB_IS_HOST() && schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK);
+          bool is_initiator = (schedule.slot[slot_idx] == NODE_ID) || (is_host && schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK);
           if (is_initiator) {
             node_registered = true;
             elwb_send_packet(slot_ofs, slot_time, slot_idx);    /* initiator -> send packet */
@@ -816,7 +844,7 @@ static void elwb_run(void)
 
     uint32_t round_ticks = (uint32_t)schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE;
     ELWB_SCHED_CLR_SLOTS(&schedule);
-    if (ELWB_IS_HOST()) {
+    if (is_host) {
       /* --- COMPUTE NEW SCHEDULE (for the next round) --- */
       schedule_len = elwb_sched_compute(&schedule, ELWB_QUEUE_SIZE(tx_queue));
     }
@@ -834,7 +862,7 @@ static void elwb_run(void)
 
     /* schedule the wakeup for the next round */
     start_of_round += round_ticks + drift_comp;
-    if (!ELWB_IS_HOST()) {
+    if (!is_host) {
       start_of_round -= ELWB_CONF_T_GUARD_ROUND;   /* add guard time on a source node */
     }
     if (call_preprocess) {
@@ -847,23 +875,23 @@ static void elwb_run(void)
 }
 
 
-void elwb_init(void* elwb_task,
+bool elwb_init(void* elwb_task,
                void* pre_elwb_task,
                void* post_elwb_task,
                void* in_queue_handle,
                void* out_queue_handle,
                void* retransmit_queue_handle,
-               void* listen_timeout_callback)
+               elwb_timeout_cb_t listen_timeout_cb)
 {
   if (!in_queue_handle || !out_queue_handle || !elwb_task) {
     LOG_ERROR("invalid parameters");
-    return;
+    return false;
   }
 
 #if ELWB_CONF_DATA_ACK
   if (!retransmit_queue_handle) {
     LOG_ERROR("invalid parameters");
-    return;
+    return false;
   }
 #endif /* ELWB_CONF_DATA_ACK */
 
@@ -873,7 +901,7 @@ void elwb_init(void* elwb_task,
   rx_queue     = in_queue_handle;
   tx_queue     = out_queue_handle;
   re_tx_queue  = retransmit_queue_handle;
-  listen_timeout_cb = listen_timeout_callback;
+  timeout_cb   = listen_timeout_cb;
   elwb_running = true;
 
   /* clear all queues */
@@ -885,21 +913,20 @@ void elwb_init(void* elwb_task,
 
   memset(&stats, 0, sizeof(elwb_stats_t));
 
-  if (ELWB_IS_HOST()) {
+  return true;
+}
+
+
+void elwb_start(bool host)
+{
+  is_host = host;
+  if (is_host) {
+    LOG_INFO("host node, network ID 0x%04x", (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK));
+    sync_state   = SYNCED;
     schedule_len = elwb_sched_init(&schedule);
     if (!schedule_len) {
       LOG_ERROR("schedule has length 0");
     }
-  }
-}
-
-
-void elwb_start(uint32_t _host_id)
-{
-  host_id = _host_id;
-  if (ELWB_IS_HOST()) {
-    LOG_INFO("host node, network ID 0x%04x", (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK));
-    sync_state = SYNCED;
   } else {
     LOG_INFO("source node, network ID 0x%04x", (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK));
     sync_state = BOOTSTRAP;
@@ -916,7 +943,7 @@ void elwb_start(uint32_t _host_id)
   /* instead of calling elwb_run(), schedule the start */
 #if ELWB_CONF_STARTUP_DELAY > 0
   elwb_time_t starttime = ELWB_MS_TO_TICKS(ELWB_CONF_STARTUP_DELAY);
-  if (ELWB_IS_HOST()) {
+  if (is_host) {
     starttime += ELWB_CONF_T_GUARD_ROUND;    /* delay the host by ELWB_CONF_T_GUARD_ROUND */
   }
   if (ELWB_TIMER_NOW() < starttime) {

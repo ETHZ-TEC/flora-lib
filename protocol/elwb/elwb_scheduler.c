@@ -559,6 +559,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   sched->n_slots = 0;
   sched->time    = elwb_time + elwb_time_ofs;
   sched->period  = base_period;
+  sched->host_id = NODE_ID;
   sched->header.net_id = ELWB_CONF_NETWORK_ID;
   sched->header.type   = 1;
   ELWB_SCHED_SET_CONT_SLOT(sched);                  /* include a contention slot */

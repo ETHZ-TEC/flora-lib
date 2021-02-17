@@ -209,7 +209,7 @@ void log_println_ext(log_level_t level, const char* module, const char* msg, con
 /* log a marker (e.g. error code or line number) */
 void log_marker(log_level_t level, const char* module, uint32_t marker);
 
-#if !LOG_PRINT_IMMEDIATELY
+#if !LOG_PRINT_IMMEDIATELY || LOG_USE_DMA
 
 /* prints out all queued data in the log buffer; returns true on success, false otherwise (e.g. when UART device is unavailable) */
 bool log_flush(void);
