@@ -298,7 +298,7 @@
 
 /* hook for user-defined stats collection after a communication slot (contention slots and invalid packets will be ignored) */
 #ifndef ELWB_COLLECT_STATS
-#define ELWB_COLLECT_STATS(initiator_id)
+#define ELWB_COLLECT_STATS(initiator_id, elwb_phase)
 #endif /* ELWB_COLLECT_STATS */
 /*---------------------------------------------------------------------------*/
 
@@ -319,6 +319,20 @@ typedef struct {
   int_fast8_t rssi_avg;   /* average RSSI value */
   int_fast8_t snr_avg;    /* average SNR value */
 } elwb_stats_t;
+
+typedef enum {
+  ELWB_PHASE_INIT = 0,  // 0
+  ELWB_PHASE_PRE,       // 1
+  ELWB_PHASE_SCHED1,    // 2
+  ELWB_PHASE_CONT,      // 3
+  ELWB_PHASE_SCHED2,    // 4
+  ELWB_PHASE_REQ,       // 5
+  ELWB_PHASE_DATA,      // 6
+  ELWB_PHASE_DACK,      // 7
+  ELWB_PHASE_POST,      // 8
+  ELWB_PHASE_IDLE,      // 9
+  NUM_ELWB_PHASES,
+} elwb_phases_t;
 
 #pragma pack(1)           /* force alignment to 1 byte for the following structs */
 
@@ -409,6 +423,9 @@ bool     elwb_sched_set_period(uint32_t period);
 elwb_time_t elwb_sched_get_time(void);
 void     elwb_sched_set_time(elwb_time_t new_time);
 bool     elwb_sched_add_node(uint16_t node_id);
+
+/* user-defined stats collection after a communication slot */
+void collect_radio_stats(uint16_t initiator_id, elwb_phases_t elwb_phase);
 
 /*---------------------------------------------------------------------------*/
 

@@ -324,14 +324,16 @@ static elwb_time_t elwb_sync(elwb_time_t start_of_round, bool expected_first_sch
       network_time = schedule.time;
       last_synced  = t_ref;
 
+      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_SCHED1);
+
     } else {
       /* just use the previous wakeup time as start time */
       t_ref = start_of_round + ELWB_CONF_T_GUARD_ROUND;
+      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_SCHED2);
     }
     /* update stats */
     elwb_update_rssi_snr();
     stats.pkt_rx_all++;
-    ELWB_COLLECT_STATS(0);
 
   } else {
     /* update the sync state machine */
@@ -458,13 +460,14 @@ static void elwb_receive_packet(elwb_time_t slot_start, uint32_t slot_length, ui
       } else {
         stats.pkt_dropped++;
       }
+      ELWB_COLLECT_STATS(schedule.slot[slot_idx], ELWB_PHASE_DATA);
 
     } else if (ELWB_IS_HOST() && (packet_len == (ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN))) {
       /* this is a request packet */
       elwb_sched_process_req(schedule.slot[slot_idx], packet.req.num_slots);
+      ELWB_COLLECT_STATS(schedule.slot[slot_idx], ELWB_PHASE_REQ);
     }
     stats.pkt_rx_all++;
-    ELWB_COLLECT_STATS(schedule.slot[slot_idx]);
 
   } else if (data_packet) {
     LOG_VERBOSE("no data received from node %u", schedule.slot[slot_idx]);
@@ -528,7 +531,7 @@ static void elwb_data_ack(elwb_time_t slot_start)
           }
         }
         stats.pkt_rx_all++;
-        ELWB_COLLECT_STATS(0);
+        ELWB_COLLECT_STATS(host_id, ELWB_PHASE_DACK);
 
       } else {
         /* requeue all packets */
@@ -544,7 +547,7 @@ static void elwb_data_ack(elwb_time_t slot_start)
 
     } else if (gloria_get_rx_cnt() && ELWB_IS_PKT_HEADER_VALID(&packet)) {
       stats.pkt_rx_all++;
-      ELWB_COLLECT_STATS(0);
+      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_DACK);
     }
     ELWB_QUEUE_CLEAR(re_tx_queue);  /* make sure the retransmit queue is empty */
   }
@@ -643,7 +646,7 @@ static void elwb_send_rcv_sched2(elwb_time_t slot_start)
         schedule.n_slots = 0;
       } /* else: all good, no need to change anything */
       stats.pkt_rx_all++;
-      ELWB_COLLECT_STATS(0);
+      ELWB_COLLECT_STATS(host_id, ELWB_PHASE_SCHED2);
 
     } else {
       LOG_WARNING("2nd schedule missed");
