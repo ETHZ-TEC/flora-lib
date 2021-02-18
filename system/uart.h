@@ -10,8 +10,12 @@
 
 
 #ifndef UART_FIFO_BUFFER_SIZE
-#define UART_FIFO_BUFFER_SIZE    1024
+#define UART_FIFO_BUFFER_SIZE    1024       /* must be < 65536 */
 #endif /* UART_FIFO_BUFFER_SIZE */
+
+#ifndef UART_TX_TIMEOUT_MS
+#define UART_TX_TIMEOUT_MS       100        /* uart_tx will block for at most this time */
+#endif /* UART_TX_TIMEOUT_MS */
 
 
 typedef struct

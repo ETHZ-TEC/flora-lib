@@ -118,7 +118,7 @@ void random_init(void)
 {
   // seed the random number generator
 #ifndef HAL_RNG_MODULE_ENABLED
-  srand((unsigned int)hs_timer_get_current_timestamp() + NODE_ID);
+  srand(hs_timer_get_counter() + NODE_ID);
 #endif /* HAL_RNG_MODULE_ENABLED */
 }
 

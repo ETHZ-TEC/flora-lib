@@ -56,8 +56,9 @@ uart_fifo_t* uart_rx()
 
 bool uart_tx(char* buffer, uint32_t size)
 {
+  uint32_t aborttime = HAL_GetTick() + UART_TX_TIMEOUT_MS;
   if(uart_initialized && size) {
-    while (size) {
+    while (size && (HAL_GetTick() < aborttime)) {
       uint16_t processable_size = (UART_FIFO_BUFFER_SIZE - tx_fifo.item_count);
       if (processable_size > size) {
         processable_size = size;
@@ -75,11 +76,11 @@ bool uart_tx(char* buffer, uint32_t size)
         uart_tx_fifo_send();
       }
     }
-    return true;
-
-  } else {
-    return false;
+    if (size == 0) {
+      return true;
+    }
   }
+  return false;
 }
 
 /* send directly without using the TX FIFO or DMA support / interrupts (blocking call) */
@@ -93,14 +94,15 @@ void uart_tx_fifo_send(void)
   if (tx_fifo.item_count && !tx_fifo.dma_transfer_count)
   {
     uint16_t processable_size;
-    if ((tx_fifo.get_pointer + tx_fifo.item_count) >= UART_FIFO_BUFFER_SIZE) {
-      processable_size = UART_FIFO_BUFFER_SIZE - tx_fifo.get_pointer;
+    uint32_t next_item = tx_fifo.get_pointer;
+    if ((next_item + tx_fifo.item_count) >= UART_FIFO_BUFFER_SIZE) {
+      processable_size = UART_FIFO_BUFFER_SIZE - next_item;
     }
     else {
       processable_size = tx_fifo.item_count;
     }
 
-    if (HAL_OK == HAL_UART_Transmit_DMA(&UART, (uint8_t*) (tx_fifo.buffer + tx_fifo.get_pointer), processable_size))
+    if (HAL_OK == HAL_UART_Transmit_DMA(&UART, (uint8_t*) (tx_fifo.buffer + next_item), processable_size))
     {
       tx_fifo.dma_transfer_count = processable_size;
     }
@@ -149,7 +151,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     tx_fifo.get_pointer = (tx_fifo.get_pointer + tx_fifo.dma_transfer_count) % UART_FIFO_BUFFER_SIZE;
     tx_fifo.item_count -= tx_fifo.dma_transfer_count;
     tx_fifo.dma_transfer_count = 0;
-    uart_tx_fifo_send();
+    //uart_tx_fifo_send();
   }
 
   return;
