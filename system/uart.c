@@ -151,7 +151,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     tx_fifo.get_pointer = (tx_fifo.get_pointer + tx_fifo.dma_transfer_count) % UART_FIFO_BUFFER_SIZE;
     tx_fifo.item_count -= tx_fifo.dma_transfer_count;
     tx_fifo.dma_transfer_count = 0;
-    //uart_tx_fifo_send();
+    uart_tx_fifo_send();
   }
 
   return;
