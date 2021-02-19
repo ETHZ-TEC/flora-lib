@@ -56,9 +56,9 @@ uart_fifo_t* uart_rx()
 
 bool uart_tx(char* buffer, uint32_t size)
 {
-  uint32_t aborttime = HAL_GetTick() + UART_TX_TIMEOUT_MS;
+  uint64_t aborttime = lptimer_now() + LPTIMER_MS_TO_TICKS(UART_TX_TIMEOUT_MS);
   if(uart_initialized && size) {
-    while (size && (HAL_GetTick() < aborttime)) {
+    while (size && (lptimer_now() < aborttime)) {
       uint16_t processable_size = (UART_FIFO_BUFFER_SIZE - tx_fifo.item_count);
       if (processable_size > size) {
         processable_size = size;
@@ -142,6 +142,14 @@ bool uart_read(char* chr)
 
 }
 
+
+void uart_wait_tx_complete(uint32_t timeout_ms)
+{
+  uint64_t aborttime = lptimer_now() + LPTIMER_MS_TO_TICKS(timeout_ms);
+  if(uart_initialized) {
+    while (tx_fifo.item_count && (lptimer_now() < aborttime));
+  }
+}
 
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)

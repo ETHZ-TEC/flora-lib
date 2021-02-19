@@ -49,4 +49,8 @@ void uart_transmit_fifo(void);
 
 bool uart_read(char* chr);
 
+/* block until TX is complete (or until the timeout is reached) */
+void uart_wait_tx_complete(uint32_t timeout_ms);
+
+
 #endif /* SYSTEM_UART_H_ */
