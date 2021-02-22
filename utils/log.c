@@ -154,7 +154,7 @@ void log_print(const char* str)
     return;
   }
   log_buffer_add(str, 0);
-#if LOG_USE_DMA
+#if LOG_USE_DMA && LOG_PRINT_IMMEDIATELY
   log_flush();
 #endif /* LOG_USE_DMA */
   log_unlock();
@@ -225,7 +225,7 @@ void log_println(log_level_t level, const char* module, const char* msg)
   /* print the newline */
   log_buffer_add(LOG_NEWLINE, 0);
 
-#if LOG_USE_DMA
+#if LOG_USE_DMA && LOG_PRINT_IMMEDIATELY
   log_flush();
 #endif /* LOG_USE_DMA */
 

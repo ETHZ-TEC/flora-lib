@@ -20,7 +20,8 @@
 #define LOG_LEVEL               LOG_LEVEL_INFO
 #endif /* LOG_LEVEL */
 
-/* whether to print immediately or postpone it (write to intermediate buffer) -> has no effect if LOG_USE_DMA is enabled */
+/* whether to print immediately or postpone it (write to intermediate buffer)
+ * note: also works if DMA is enabled (DMA transfer will then only be initiated when calling log_flush) */
 #ifndef LOG_PRINT_IMMEDIATELY
 #define LOG_PRINT_IMMEDIATELY   0
 #endif /* LOG_PRINT_IMMEDIATELY */
@@ -103,7 +104,7 @@
 /* in case a FreeRTOS task is supposed to be polled every time a message is written to the buffer, define LOG_TASK_HANDLE */
 #ifdef LOG_TASK_HANDLE
   #define LOG_TASK_NOTIFY()     if (LOG_TASK_HANDLE && (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)) { \
-                                  if ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0) {\
+                                  if (IS_INTERRUPT()) {\
                                     xTaskNotifyFromISR(LOG_TASK_HANDLE, 0, eNoAction, 0);\
                                   } else {\
                                     xTaskNotify(LOG_TASK_HANDLE, 0, eNoAction);\
