@@ -10,26 +10,29 @@
 
 
 #ifndef UART_FIFO_BUFFER_SIZE
-#define UART_FIFO_BUFFER_SIZE    1024       /* must be < 65536 */
+#define UART_FIFO_BUFFER_SIZE    1024       /* buffer size for RX and TX queues, must be < 65536 */
 #endif /* UART_FIFO_BUFFER_SIZE */
 
 #ifndef UART_TX_TIMEOUT_MS
 #define UART_TX_TIMEOUT_MS       100        /* uart_tx will block for at most this time */
 #endif /* UART_TX_TIMEOUT_MS */
 
+#ifndef UART_RX_ENABLE
+#define UART_RX_ENABLE           CLI_ENABLE   /* by default, only enable if CLI is enabled */
+#endif /* UART_RX_ENABLE */
+
 
 typedef struct
 {
   uint8_t buffer[UART_FIFO_BUFFER_SIZE];
-  uint16_t set_pointer;
-  uint16_t get_pointer;
-  uint16_t item_count;
-  uint16_t dma_transfer_count;
+  volatile uint16_t set_pointer;
+  volatile uint16_t get_pointer;
+  volatile uint16_t item_count;
+  volatile uint16_t dma_transfer_count;
 } uart_fifo_t;
 
 
 void uart_init();
-void uart_deinit();
 
 uart_fifo_t* uart_rx(void);
 
