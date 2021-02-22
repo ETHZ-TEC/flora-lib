@@ -605,6 +605,10 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
     /* set random backoff time between 0 and 3 */
     rand_backoff = (rand() % ELWB_CONF_RAND_BACKOFF);
 
+    if (slot_cb) {
+      slot_cb(NODE_ID, ELWB_PHASE_CONT, &packet);
+    }
+
   } else {
 
     /* just receive / relay packets */
@@ -636,11 +640,12 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
       }
       elwb_update_rssi_snr();
     }
+
+    if (slot_cb) {
+      slot_cb(packet.cont.node_id, ELWB_PHASE_CONT, &packet);
+    }
   }
 
-  if (slot_cb) {
-    slot_cb(packet.cont.node_id, ELWB_PHASE_CONT, &packet);
-  }
 }
 
 
