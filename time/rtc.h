@@ -32,7 +32,6 @@ bool rtc_parse_date_string(RTC_DateTypeDef* rtc_date, RTC_TimeTypeDef* rtc_time,
 bool rtc_set_alarm(uint64_t timestamp, void* callback);
 bool rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void (*callback)(void));
 uint32_t rtc_time_to_next_alarm(void);
-void rtc_try_to_sleep();
 
 #else /* HAL_RTC_MODULE_ENABLED */
 

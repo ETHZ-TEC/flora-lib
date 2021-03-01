@@ -293,7 +293,17 @@ struct Radio_s
      * \param [IN]: buffer     Buffer pointer
      * \param [IN]: size       Buffer size
      */
-    void    ( *Send )( uint8_t *buffer, uint8_t size );
+    void    ( *SendPayload )( uint8_t *buffer, uint8_t size );
+    /*!
+    * \brief Sends the buffer of size. Prepares the packet to be sent and sets
+    *        the radio in transmission mode with configuring
+    *        the radio interrupts by the mask
+     *
+     * \param [IN]: mask       Mask to enable/disable radio interrupts
+     * \param [IN]: buffer     Buffer pointer
+     * \param [IN]: size       Buffer size
+     */
+    void    ( *SendPayloadMask )( uint16_t mask, uint8_t *buffer, uint8_t size );
     /*!
      * \brief Sets the radio in sleep mode
      */
@@ -423,9 +433,9 @@ struct Radio_s
      *
      * \remark Available on SX126x radios only.
      *
-     * \param [in]  rxTime        Structure describing reception timeout value
-     * \param [in]  sleepTime     Structure describing sleep timeout value
-     * \param [in]  scheduled     Whether this is a scheduled command (= w/o execute)
+     * \param [IN]  rxTime        Structure describing reception timeout value
+     * \param [IN]  sleepTime     Structure describing sleep timeout value
+     * \param [IN]  scheduled     Whether this is a scheduled command (= w/o execute)
      */
     void ( *SetRxDutyCycle ) ( uint32_t rxTime, uint32_t sleepTime, bool scheduled );
 
@@ -433,9 +443,17 @@ struct Radio_s
      * \brief Set the radio into TX mode
      *
      * \param [IN] timeout_ms Timeout in milliseconds (0 = no timeout).
-     * \param [in] schedule   Whether this is a scheduled command (= w/o execute)
+     * \param [IN] schedule   Whether this is a scheduled command (= w/o execute)
      */
     void ( *Tx ) ( uint32_t timeout_ms, bool scheduled );
+    /*!
+     * \brief Set the radio into TX mode
+     *
+     * \param [IN] mask       Mask to enable/disable radio interrupts
+     * \param [IN] timeout_ms Timeout in milliseconds (0 = no timeout).
+     * \param [IN] schedule   Whether this is a scheduled command (= w/o execute)
+     */
+    void ( *TxMask ) ( uint16_t mask, uint32_t timeout_ms, bool scheduled );
 };
 
 /*!
