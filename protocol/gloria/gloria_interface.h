@@ -77,7 +77,7 @@
  *       has the same or higher priority than the hs_timer / radio interrupt.
  */
 #ifndef GLORIA_INTERFACE_WAIT_TX_FINISHED
-#define GLORIA_INTERFACE_WAIT_TX_FINISHED   1
+#define GLORIA_INTERFACE_WAIT_TX_FINISHED   0
 #endif /* GLORIA_INTERFACE_WAIT_TX_FINISHED */
 
 
