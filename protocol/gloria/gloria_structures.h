@@ -25,7 +25,7 @@ typedef struct __attribute__((__packed__, __aligned__(1))) {
   uint8_t protocol_id : 4;    // protocol ID
   uint8_t type : 3;           // msg type
   uint8_t sync: 1;            // 1: message includes ts for sync, 0: no ts
-  uint8_t slot_index;         // current slot index
+  int8_t  slot_index;         // current slot index (must be signed due to init values for ACK floods)
   uint8_t src;                // msg source
   uint8_t dst;                // msg destination
 } gloria_header_t;

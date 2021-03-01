@@ -545,7 +545,7 @@ RadioState_t radio_get_status(void)
 }
 
 
-RadioOperatingModes_t radio_read_status(void)
+RadioOperatingModes_t radio_get_chipmode(void)
 {
   uint8_t chipmode = SX126xGetStatus().Fields.ChipMode;
   switch (chipmode) {

@@ -53,8 +53,8 @@ bool      radio_is_channel_free(uint8_t modulation, uint32_t timeout_ms);
 uint32_t  radio_get_last_pkt_snr(void);
 int32_t   radio_get_rssi(void);
 
-RadioState_t          radio_get_status(void);
-RadioOperatingModes_t radio_read_status(void);      // reads the current status (chip mode) from the radio
+RadioState_t          radio_get_status(void);       // returns the current radio driver status
+RadioOperatingModes_t radio_get_chipmode(void);     // reads the current chip mode from the radio (sends a radio command)
 void                  radio_print_status(void);
 
 /*!

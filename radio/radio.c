@@ -17,7 +17,6 @@ volatile bool radio_irq_direct = false;
 
 /* internal state */
 static volatile radio_sleeping_t  radio_sleeping = RADIO_SLEEPING_FALSE;
-static volatile uint16_t          radio_irq_mask = IRQ_RADIO_ALL;
 static bool                       rx_boosted = true;
 static uint64_t                   radio_last_sync_timestamp = 0;
 static uint8_t                    preamble_detected_counter = 0;
@@ -74,7 +73,7 @@ static void radio_restore_config(bool reset)
 
   } else {
     // make sure the radio is in STDBY_XOSC mode and set crystal trim values
-    Radio.SetXoscTrim();
+    SX126xSetXoscTrim();
   }
 
   // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
@@ -114,6 +113,8 @@ void radio_set_irq_callback(void (*callback)())
 
 void radio_set_irq_mode(lora_irq_mode_t mode)
 {
+  uint16_t radio_irq_mask = IRQ_RADIO_ALL;
+
   switch (mode)
   {
   case IRQ_MODE_ALL:
@@ -249,9 +250,9 @@ void radio_standby(void)
     radio_wakeup();       // wake radio if it is still in sleep mode
   }
 
-  // temporarily force into RC mode (bug workaround)
-  SX126xSetStandby( STDBY_RC );     // if TCXO not used, STDBY_XOSC will be entered in RadioSetXoscTrim()
-  Radio.SetXoscTrim();
+  // temporarily force into RC mode (bug workaround -> 10us offset for TX start)
+  SX126xSetStandby( STDBY_RC );
+  SX126xSetXoscTrim();
   Radio.Standby();
 
   RADIO_RX_STOP_IND();
@@ -534,7 +535,7 @@ void radio_transmit_scheduled(uint8_t* buffer, uint8_t size, uint64_t schedule_t
     radio_set_payload(buffer, size);
   }
   Radio.Tx(0, true);
-  hs_timer_schedule(schedule_timestamp_hs, &radio_execute);
+  hs_timer_schedule_start(schedule_timestamp_hs, &radio_execute);
 }
 
 
@@ -546,7 +547,7 @@ void radio_execute_manually(int64_t timestamp_hs)
       radio_execute();
     }
     else {
-      hs_timer_schedule(timestamp_hs, &radio_execute);
+      hs_timer_schedule_start(timestamp_hs, &radio_execute);
     }
   }
 }
@@ -566,13 +567,13 @@ void radio_receive_scheduled(uint64_t schedule_timestamp_hs, uint32_t timeout_hs
   }
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout_hs) {
-    hs_timer_timeout(schedule_timestamp_hs + timeout_hs, &radio_timeout_cb);
+    hs_timer_timeout_start(schedule_timestamp_hs + timeout_hs, &radio_timeout_cb);
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 
   Radio.Rx(timeout_ms, false, true);
 
-  hs_timer_schedule(schedule_timestamp_hs, &radio_execute);
+  hs_timer_schedule_start(schedule_timestamp_hs, &radio_execute);
 }
 
 
@@ -590,7 +591,7 @@ void radio_receive(uint32_t timeout_hs)
   }
 #else  /* RADIO_USE_HW_TIMEOUT */
   if (timeout_hs) {
-    hs_timer_timeout(hs_timer_get_current_timestamp() + timeout_hs, &radio_timeout_cb);
+    hs_timer_timeout_start(hs_timer_get_current_timestamp() + timeout_hs, &radio_timeout_cb);
   }
 #endif /* RADIO_USE_HW_TIMEOUT */
 

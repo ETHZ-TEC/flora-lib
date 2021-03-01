@@ -9,7 +9,7 @@
 
 // Macros and defines
 
-#define SCHEDULE_NEXT_SLOT()        hs_timer_schedule(start_time + DISCOSYNC_SLOT_TIME * (pkt.slot_idx + 1), &discosync_start_next_slot)
+#define SCHEDULE_NEXT_SLOT()        hs_timer_schedule_start(start_time + DISCOSYNC_SLOT_TIME * (pkt.slot_idx + 1), &discosync_start_next_slot)
 
 
 // Types
@@ -117,7 +117,7 @@ void discosync_start(uint8_t nr_slots, uint16_t rx_time_before_start_ms, discosy
   } else {
     start_time += rx_time_before_start_ms * HS_TIMER_FREQUENCY_MS;
     discosync_start_rx();
-    hs_timer_schedule(start_time, &discosync_start_rx_tx);
+    hs_timer_schedule_start(start_time, &discosync_start_rx_tx);
   }
 }
 

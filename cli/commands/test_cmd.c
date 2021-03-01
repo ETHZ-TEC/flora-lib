@@ -122,7 +122,7 @@ volatile int64_t dbg_sync_offset = -1;
 
 static void handle_irq() {
   if (dbg_sync_offset != -1) {
-    hs_timer_schedule(hs_timer_get_capture_timestamp() + dbg_sync_offset, &handle_dbg_sync);
+    hs_timer_schedule_start(hs_timer_get_capture_timestamp() + dbg_sync_offset, &handle_dbg_sync);
   }
 
   //lora_set_irq_callback(NULL);
@@ -157,7 +157,7 @@ static command_return_t test_sync_command_handler(command_execution_t execution)
     if (schedule_param) {
       uint32_t offset = strtol(schedule_param->value, NULL, 10);
 
-      hs_timer_schedule(hs_timer_get_current_timestamp() + offset, &handle_sync_initiation);
+      hs_timer_schedule_start(hs_timer_get_current_timestamp() + offset, &handle_sync_initiation);
     }
     else {
       handle_sync_initiation();

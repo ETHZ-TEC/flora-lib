@@ -28,11 +28,6 @@
 #define SX1262                                      2
 
 /*!
- * Radio complete Wake-up Time with margin for temperature compensation
- */
-#define RADIO_WAKEUP_TIME                           3 // [ms]
-
-/*!
  * \brief Compensation delay for SetAutoTx/Rx functions in 15.625 microseconds
  */
 #define AUTO_RX_TX_OFFSET                           2
@@ -827,40 +822,32 @@ void SX126xSetFs( void );
  * \brief Sets the radio in transmission mode
  *
  * \param [in]  timeout       Structure describing the transmission timeout value
+ * \param [in]  execute       Whether to execute the command immediately (set NSS line high)
  */
-void SX126xSetTx( uint32_t timeout );
-void SX126xSetTxWithoutExecute( uint32_t timeout );
+void SX126xSetTx( uint32_t timeout, bool execute );
 
 /*!
  * \brief Sets the radio in reception mode
  *
  * \param [in]  timeout       Structure describing the reception timeout value
+ * \param [in]  execute       Whether to execute the command immediately (set NSS line high)
+ * \param [in]  boosted       Set to true to use the higher (boosted) RX gain
  */
-void SX126xSetRx( uint32_t timeout );
-void SX126xSetRxWithoutExecute( uint32_t timeout );
-
-/*!
- * \brief Sets the radio in reception mode with Boosted LNA gain
- *
- * \param [in]  timeout       Structure describing the reception timeout value
- */
-void SX126xSetRxBoosted( uint32_t timeout );
-void SX126xSetRxBoostedWithoutExecute( uint32_t timeout );
+void SX126xSetRx( uint32_t timeout, bool execute, bool boosted );
 
 /*!
  * \brief Sets the Rx duty cycle management parameters
  *
  * \param [in]  rxTime        Structure describing reception timeout value
  * \param [in]  sleepTime     Structure describing sleep timeout value
+ * \param [in]  execute       Whether to execute the command immediately (set NSS line high)
  */
-void SX126xSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime );
-void SX126xSetRxDutyCycleWithoutExecute( uint32_t rxTime, uint32_t sleepTime );
+void SX126xSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime, bool execute );
 
 /*!
  * \brief Sets the radio in CAD mode
  */
 void SX126xSetCad( void );
-void SX126xSetCadWithoutExecute( void );
 
 /*!
  * \brief Sets the radio in continuous wave transmission mode
@@ -1116,5 +1103,10 @@ void SX126xClearDeviceErrors( void );
  * \param [in]  irq           IRQ(s) to be cleared
  */
 void SX126xClearIrqStatus( uint16_t irq );
+
+/*!
+ * \brief Set external oscillator capacitance
+ */
+void SX126xSetXoscTrim( void );
 
 #endif // __SX126x_H__

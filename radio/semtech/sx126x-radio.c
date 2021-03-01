@@ -261,11 +261,6 @@ void RadioTx( uint32_t timeout_ms, bool scheduled );
 void RadioSetTxContinuousWave( uint32_t freq, int8_t power );
 
 /*!
- * \brief Set the trim values for the XOSC (external XTAL)
- */
-void RadioSetXoscTrim( void );
-
-/*!
  * \brief Reads the current RSSI value
  *
  * \retval rssiValue Current RSSI value in [dBm]
@@ -310,6 +305,8 @@ void RadioReadBuffer( uint16_t addr, uint8_t *buffer, uint8_t size );
  * \brief Sets the maximum payload length.
  *
  * \param [IN] max        Maximum payload length in bytes
+ *
+ * \note Packet type must be set with RadioSetModem() before calling this function.
  */
 void RadioSetMaxPayloadLength( uint8_t max );
 
@@ -407,7 +404,6 @@ const struct Radio_s Radio =
     RadioRxBoostedMask,
     RadioSetRxDutyCycle,
 
-    RadioSetXoscTrim,
     RadioTx
 };
 
@@ -555,7 +551,7 @@ void RadioInit( RadioEvents_t *events )
     SX126xInit();
 
     SX126xSetRegulatorMode( USE_DCDC );
-    RadioSetXoscTrim( );
+    SX126xSetXoscTrim();
 
     SX126xSetBufferBaseAddress( 0x00, 0x00 );
     SX126xSetTxParams( 0, RADIO_RAMP_200_US );
@@ -1071,16 +1067,9 @@ void RadioRx( uint32_t timeout_ms, bool continuous, bool scheduled )
     }
     else
     {
-        timeout_ms <<= 6;
+        timeout_ms <<= 6;   // x64 to convert from radio ticks to ms
     }
-    if( scheduled)
-    {
-        SX126xSetRxWithoutExecute( timeout_ms << 6 );
-    }
-    else
-    {
-        SX126xSetRx( timeout_ms << 6 );
-    }
+    SX126xSetRx( timeout_ms, !scheduled, false );
 }
 
 void RadioRxMask( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled )
@@ -1102,14 +1091,7 @@ void RadioRxBoosted( uint32_t timeout_ms, bool continuous, bool scheduled )
     {
         timeout_ms <<= 6;
     }
-    if( scheduled)
-    {
-        SX126xSetRxBoostedWithoutExecute( timeout_ms << 6 );
-    }
-    else
-    {
-        SX126xSetRxBoosted( timeout_ms << 6 );
-    }
+    SX126xSetRx( timeout_ms, !scheduled, true );
 }
 
 void RadioRxBoostedMask( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled )
@@ -1123,14 +1105,7 @@ void RadioRxBoostedMask( uint16_t mask, uint32_t timeout_ms, bool continuous, bo
 
 void RadioSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime, bool scheduled )
 {
-    if( scheduled )
-    {
-        SX126xSetRxDutyCycleWithoutExecute( rxTime, sleepTime );
-    }
-    else
-    {
-        SX126xSetRxDutyCycle( rxTime, sleepTime );
-    }
+    SX126xSetRxDutyCycle( rxTime, sleepTime, !scheduled );
 }
 
 void RadioStartCad( void )
@@ -1141,14 +1116,7 @@ void RadioStartCad( void )
 
 void RadioTx( uint32_t timeout_ms, bool scheduled )
 {
-    if( scheduled )
-    {
-        SX126xSetTxWithoutExecute( timeout_ms << 6 );
-    }
-    else
-    {
-        SX126xSetTx( timeout_ms << 6 );
-    }
+    SX126xSetTx( timeout_ms << 6, !scheduled );
 }
 
 void RadioSetTxContinuousWave( uint32_t freq, int8_t power )
@@ -1156,18 +1124,6 @@ void RadioSetTxContinuousWave( uint32_t freq, int8_t power )
     SX126xSetRfFrequency( freq );
     SX126xSetRfTxPower( power );
     SX126xSetTxContinuousWave( );
-}
-
-void RadioSetXoscTrim( void )
-{
-#ifndef USE_TCXO
-    // Internal state machine of SX1262 overwrites trim values when switching to XOSC (happens whenever in Tx/Rx) -> set XOSC beforehand
-    SX126xSetRxTxFallbackMode( 0x30 );  // always fallback to XOSC (not RC since state change overwrites trim values)
-    SX126xSetStandby( STDBY_XOSC );     // set XOSC mode now
-    // set values for XTAL trimming caps (calibration)
-    SX126xWriteRegister( REG_XTA_TRIM, 0x0E );
-    SX126xWriteRegister( REG_XTB_TRIM, 0x0F );
-#endif
 }
 
 int16_t RadioRssi( RadioModems_t modem )

@@ -53,7 +53,7 @@ void blink_callback() {
   }
 
   count++;
-  hs_timer_schedule(first_ts + count*500*HS_TIMER_FREQUENCY_MS, &blink_callback);
+  hs_timer_schedule_start(first_ts + count*500*HS_TIMER_FREQUENCY_MS, &blink_callback);
 
 #else /* FLOCKLAB */
   print_c_ts(1);

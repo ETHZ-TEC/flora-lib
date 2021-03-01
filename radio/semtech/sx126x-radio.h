@@ -428,10 +428,7 @@ struct Radio_s
      * \param [in]  scheduled     Whether this is a scheduled command (= w/o execute)
      */
     void ( *SetRxDutyCycle ) ( uint32_t rxTime, uint32_t sleepTime, bool scheduled );
-    /*!
-     * \brief Sets the trim values for the external crystal oscillator
-     */
-    void ( *SetXoscTrim ) ( void );
+
     /*!
      * \brief Set the radio into TX mode
      *

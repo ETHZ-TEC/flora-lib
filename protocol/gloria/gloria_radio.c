@@ -55,7 +55,7 @@ void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
         break;
       default:
         // schedule radio wakeup for rx setup
-        hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
+        hs_timer_schedule_start(setup_timestamp, &gloria_radio_setup_callback);
         break;
     }
   }
@@ -90,7 +90,7 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
         break;
       default:
         // schedule radio wakeup for rx setup
-        hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
+        hs_timer_schedule_start(setup_timestamp, &gloria_radio_setup_callback);
         break;
     }
   }
@@ -133,7 +133,7 @@ void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
           break;
         default:
           // schedule radio wakeup for rx setup
-          hs_timer_schedule(setup_timestamp, &gloria_radio_setup_callback);
+          hs_timer_schedule_start(setup_timestamp, &gloria_radio_setup_callback);
           break;
       }
     }

@@ -29,7 +29,6 @@ static hs_timer_cb_t generic_callback  = NULL;
 #endif /* BOLT_ENABLE */
 
 static uint64_t hs_timer_scheduled_timestamp        = 0;
-static uint64_t hs_timer_timeout_timestamp          = 0;
 static uint32_t hs_timer_counter_extension          = 0;
 static uint32_t hs_timer_capture_counter_extension  = 0;
 static uint32_t hs_timer_schedule_counter_extension = 0;
@@ -271,60 +270,59 @@ void hs_timer_capture(hs_timer_cb_t callback)
 }
 
 
-void hs_timer_schedule(uint64_t timestamp, hs_timer_cb_t callback)
+void hs_timer_schedule_start(uint64_t timestamp, hs_timer_cb_t callback)
 {
-  uint64_t now = hs_timer_get_current_timestamp();
-
-  if (timestamp < (now + HS_TIMER_GUARD_TIME)) {
-    callback();
-    LOG_WARNING("Schedule too late!");
-  }
-  else {
-    hs_timer_scheduled_timestamp = timestamp;
-    schedule_callback = callback;
-    hs_timer_set_schedule_timestamp(timestamp);
-#ifndef DEVKIT
-    __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC2);
-    HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
-#else
-    __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC1);
-    HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
-#endif
+  if (callback) {
+    uint64_t now = hs_timer_get_current_timestamp();
+    if (timestamp < (now + HS_TIMER_GUARD_TIME)) {
+      callback();
+      LOG_WARNING("Schedule too late!");
+    }
+    else {
+      hs_timer_scheduled_timestamp = timestamp;
+      schedule_callback = callback;
+      hs_timer_set_schedule_timestamp(timestamp);
+  #ifndef DEVKIT
+      __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC2);
+      HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
+  #else
+      __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC1);
+      HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+  #endif
+    }
   }
 }
 
 
-void hs_timer_timeout(uint64_t timeout, hs_timer_cb_t callback)
+void hs_timer_timeout_start(uint64_t timeout, hs_timer_cb_t callback)
 {
-  timeout_callback  = callback;
-  hs_timer_timeout_timestamp = timeout;
-  if (hs_timer_timeout_timestamp) {
+  if (callback) {
+    timeout_callback = callback;
     hs_timer_set_hs_timer_timeout_timestamp(timeout);
     __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC3);
     HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_3);
-  } else {
-    HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
-    __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC3);
   }
 }
 
 
 #if !BOLT_ENABLE
 
-void hs_timer_generic(uint64_t timestamp, hs_timer_cb_t callback) {
-  uint64_t now = hs_timer_get_current_timestamp();
-
-  if ((timestamp - now) < HS_TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
-    callback();
-  }
-  else {
-    generic_callback = callback;
-    hs_timer_set_generic_timestamp(timestamp);
-#ifndef DEVKIT
-    HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_4);
-#else
-    HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
-#endif
+void hs_timer_generic_start(uint64_t timestamp, hs_timer_cb_t callback)
+{
+  if (callback) {
+    uint64_t now = hs_timer_get_current_timestamp();
+    if ((timestamp - now) < HS_TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
+      callback();
+    }
+    else {
+      generic_callback = callback;
+      hs_timer_set_generic_timestamp(timestamp);
+  #ifndef DEVKIT
+      HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_4);
+  #else
+      HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
+  #endif
+    }
   }
 }
 
@@ -340,14 +338,15 @@ void hs_timer_schedule_stop(void)
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_1);
   __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC1);
 #endif
+  schedule_callback = 0;
 }
 
 
 void hs_timer_timeout_stop(void)
 {
-  hs_timer_timeout_timestamp = 0;
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
   __HAL_TIM_CLEAR_IT(&htim2, TIM_FLAG_CC3);
+  timeout_callback = 0;
 }
 
 #if !BOLT_ENABLE
@@ -358,6 +357,7 @@ void hs_timer_generic_stop(void)
 #else
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
 #endif
+  generic_callback = 0;
 }
 #endif /* BOLT_ENABLE */
 
@@ -426,7 +426,6 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
-      hs_timer_timeout_timestamp = 0;
       if (timeout_callback) {
         timeout_callback();
       }

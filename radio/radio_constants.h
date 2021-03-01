@@ -22,6 +22,9 @@
 #define RADIO_TIME_PA_RAMP_UP           40 // us
 #define RADIO_SPI_SPEED                 12580000 // 12 MeBit/s
 
+// Radio complete Wake-up Time with margin for temperature compensation
+#define RADIO_WAKEUP_TIME               3 // [ms]
+
 // SX1262 power values
 #define RADIO_MAX_POWER                 22 // dBm (SX1262)
 #define RADIO_MIN_POWER                 -9 // dBm (SX1262)
