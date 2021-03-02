@@ -27,9 +27,13 @@
 
 
 #define IS_INTERRUPT()        ((SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0)
+#define INTERRUPTS_ENABLED()  ((__get_PRIMASK() & 0x1) == 0)
 
 #define SUSPEND_SYSTICK()     CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk)
 #define RESUME_SYSTICK()      SET_BIT(SysTick->CTRL, SysTick_CTRL_ENABLE_Msk)
+
+#define SUSPEND_HALTICK()     HAL_SuspendTick()
+#define RESUME_HALTICK()      HAL_ResumeTick(); NVIC_EnableIRQ(HALTICK_IRQ)
 
 #define REGVAL16(addr)        (*(volatile uint16_t*)(addr))
 #define REGVAL32(addr)        (*(volatile uint32_t*)(addr))
@@ -61,5 +65,7 @@ uint32_t random_rand16(void);        /* returns a 16-bit random number (c-lib) *
 #ifdef HAL_RNG_MODULE_ENABLED
 uint32_t random_rand32(void);        /* returns a 32-bit random number (only available if the hardware RNG is enabled) */
 #endif /* HAL_RNG_MODULE_ENABLED */
+
+bool check_hal_tick(void);           /* returns true if the HAL tick is enabled */
 
 #endif /* UTILS_MISC_H_ */

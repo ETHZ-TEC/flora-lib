@@ -149,4 +149,13 @@ uint32_t random_rand32(void)
 #endif /* HAL_RNG_MODULE_ENABLED */
 
 
-
+/* make sure the HAL tick is enabled */
+bool check_hal_tick(void)
+{
+  if (!(HALTICK_TIMER.Instance->CR1 & TIM_CR1_CEN) ||
+      !NVIC_GetEnableIRQ(TIM1_UP_TIM16_IRQn)       ||
+      !__HAL_TIM_GET_IT_SOURCE(&HALTICK_TIMER, TIM_IT_UPDATE)) {
+    return false;
+  }
+  return true;
+}
