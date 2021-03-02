@@ -144,9 +144,7 @@ void gloria_start(bool is_initiator,
   radio_reset_sync_counter();
 
 #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
-  // TODO disable other potentially interfering interrupts!
   HAL_SuspendTick();
-  HAL_NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);    // needs to be disabled
   SUSPEND_SYSTICK();
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
@@ -221,11 +219,8 @@ uint8_t gloria_stop(void)
     tx_start_timestamp = 0;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
-    /* re-enable other interrupts */
-    HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
     HAL_ResumeTick();
     RESUME_SYSTICK();
-    //lptimer_enable_ovf_int(true);
   #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
     GLORIA_STOP_IND();

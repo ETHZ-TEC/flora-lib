@@ -24,6 +24,15 @@
 #define __SX126x_BOARD_H__
 
 
+
+#ifndef SX126x_CHECK_CMD_RETVAL
+#define SX126x_CHECK_CMD_RETVAL   1         // set to 1 to check return values for sent commands
+#endif /* SX126x_CHECK_CMD_RETVAL */
+
+#define SX126x_CMD_TIMEOUT        100       // timeout for sending a command to the radio, in HAL ticks
+
+
+
 /*!
  * \brief HW Reset of the radio
  */
@@ -45,10 +54,11 @@ void SX126xWakeup( void );
  * \param [in]  opcode        Opcode of the command
  * \param [in]  buffer        Buffer to be send to the radio
  * \param [in]  size          Size of the buffer to send
+ * \retval                    Returns true on success
  */
-void SX126xWriteCommand( RadioCommands_t opcode, uint8_t *buffer, uint16_t size );
+bool SX126xWriteCommand( RadioCommands_t opcode, uint8_t *buffer, uint16_t size );
 
-void SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer, uint16_t size);
+bool SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer, uint16_t size);
 
 /*!
  * \brief Send a command that read data from the radio
@@ -56,8 +66,9 @@ void SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer,
  * \param [in]  opcode        Opcode of the command
  * \param [out] buffer        Buffer holding data from the radio
  * \param [in]  size          Size of the buffer
+ * \retval                    Returns true on success
  */
-void SX126xReadCommand( RadioCommands_t opcode, uint8_t *buffer, uint16_t size );
+bool SX126xReadCommand( RadioCommands_t opcode, uint8_t *buffer, uint16_t size );
 
 /*!
  * \brief Write a single byte of data to the radio memory

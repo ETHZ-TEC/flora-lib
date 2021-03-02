@@ -507,7 +507,7 @@ void SX126xSetDioIrqParams( uint16_t irqMask, uint16_t dio1Mask, uint16_t dio2Ma
 
 uint16_t SX126xGetIrqStatus( void )
 {
-    uint8_t irqStatus[2];
+    uint8_t irqStatus[2] = { 0 };
 
     SX126xReadCommand( RADIO_GET_IRQSTATUS, irqStatus, 2 );
     return ( (uint16_t)irqStatus[0] << 8 ) | irqStatus[1];

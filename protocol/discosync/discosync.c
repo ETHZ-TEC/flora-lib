@@ -106,7 +106,6 @@ void discosync_start(uint8_t nr_slots, uint16_t rx_time_before_start_ms, discosy
 #if DISCOSYNC_DISABLE_INTERRUPTS
   // Disable other potentially interfering interrupts!
   HAL_SuspendTick();
-  HAL_NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);    // needs to be disabled
   SUSPEND_SYSTICK();
 #endif /* DISCOSYNC_DISABLE_INTERRUPTS */
 
@@ -136,7 +135,6 @@ void discosync_stop(void)
 
 #if DISCOSYNC_DISABLE_INTERRUPTS
     // Re-enable other interrupts
-    HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
     HAL_ResumeTick();
     RESUME_SYSTICK();
 #endif /* DISCOSYNC_DISABLE_INTERRUPTS */
