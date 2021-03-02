@@ -29,10 +29,16 @@
 
 #ifndef DEVKIT
 #define RADIO_SPI hspi2
-SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi2;
 #else
 #define RADIO_SPI hspi1
-SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi1;
 #endif
+
+
+#define HALTICK_TIMER       htim1
+#define HALTICK_IRQ         TIM1_UP_TIM16_IRQn
+extern TIM_HandleTypeDef    htim1;
+
 
 #endif /* SYSTEM_PLATFORM_H_ */

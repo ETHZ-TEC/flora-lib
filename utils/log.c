@@ -44,9 +44,9 @@ static bool log_lock(void)
     if (log_semaphore == 1) {
       return true;
     }
-    log_lock_failed = true;
     log_unlock();
   }
+  log_lock_failed = true;
   return false;
 }
 
