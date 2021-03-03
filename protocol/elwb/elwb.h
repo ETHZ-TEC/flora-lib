@@ -270,19 +270,35 @@
 #define ELWB_TIMER_LAST_EXP()           lptimer_get()
 #define ELWB_TIMER_SET(t, cb)           lptimer_set(t, cb)
 #define ELWB_TIMER_STOP()               lptimer_set(0, 0)
-#define ELWB_HFTIMER_SCHEDULE           //TODO
+#define ELWB_HFTIMER_SCHEDULE()         //TODO
 
 /* message passing */
+#ifndef ELWB_QUEUE_SIZE
 #define ELWB_QUEUE_SIZE(handle)         uxQueueMessagesWaiting(handle)          /* polls the queue size (# elements in queue) */
+#endif /* ELWB_QUEUE_SIZE */
+#ifndef ELWB_QUEUE_SPACE
 #define ELWB_QUEUE_SPACE(handle)        uxQueueSpacesAvailable(handle)          /* polls the empty queue space */
+#endif /* ELWB_QUEUE_SPACE */
+#ifndef ELWB_QUEUE_POP
 #define ELWB_QUEUE_POP(handle, data)    xQueueReceive(handle, data, 0)          /* receive / remove an element from the queue (non-blocking, return true on success) */
+#endif /* ELWB_QUEUE_POP */
+#ifndef ELWB_QUEUE_PUSH
 #define ELWB_QUEUE_PUSH(handle, data)   xQueueSend(handle, data, 0)             /* append an element to the queue */
+#endif /* ELWB_QUEUE_PUSH */
+#ifndef ELWB_QUEUE_CLEAR
 #define ELWB_QUEUE_CLEAR(handle)        xQueueReset(handle)                     /* empty a queue (drop all elements) */
+#endif /* ELWB_QUEUE_CLEAR */
 
 /* task related stuff */
+#ifndef ELWB_TASK_YIELD
 #define ELWB_TASK_YIELD()               ulTaskNotifyTake(pdTRUE, portMAX_DELAY) /* function used to yield the eLWB task (and allow other, lower priority tasks to run) */
-#define ELWB_TASK_NOTIFY(task)          xTaskNotify(task, 0, eNoAction);        /* function used to notify (poll) a task, i.e. giving it permission to run */
+#endif /* ELWB_TASK_YIELD */
+#ifndef ELWB_TASK_NOTIFY
+#define ELWB_TASK_NOTIFY(task)          xTaskNotify(task, 0, eNoAction)         /* function used to notify (poll) a task, i.e. giving it permission to run */
+#endif /* ELWB_TASK_NOTIFY */
+#ifndef ELWB_TASK_NOTIFY_FROM_ISR
 #define ELWB_TASK_NOTIFY_FROM_ISR(task) xTaskNotifyFromISR(task, 0, eNoAction, 0);
+#endif /* ELWB_TASK_NOTIFY_FROM_ISR */
 #ifndef ELWB_RESUMED
   #define ELWB_RESUMED()
   #define ELWB_SUSPENDED()
