@@ -54,6 +54,9 @@
 #define UNMASK_INTERRUPTS()         __set_BASEPRI(0)         /* allow all interrupts */
 
 
+typedef volatile uint8_t semaphore_t;
+
+
 void delay(volatile uint32_t loop_passes);
 void delay_us(volatile uint32_t us);
 
@@ -67,5 +70,9 @@ uint32_t random_rand32(void);        /* returns a 32-bit random number (only ava
 #endif /* HAL_RNG_MODULE_ENABLED */
 
 bool check_hal_tick(void);           /* returns true if the HAL tick is enabled */
+
+bool semaphore_acquire(semaphore_t* sem);
+void semaphore_release(semaphore_t* sem);
+
 
 #endif /* UTILS_MISC_H_ */

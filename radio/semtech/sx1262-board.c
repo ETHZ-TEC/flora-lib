@@ -1,27 +1,5 @@
 /*!
- * \file      sx1262dvk1cas-board.c
- *
- * \brief     Target board SX1262DVK1CAS shield driver implementation
- *
- * \copyright Revised BSD License, see section \ref LICENSE.
- *
- * \code
- *                ______                              _
- *               / _____)             _              | |
- *              ( (____  _____ ____ _| |_ _____  ____| |__
- *               \____ \| ___ |    (_   _) ___ |/ ___)  _ \
- *               _____) ) ____| | | || |_| ____( (___| | | |
- *              (______/|_____)_|_|_| \__)_____)\____)_| |_|
- *              (C)2013-2017 Semtech
- *
- * \endcode
- *
- * \author    Miguel Luis ( Semtech )
- *
- * \author    Gregory Cristian ( Semtech )
- *
- * \author    Markus Wegmann ( Technokrat )
- *
+ * based on sx1262dvk1cas-board.c by Semtech
  */
 
 #include "flora_lib.h"
@@ -30,33 +8,25 @@
 #define SX126x_CMD_STATUS_VALID(status)     ((status & 0xe) < (0x3 << 1) || (status & 0xe) > (0x5 << 1))      // see datasheet p.95
 
 
-static int8_t sx126x_lock = 0;     // radio SPI access semaphore
+#if SX126x_USE_ACCESS_LOCK
 
+#ifndef SX126xAcquireLock         // if not used-defined, use the default lock implementation
 
-static void SX126xReleaseLock(void)
-{
-    sx126x_lock--;
-    if (sx126x_lock < 0)
-    {
-        LOG_ERROR("invalid semaphore state");
-        sx126x_lock = 0;
-    }
-}
+semaphore_t sx126x_lock = 1;      // initial value 1 means this is a binary semaphore
 
-static bool SX126xAcquireLock(void)
-{
-    if (sx126x_lock == 0)
-    {
-        sx126x_lock++;
-        if (sx126x_lock == 1)
-        {
-            return true;
-        }
-        SX126xReleaseLock();
-    }
-    LOG_ERROR("failed to acquire radio lock");
-    return false;
-}
+#define SX126xAcquireLock()       semaphore_acquire(&sx126x_lock)
+#define SX126xReleaseLock()       semaphore_release(&sx126x_lock)
+
+#endif /* SX126xAcquireLock */
+
+#else /* SX126x_USE_ACCESS_LOCK */
+
+// access lock not used -> define empty macros
+#define SX126xAcquireLock()       1
+#define SX126xReleaseLock()
+
+#endif /* SX126x_USE_ACCESS_LOCK */
+
 
 uint32_t SX126xGetBoardTcxoWakeupTime( void )
 {
@@ -133,6 +103,7 @@ bool SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size
 
     if (!SX126xAcquireLock())
     {
+        LOG_ERROR("radio access denied");
         return false;
     }
     SX126xCheckDeviceReady( );
@@ -158,6 +129,7 @@ bool SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer,
 
     if (!SX126xAcquireLock())
     {
+        LOG_ERROR("radio access denied");
         return false;
     }
     SX126xCheckDeviceReady( );
@@ -178,6 +150,7 @@ bool SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size 
 
     if (!SX126xAcquireLock())
     {
+        LOG_ERROR("radio access denied");
         return false;
     }
     SX126xCheckDeviceReady( );
@@ -225,6 +198,7 @@ bool SX126xWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
 
     if (!SX126xAcquireLock())
     {
+        LOG_ERROR("radio access denied");
         return false;
     }
     SX126xCheckDeviceReady( );
@@ -276,6 +250,7 @@ bool SX126xReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
 
     if (!SX126xAcquireLock())
     {
+        LOG_ERROR("radio access denied");
         return false;
     }
     SX126xCheckDeviceReady( );
@@ -325,6 +300,7 @@ bool SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 
     if (!SX126xAcquireLock())
     {
+        LOG_ERROR("radio access denied");
         return false;
     }
     SX126xCheckDeviceReady( );
@@ -367,6 +343,7 @@ bool SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 
     if (!SX126xAcquireLock())
     {
+        LOG_ERROR("radio access denied");
         return false;
     }
     SX126xCheckDeviceReady( );

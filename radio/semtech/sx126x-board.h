@@ -29,6 +29,10 @@
 #define SX126x_CHECK_CMD_RETVAL   1         // set to 1 to check return values for sent commands
 #endif /* SX126x_CHECK_CMD_RETVAL */
 
+#ifndef SX126x_USE_ACCESS_LOCK
+#define SX126x_USE_ACCESS_LOCK    1         // set to 1 to use an lock (semaphore) for the radio SPI access to prevent nesting
+#endif /* SX126x_USE_ACCESS_LOCK */
+
 #define SX126x_CMD_TIMEOUT        100       // timeout for sending a command to the radio, in HAL ticks
 
 

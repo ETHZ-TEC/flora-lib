@@ -159,3 +159,28 @@ bool check_hal_tick(void)
   }
   return true;
 }
+
+
+bool semaphore_acquire(semaphore_t* sem)
+{
+  bool acquired = false;
+  if (sem) {
+    ENTER_CRITICAL_SECTION();
+    if (*sem > 0) {
+      (*sem)--;
+      acquired = true;
+    }
+    LEAVE_CRITICAL_SECTION();
+  }
+  return acquired;
+}
+
+
+void semaphore_release(semaphore_t* sem)
+{
+  if (sem) {
+    ENTER_CRITICAL_SECTION();
+    (*sem)++;
+    LEAVE_CRITICAL_SECTION();
+  }
+}
