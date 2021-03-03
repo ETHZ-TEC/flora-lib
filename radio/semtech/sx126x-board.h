@@ -33,9 +33,19 @@
 #define SX126x_USE_ACCESS_LOCK    1         // set to 1 to use an lock (semaphore) for the radio SPI access to prevent nesting
 #endif /* SX126x_USE_ACCESS_LOCK */
 
+#ifndef SX126x_PRINT_ERRORS
+#define SX126x_PRINT_ERRORS       1         // by default print errors
+#endif /* SX126x_PRINT_ERRORS */
+
 #define SX126x_CMD_TIMEOUT        100       // timeout for sending a command to the radio, in HAL ticks
 
 
+/*!
+ * \brief Check for low-level radio command errors (write / read failures)
+ *
+ * \retval   errcnt     Returns the number of errors since the last reset
+ */
+uint32_t SX126xCheckCmdError( bool reset_counter );
 
 /*!
  * \brief HW Reset of the radio

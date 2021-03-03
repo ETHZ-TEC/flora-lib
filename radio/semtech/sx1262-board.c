@@ -8,13 +8,28 @@
 #define SX126x_CMD_STATUS_VALID(status)     ((status & 0xe) < (0x3 << 1) || (status & 0xe) > (0x5 << 1))      // see datasheet p.95
 
 
+#if SX126x_PRINT_ERRORS
+
+#define SX126x_ERROR(...)         sx126x_error_cnt++; LOG_ERROR(__VA_ARGS__)
+
+#else /* SX126x_PRINT_ERRORS */
+
+#define SX126x_ERROR(...)         sx126x_error_cnt++
+
+#endif /* SX126x_PRINT_ERRORS */
+
+
 #if SX126x_USE_ACCESS_LOCK
 
 #ifndef SX126xAcquireLock         // if not used-defined, use the default lock implementation
 
 semaphore_t sx126x_lock = 1;      // initial value 1 means this is a binary semaphore
 
-#define SX126xAcquireLock()       semaphore_acquire(&sx126x_lock)
+#define SX126xAcquireLock()       if (!semaphore_acquire(&sx126x_lock)) \
+                                  { \
+                                      SX126x_ERROR("radio access denied"); \
+                                      return false; \
+                                  }
 #define SX126xReleaseLock()       semaphore_release(&sx126x_lock)
 
 #endif /* SX126xAcquireLock */
@@ -27,6 +42,19 @@ semaphore_t sx126x_lock = 1;      // initial value 1 means this is a binary sema
 
 #endif /* SX126x_USE_ACCESS_LOCK */
 
+
+static uint32_t sx126x_error_cnt = 0;
+
+
+uint32_t SX126xCheckCmdError( bool reset_counter )
+{
+    uint32_t cnt = sx126x_error_cnt;
+    if (reset_counter)
+    {
+        sx126x_error_cnt = 0;
+    }
+    return cnt;
+}
 
 uint32_t SX126xGetBoardTcxoWakeupTime( void )
 {
@@ -44,6 +72,9 @@ void SX126xReset( void )
     delay_us(200);
     RADIO_SET_NRESET_PIN();
     delay_us(100);
+
+    // operating mode after reset is STDBY_RC
+    SX126xSetOperatingMode(MODE_STDBY_RC);
 }
 
 void SX126xWaitOnBusy( void )
@@ -83,7 +114,7 @@ static bool SX126xSPIWrite( RadioCommands_t command, uint8_t *buffer, uint8_t si
         !SX126x_CMD_STATUS_VALID(status)                                                                 ||
         ((size > 1) && (HAL_SPI_Transmit(&RADIO_SPI, &buffer[1], size - 1, SX126x_CMD_TIMEOUT) != HAL_OK)))
     {
-        LOG_ERROR("failed to send radio cmd (%x)", status);
+        SX126x_ERROR("failed to send radio cmd (%x)", status);
         return false;
     }
 
@@ -101,11 +132,8 @@ bool SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size
 {
     bool success = true;
 
-    if (!SX126xAcquireLock())
-    {
-        LOG_ERROR("radio access denied");
-        return false;
-    }
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
@@ -127,11 +155,8 @@ bool SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer,
 {
     bool success = true;
 
-    if (!SX126xAcquireLock())
-    {
-        LOG_ERROR("radio access denied");
-        return false;
-    }
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
@@ -148,11 +173,8 @@ bool SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size 
     bool    success = true;
     uint8_t status  = 0;
 
-    if (!SX126xAcquireLock())
-    {
-        LOG_ERROR("radio access denied");
-        return false;
-    }
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
@@ -165,7 +187,7 @@ bool SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size 
         !SX126x_CMD_STATUS_VALID(status)                                                        ||
         HAL_SPI_TransmitReceive(&RADIO_SPI, buffer, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
     {
-        LOG_ERROR("failed to execute read cmd (%x)", status);
+        SX126x_ERROR("failed to execute read cmd (%x)", status);
         success = false;
     }
 
@@ -196,11 +218,8 @@ bool SX126xWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
     addr[0] = address >> 8;    // MSB first!
     addr[1] = address & 0xff;
 
-    if (!SX126xAcquireLock())
-    {
-        LOG_ERROR("radio access denied");
-        return false;
-    }
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
@@ -211,7 +230,7 @@ bool SX126xWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
         HAL_SPI_Transmit(&RADIO_SPI, addr, 2, SX126x_CMD_TIMEOUT)      != HAL_OK ||
         HAL_SPI_Transmit(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
     {
-        LOG_ERROR("failed to write registers");
+        SX126x_ERROR("failed to write registers");
         success = false;
     }
 
@@ -248,11 +267,8 @@ bool SX126xReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
     addr_ret[1] = address & 0xff;
     addr_ret[2] = 0;
 
-    if (!SX126xAcquireLock())
-    {
-        LOG_ERROR("radio access denied");
-        return false;
-    }
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
@@ -264,7 +280,7 @@ bool SX126xReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
         !SX126x_CMD_STATUS_VALID(addr_ret[2])                                   ||
         HAL_SPI_Receive(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
     {
-        LOG_ERROR("failed to read registers");
+        SX126x_ERROR("failed to read registers");
         success = false;
     }
 
@@ -298,11 +314,8 @@ bool SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
     bool    success = true;
     uint8_t cmd     = RADIO_WRITE_BUFFER;
 
-    if (!SX126xAcquireLock())
-    {
-        LOG_ERROR("radio access denied");
-        return false;
-    }
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
@@ -313,7 +326,7 @@ bool SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
         HAL_SPI_Transmit(&RADIO_SPI, &offset, 1, SX126x_CMD_TIMEOUT)   != HAL_OK ||
         HAL_SPI_Transmit(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
     {
-        LOG_ERROR("failed to write buffer");
+        SX126x_ERROR("failed to write buffer");
         success = false;
     }
 
@@ -341,11 +354,8 @@ bool SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
     uint8_t cmd     = RADIO_READ_BUFFER;
     uint8_t status  = 0;
 
-    if (!SX126xAcquireLock())
-    {
-        LOG_ERROR("radio access denied");
-        return false;
-    }
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
@@ -358,7 +368,7 @@ bool SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
         !SX126x_CMD_STATUS_VALID(status)                                                       ||
         HAL_SPI_Receive(&RADIO_SPI, buffer, 255, SX126x_CMD_TIMEOUT)                 != HAL_OK)
     {
-        LOG_ERROR("failed to read buffer");
+        SX126x_ERROR("failed to read buffer");
         success = false;
     }
 
@@ -376,7 +386,7 @@ bool SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 
     SX126xWaitOnBusy( );
 
-    SX126xReleaseLock();
+    SX126xReleaseLock( );
 
     return success;
 }
