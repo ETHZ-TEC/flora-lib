@@ -177,8 +177,10 @@ uint8_t gloria_stop(void)
     radio_set_timeout_callback(NULL);
     radio_set_rx_callback(NULL);
 
-    // put radio in standby mode
+    // put radio in standby mode (use critical section to make sure no interrupt can abort this command)
+    ENTER_CRITICAL_SECTION();
     radio_standby();
+    LEAVE_CRITICAL_SECTION();
 
     /* Set internal state for the case nothing has been received */
     lastrun_t_ref_updated = false;

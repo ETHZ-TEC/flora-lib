@@ -127,7 +127,10 @@ void discosync_stop(void)
     is_running = false;
     hs_timer_schedule_stop();
 
+    ENTER_CRITICAL_SECTION();     // use critical section to make sure no interrupt can abort this command
     radio_standby();
+    LEAVE_CRITICAL_SECTION();
+
     radio_set_rx_callback(0);
     radio_set_tx_callback(0);
     radio_set_cad_callback(0);

@@ -250,12 +250,10 @@ void radio_standby(void)
     radio_wakeup();       // wake radio if it is still in sleep mode
   }
 
-  //ENTER_CRITICAL_SECTION( );
   // temporarily force into RC mode (bug workaround -> 10us offset for TX start)
   SX126xSetStandby( STDBY_RC );
   SX126xSetXoscTrim();
   Radio.Standby();
-  //LEAVE_CRITICAL_SECTION();
 
   RADIO_RX_STOP_IND();
   RADIO_TX_STOP_IND();
