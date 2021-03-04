@@ -1,37 +1,60 @@
 /*!
- * \file      sx1262dvk1cas-board.c
- *
- * \brief     Target board SX1262DVK1CAS shield driver implementation
- *
- * \copyright Revised BSD License, see section \ref LICENSE.
- *
- * \code
- *                ______                              _
- *               / _____)             _              | |
- *              ( (____  _____ ____ _| |_ _____  ____| |__
- *               \____ \| ___ |    (_   _) ___ |/ ___)  _ \
- *               _____) ) ____| | | || |_| ____( (___| | | |
- *              (______/|_____)_|_|_| \__)_____)\____)_| |_|
- *              (C)2013-2017 Semtech
- *
- * \endcode
- *
- * \author    Miguel Luis ( Semtech )
- *
- * \author    Gregory Cristian ( Semtech )
- *
- * \author    Markus Wegmann ( Technokrat )
- *
+ * based on sx1262dvk1cas-board.c by Semtech
  */
 
 #include "flora_lib.h"
 
 
-void (*RadioOnDioIrqPtr)() = NULL;
+#define SX126x_CMD_STATUS_VALID(status)     ((status & 0xe) < (0x3 << 1) || (status & 0xe) > (0x5 << 1))      // see datasheet p.95
 
 
-static uint8_t tmp;
-static uint8_t zero = 0;
+#if SX126x_PRINT_ERRORS
+
+#define SX126x_ERROR(...)         sx126x_error_cnt++; LOG_ERROR(__VA_ARGS__)
+
+#else /* SX126x_PRINT_ERRORS */
+
+#define SX126x_ERROR(...)         sx126x_error_cnt++
+
+#endif /* SX126x_PRINT_ERRORS */
+
+
+#if SX126x_USE_ACCESS_LOCK
+
+#ifndef SX126xAcquireLock         // if not used-defined, use the default lock implementation
+
+semaphore_t sx126x_lock = 1;      // initial value 1 means this is a binary semaphore
+
+#define SX126xAcquireLock()       if (!semaphore_acquire(&sx126x_lock)) \
+                                  { \
+                                      SX126x_ERROR("radio access denied"); \
+                                      return false; \
+                                  }
+#define SX126xReleaseLock()       semaphore_release(&sx126x_lock)
+
+#endif /* SX126xAcquireLock */
+
+#else /* SX126x_USE_ACCESS_LOCK */
+
+// access lock not used -> define empty macros
+#define SX126xAcquireLock()       1
+#define SX126xReleaseLock()
+
+#endif /* SX126x_USE_ACCESS_LOCK */
+
+
+static uint32_t sx126x_error_cnt = 0;
+
+
+uint32_t SX126xCheckCmdError( bool reset_counter )
+{
+    uint32_t cnt = sx126x_error_cnt;
+    if (reset_counter)
+    {
+        sx126x_error_cnt = 0;
+    }
+    return cnt;
+}
 
 uint32_t SX126xGetBoardTcxoWakeupTime( void )
 {
@@ -49,6 +72,9 @@ void SX126xReset( void )
     delay_us(200);
     RADIO_SET_NRESET_PIN();
     delay_us(100);
+
+    // operating mode after reset is STDBY_RC
+    SX126xSetOperatingMode(MODE_STDBY_RC);
 }
 
 void SX126xWaitOnBusy( void )
@@ -77,13 +103,41 @@ void SX126xWakeup( void )
     LEAVE_CRITICAL_SECTION( );
 }
 
-void SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size )
+static bool SX126xSPIWrite( RadioCommands_t command, uint8_t *buffer, uint8_t size )
 {
+#if SX126x_CHECK_CMD_RETVAL
+
+    uint8_t status = 0;
+
+    if (HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, SX126x_CMD_TIMEOUT)               != HAL_OK ||
+        HAL_SPI_TransmitReceive(&RADIO_SPI, buffer, &status, 1, SX126x_CMD_TIMEOUT)            != HAL_OK ||
+        !SX126x_CMD_STATUS_VALID(status)                                                                 ||
+        ((size > 1) && (HAL_SPI_Transmit(&RADIO_SPI, &buffer[1], size - 1, SX126x_CMD_TIMEOUT) != HAL_OK)))
+    {
+        SX126x_ERROR("failed to send radio cmd (%x)", status);
+        return false;
+    }
+
+#else /* SX126x_CHECK_CMD_RETVAL */
+
+    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT);
+
+#endif /* SX126x_CHECK_CMD_RETVAL */
+
+    return true;
+}
+
+bool SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size )
+{
+    bool success = true;
+
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
+    success = SX126xSPIWrite( command, buffer, size );
     RADIO_SET_NSS_PIN();
     delay_us(1);          // wait at least 600ns before continuing
 
@@ -91,114 +145,250 @@ void SX126xWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size
     {
         SX126xWaitOnBusy( );
     }
+
+    SX126xReleaseLock();
+
+    return success;
 }
 
-void SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer, uint16_t size )
+bool SX126xWriteCommandWithoutExecute( RadioCommands_t command, uint8_t *buffer, uint16_t size )
 {
+    bool success = true;
+
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
+    success = SX126xSPIWrite( command, buffer, size );
     // no RADIO_SET_NSS_PIN(); as it will be timed precisely
+
+    SX126xReleaseLock();
+
+    return success;
 }
 
-void SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size )
+bool SX126xReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t size )
 {
+    bool    success = true;
+    uint8_t status  = 0;
+
+    SX126xAcquireLock( );
+
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
-    for( uint16_t i = 0; i < size; i++ )
+
+#if SX126x_CHECK_CMD_RETVAL
+
+
+    if (HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, SX126x_CMD_TIMEOUT)      != HAL_OK ||
+        HAL_SPI_TransmitReceive(&RADIO_SPI, &status, &status, 1, SX126x_CMD_TIMEOUT)  != HAL_OK ||
+        !SX126x_CMD_STATUS_VALID(status)                                                        ||
+        HAL_SPI_TransmitReceive(&RADIO_SPI, buffer, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
     {
-        HAL_SPI_TransmitReceive(&RADIO_SPI, (uint8_t*) (buffer + i), &tmp, 1, 100);
-        buffer[i] = tmp;
+        SX126x_ERROR("failed to execute read cmd (%x)", status);
+        success = false;
     }
+
+#else
+
+    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &status, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_TransmitReceive(&RADIO_SPI, (uint8_t*) buffer, buffer, size, SX126x_CMD_TIMEOUT);
+
+#endif /* SX126x_CHECK_CMD_RETVAL */
+
     RADIO_SET_NSS_PIN();
     delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
+
+    SX126xReleaseLock();
+
+    return success;
 }
 
-void SX126xWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
+bool SX126xWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
 {
-    tmp = RADIO_WRITE_REGISTER;
+    bool    success = true;
+    uint8_t cmd     = RADIO_WRITE_REGISTER;
+    uint8_t addr[2];
+
+    addr[0] = address >> 8;    // MSB first!
+    addr[1] = address & 0xff;
+
+    SX126xAcquireLock( );
 
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address) + 1, 1, 100); // MSB first!
-    HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address), 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
+
+#if SX126x_CHECK_CMD_RETVAL
+
+    if (HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, 100)                     != HAL_OK ||
+        HAL_SPI_Transmit(&RADIO_SPI, addr, 2, SX126x_CMD_TIMEOUT)      != HAL_OK ||
+        HAL_SPI_Transmit(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
+    {
+        SX126x_ERROR("failed to write registers");
+        success = false;
+    }
+
+#else /* SX126x_CHECK_CMD_RETVAL */
+
+    HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, 100);
+    HAL_SPI_Transmit(&RADIO_SPI, addr, 2, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT);
+
+#endif /* SX126x_CHECK_CMD_RETVAL */
+
     RADIO_SET_NSS_PIN();
     delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
+
+    SX126xReleaseLock();
+
+    return success;
 }
 
-void SX126xWriteRegister( uint16_t address, uint8_t value )
+bool SX126xWriteRegister( uint16_t address, uint8_t value )
 {
-    SX126xWriteRegisters( address, &value, 1 );
+    return SX126xWriteRegisters( address, &value, 1 );
 }
 
-void SX126xReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
+bool SX126xReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
 {
-    tmp = RADIO_READ_REGISTER;
+    bool    success = true;
+    uint8_t cmd     = RADIO_READ_REGISTER;
+    uint8_t addr_ret[3];        // address and return value
+
+    addr_ret[0] = address >> 8;     // MSB first!
+    addr_ret[1] = address & 0xff;
+    addr_ret[2] = 0;
+
+    SX126xAcquireLock( );
 
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address) + 1, 1, 100); // MSB first!
-    HAL_SPI_Transmit(&RADIO_SPI, ((uint8_t*) &address), 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
-    HAL_SPI_Receive(&RADIO_SPI, buffer, size, 1000);
+
+#if SX126x_CHECK_CMD_RETVAL
+
+    if (HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, SX126x_CMD_TIMEOUT)     != HAL_OK ||
+        HAL_SPI_Transmit(&RADIO_SPI, addr_ret, 3, SX126x_CMD_TIMEOUT) != HAL_OK ||
+        !SX126x_CMD_STATUS_VALID(addr_ret[2])                                   ||
+        HAL_SPI_Receive(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
+    {
+        SX126x_ERROR("failed to read registers");
+        success = false;
+    }
+
+#else /* SX126x_CHECK_CMD_RETVAL */
+
+    HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, addr_ret, 3, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Receive(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT);
+
+#endif /* SX126x_CHECK_CMD_RETVAL */
+
     RADIO_SET_NSS_PIN();
     delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
+
+    SX126xReleaseLock();
+
+    return success;
 }
 
 uint8_t SX126xReadRegister( uint16_t address )
 {
-    uint8_t data;
+    uint8_t data = 0;
     SX126xReadRegisters( address, &data, 1 );
     return data;
 }
 
-void SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
+bool SX126xWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 {
-    tmp = RADIO_WRITE_BUFFER;
+    bool    success = true;
+    uint8_t cmd     = RADIO_WRITE_BUFFER;
+
+    SX126xAcquireLock( );
 
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &offset, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, buffer, size, 1000);
+
+#if SX126x_CHECK_CMD_RETVAL
+
+    if (HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, SX126x_CMD_TIMEOUT)      != HAL_OK ||
+        HAL_SPI_Transmit(&RADIO_SPI, &offset, 1, SX126x_CMD_TIMEOUT)   != HAL_OK ||
+        HAL_SPI_Transmit(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT) != HAL_OK)
+    {
+        SX126x_ERROR("failed to write buffer");
+        success = false;
+    }
+
+#else /* SX126x_CHECK_CMD_RETVAL */
+
+    HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, &offset, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, buffer, size, SX126x_CMD_TIMEOUT);
+
+#endif /* SX126x_CHECK_CMD_RETVAL */
+
     RADIO_SET_NSS_PIN();
     delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
+
+    SX126xReleaseLock();
+
+    return success;
 }
 
-void SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
+bool SX126xReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 {
-    tmp = RADIO_READ_BUFFER;
+    bool    success = true;
+    uint8_t cmd     = RADIO_READ_BUFFER;
+    uint8_t status  = 0;
+
+    SX126xAcquireLock( );
 
     SX126xCheckDeviceReady( );
 
     RADIO_CLR_NSS_PIN();
-    HAL_SPI_Transmit(&RADIO_SPI, &tmp, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &offset, 1, 100);
-    HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &zero, 1, 100);
-    HAL_SPI_Receive(&RADIO_SPI, buffer, 255, 1000);
+
+#if SX126x_CHECK_CMD_RETVAL
+
+    if (HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, SX126x_CMD_TIMEOUT)                    != HAL_OK ||
+        HAL_SPI_Transmit(&RADIO_SPI, &offset, 1, SX126x_CMD_TIMEOUT)                 != HAL_OK ||
+        HAL_SPI_TransmitReceive(&RADIO_SPI, &status, &status, 1, SX126x_CMD_TIMEOUT) != HAL_OK ||
+        !SX126x_CMD_STATUS_VALID(status)                                                       ||
+        HAL_SPI_Receive(&RADIO_SPI, buffer, 255, SX126x_CMD_TIMEOUT)                 != HAL_OK)
+    {
+        SX126x_ERROR("failed to read buffer");
+        success = false;
+    }
+
+#else /* SX126x_CHECK_CMD_RETVAL */
+
+    HAL_SPI_Transmit(&RADIO_SPI, &cmd, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, &offset, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Transmit(&RADIO_SPI, &status, 1, SX126x_CMD_TIMEOUT);
+    HAL_SPI_Receive(&RADIO_SPI, buffer, 255, SX126x_CMD_TIMEOUT);
+
+#endif /* SX126x_CHECK_CMD_RETVAL */
+
     RADIO_SET_NSS_PIN();
     delay_us(1);          // wait at least 600ns before continuing
 
     SX126xWaitOnBusy( );
+
+    SX126xReleaseLock( );
+
+    return success;
 }
 
 void SX126xSetRfTxPower( int8_t power )

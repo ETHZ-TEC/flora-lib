@@ -1284,7 +1284,6 @@ void RadioIrqProcess( void )
     if( IrqFired == true )
     {
         IrqFired = false;
-
         uint16_t irqRegs = SX126xGetIrqStatus( );
         SX126xClearIrqStatus( irqRegs );    // takes ~20us
 
@@ -1292,6 +1291,10 @@ void RadioIrqProcess( void )
         while (RADIO_READ_DIO1_PIN())
         {
             uint16_t irqRegs2 = SX126xGetIrqStatus( );
+            if (!irqRegs2)
+            {
+                break;    // most likely the read command failed -> abort
+            }
             SX126xClearIrqStatus( irqRegs2 );
             irqRegs |= irqRegs2;
         }

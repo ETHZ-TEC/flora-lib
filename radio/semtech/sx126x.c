@@ -145,7 +145,6 @@ void SX126xInit( )
     SX126xWriteRegister(0x08D8, txclampcfg | 0x1E);
 
     SX126xSetDio2AsRfSwitchCtrl( true );
-    OperatingMode = MODE_STDBY_XOSC;
 }
 
 RadioOperatingModes_t SX126xGetOperatingMode( void )
@@ -278,71 +277,72 @@ uint32_t SX126xGetRandom( void )
 
 void SX126xSetSleep( SleepParams_t sleepConfig )
 {
-    SX126xAntSwOff( );
-
-    if (sleepConfig.Fields.WarmStart == 0)
+    if( SX126xWriteCommand( RADIO_SET_SLEEP, &sleepConfig.Value, 1 ) )
     {
-        ImageCalibrated = false;
-    }
+        SX126xAntSwOff( );
 
-    SX126xWriteCommand( RADIO_SET_SLEEP, &sleepConfig.Value, 1 );
-    OperatingMode = MODE_SLEEP;
+        if( sleepConfig.Fields.WarmStart == 0 )
+        {
+            ImageCalibrated = false;
+        }
+
+        OperatingMode = MODE_SLEEP;
+    }
 }
 
 void SX126xSetStandby( RadioStandbyModes_t standbyConfig )
 {
     // NOTE: Be aware when using MODE_STDBY_RC: XTAL trim values are overwritten by SX1262 state machine when switching to MODE_STDBY_RC, i.e. they need to be reapplied when switching to XOSC
-    SX126xWriteCommand( RADIO_SET_STANDBY, ( uint8_t* )&standbyConfig, 1 );
-    if( standbyConfig == STDBY_RC )
+    if( SX126xWriteCommand( RADIO_SET_STANDBY, ( uint8_t* )&standbyConfig, 1 ) )
     {
-        OperatingMode = MODE_STDBY_RC;
-    }
-    else
-    {
-        OperatingMode = MODE_STDBY_XOSC;
+        if( standbyConfig == STDBY_RC )
+        {
+            OperatingMode = MODE_STDBY_RC;
+        }
+        else
+        {
+            OperatingMode = MODE_STDBY_XOSC;
+        }
     }
 }
 
 void SX126xSetFs( void )
 {
-    SX126xWriteCommand( RADIO_SET_FS, 0, 0 );
-    OperatingMode = MODE_FS;
+    if( SX126xWriteCommand( RADIO_SET_FS, 0, 0 ) )
+    {
+        OperatingMode = MODE_FS;
+    }
 }
 
 void SX126xSetTx( uint32_t timeout, bool execute )
 {
     uint8_t buf[3];
-
-    OperatingMode = MODE_TX;
+    bool    success;
 
     buf[0] = ( uint8_t )( ( timeout >> 16 ) & 0xFF );
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
     buf[2] = ( uint8_t )( timeout & 0xFF );
 
-    if (execute)
+    if( execute )
     {
-        SX126xWriteCommand( RADIO_SET_TX, buf, 3 );
+        success = SX126xWriteCommand( RADIO_SET_TX, buf, 3 );
     }
     else
     {
-        SX126xWriteCommandWithoutExecute( RADIO_SET_TX, buf, 3 );
+        success = SX126xWriteCommandWithoutExecute( RADIO_SET_TX, buf, 3 );
+    }
+    if( success )
+    {
+        OperatingMode = MODE_TX;
     }
 }
 
 void SX126xSetRx( uint32_t timeout, bool execute, bool boosted )
 {
     uint8_t buf[3];
+    bool    success;
 
-    if (timeout == 0xFFFFFF)
-    {
-        OperatingMode = MODE_RX_CONTINUOUS;
-    }
-    else
-    {
-        OperatingMode = MODE_RX;
-    }
-
-    if (boosted)
+    if( boosted )
     {
         SX126xWriteRegister( REG_RX_GAIN, 0x96 ); // max LNA gain, increase current by ~2mA for around ~3dB in sensitivity
     }
@@ -351,19 +351,31 @@ void SX126xSetRx( uint32_t timeout, bool execute, bool boosted )
     buf[1] = ( uint8_t )( ( timeout >> 8 ) & 0xFF );
     buf[2] = ( uint8_t )( timeout & 0xFF );
 
-    if (execute)
+    if( execute )
     {
-        SX126xWriteCommand( RADIO_SET_RX, buf, 3 );
+        success = SX126xWriteCommand( RADIO_SET_RX, buf, 3 );
     }
     else
     {
-        SX126xWriteCommandWithoutExecute( RADIO_SET_RX, buf, 3 );
+        success = SX126xWriteCommandWithoutExecute( RADIO_SET_RX, buf, 3 );
+    }
+    if( success )
+    {
+        if( timeout == 0xFFFFFF )
+        {
+            OperatingMode = MODE_RX_CONTINUOUS;
+        }
+        else
+        {
+            OperatingMode = MODE_RX;
+        }
     }
 }
 
 void SX126xSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime, bool execute )
 {
     uint8_t buf[6];
+    bool    success;
 
     buf[0] = ( uint8_t )( ( rxTime >> 16 ) & 0xFF );
     buf[1] = ( uint8_t )( ( rxTime >> 8 ) & 0xFF );
@@ -372,33 +384,42 @@ void SX126xSetRxDutyCycle( uint32_t rxTime, uint32_t sleepTime, bool execute )
     buf[4] = ( uint8_t )( ( sleepTime >> 8 ) & 0xFF );
     buf[5] = ( uint8_t )( sleepTime & 0xFF );
 
-    if (execute)
+    if( execute )
     {
-        SX126xWriteCommand( RADIO_SET_RXDUTYCYCLE, buf, 6 );
+        success = SX126xWriteCommand( RADIO_SET_RXDUTYCYCLE, buf, 6 );
     }
     else
     {
-        SX126xWriteCommandWithoutExecute( RADIO_SET_RXDUTYCYCLE, buf, 6 );
+        success = SX126xWriteCommandWithoutExecute( RADIO_SET_RXDUTYCYCLE, buf, 6 );
     }
-    OperatingMode = MODE_RX_DC;
+    if( success )
+    {
+        OperatingMode = MODE_RX_DC;
+    }
 }
 
 void SX126xSetCad( void )
 {
-    SX126xWriteCommand( RADIO_SET_CAD, 0, 0 );
-    OperatingMode = MODE_CAD;
+    if( SX126xWriteCommand( RADIO_SET_CAD, 0, 0 ) )
+    {
+        OperatingMode = MODE_CAD;
+    }
 }
 
 void SX126xSetTxContinuousWave( void )
 {
-    SX126xWriteCommand( RADIO_SET_TXCONTINUOUSWAVE, 0, 0 );
-    OperatingMode = MODE_TX;
+    if( SX126xWriteCommand( RADIO_SET_TXCONTINUOUSWAVE, 0, 0 ) )
+    {
+        OperatingMode = MODE_TX;
+    }
 }
 
 void SX126xSetTxInfinitePreamble( void )
 {
-    SX126xWriteCommand( RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 );
-    OperatingMode = MODE_TX;
+    if( SX126xWriteCommand( RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 ) )
+    {
+        OperatingMode = MODE_TX;
+    }
 }
 
 void SX126xSetStopRxTimerOnPreambleDetect( bool enable )
@@ -471,7 +492,10 @@ void SX126xCalibrateImage( uint32_t freq )
         calFreq[0] = 0x6B;
         calFreq[1] = 0x6F;
     }
-    SX126xWriteCommand( RADIO_CALIBRATEIMAGE, calFreq, 2 );
+    if( SX126xWriteCommand( RADIO_CALIBRATEIMAGE, calFreq, 2 ) )
+    {
+        ImageCalibrated = true;
+    }
 }
 
 void SX126xSetPaConfig( uint8_t paDutyCycle, uint8_t hpMax, uint8_t deviceSel, uint8_t paLut )
@@ -507,7 +531,7 @@ void SX126xSetDioIrqParams( uint16_t irqMask, uint16_t dio1Mask, uint16_t dio2Ma
 
 uint16_t SX126xGetIrqStatus( void )
 {
-    uint8_t irqStatus[2];
+    uint8_t irqStatus[2] = { 0 };
 
     SX126xReadCommand( RADIO_GET_IRQSTATUS, irqStatus, 2 );
     return ( (uint16_t)irqStatus[0] << 8 ) | irqStatus[1];
@@ -537,7 +561,6 @@ void SX126xSetRfFrequency( uint32_t frequency )
     if( ImageCalibrated == false )
     {
         SX126xCalibrateImage( frequency );
-        ImageCalibrated = true;
     }
 
     uint32_t freqInPllSteps = SX126xConvertFreqInHzToPllStep( frequency );
@@ -554,8 +577,10 @@ void SX126xSetRfFrequency( uint32_t frequency )
 void SX126xSetPacketType( RadioPacketTypes_t packetType )
 {
     // Save packet type internally to avoid questioning the radio
-    PacketType = packetType;
-    SX126xWriteCommand( RADIO_SET_PACKETTYPE, ( uint8_t* )&packetType, 1 );
+    if( SX126xWriteCommand( RADIO_SET_PACKETTYPE, ( uint8_t* )&packetType, 1 ) )
+    {
+        PacketType = packetType;
+    }
 }
 
 RadioPacketTypes_t SX126xGetPacketType( void )
@@ -721,8 +746,10 @@ void SX126xSetCadParams( RadioLoRaCadSymbols_t cadSymbolNum, uint8_t cadDetPeak,
     buf[4] = ( uint8_t )( ( cadTimeout >> 16 ) & 0xFF );
     buf[5] = ( uint8_t )( ( cadTimeout >> 8 ) & 0xFF );
     buf[6] = ( uint8_t )( cadTimeout & 0xFF );
-    SX126xWriteCommand( RADIO_SET_CADPARAMS, buf, 7 );
-    OperatingMode = MODE_CAD;
+    if( SX126xWriteCommand( RADIO_SET_CADPARAMS, buf, 7 ) )
+    {
+        OperatingMode = MODE_CAD;
+    }
 }
 
 void SX126xSetBufferBaseAddress( uint8_t txBaseAddress, uint8_t rxBaseAddress )

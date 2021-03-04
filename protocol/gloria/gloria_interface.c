@@ -144,9 +144,7 @@ void gloria_start(bool is_initiator,
   radio_reset_sync_counter();
 
 #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
-  // TODO disable other potentially interfering interrupts!
   HAL_SuspendTick();
-  HAL_NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);    // needs to be disabled
   SUSPEND_SYSTICK();
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
@@ -179,8 +177,10 @@ uint8_t gloria_stop(void)
     radio_set_timeout_callback(NULL);
     radio_set_rx_callback(NULL);
 
-    // put radio in standby mode
+    // put radio in standby mode (use critical section to make sure no interrupt can abort this command)
+    ENTER_CRITICAL_SECTION();
     radio_standby();
+    LEAVE_CRITICAL_SECTION();
 
     /* Set internal state for the case nothing has been received */
     lastrun_t_ref_updated = false;
@@ -221,11 +221,8 @@ uint8_t gloria_stop(void)
     tx_start_timestamp = 0;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
-    /* re-enable other interrupts */
-    HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
     HAL_ResumeTick();
     RESUME_SYSTICK();
-    //lptimer_enable_ovf_int(true);
   #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
     GLORIA_STOP_IND();
