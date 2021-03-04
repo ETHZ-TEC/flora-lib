@@ -123,7 +123,19 @@ void random_init(void)
 }
 
 
-uint32_t random_rand16(void)
+#ifdef HAL_RNG_MODULE_ENABLED
+
+uint32_t random_rand32(void)
+{
+  // use the true random number generator of the STM32L4
+  uint32_t rand_val = 0;
+  HAL_RNG_GenerateRandomNumber(&hrng, &rand_val);
+  return rand_val;
+}
+
+#else
+
+uint32_t random_rand32(void)
 {
   // seed the random number generator
 #ifdef HAL_RNG_MODULE_ENABLED
@@ -137,15 +149,6 @@ uint32_t random_rand16(void)
 #endif /* HAL_RNG_MODULE_ENABLED */
 }
 
-
-#ifdef HAL_RNG_MODULE_ENABLED
-uint32_t random_rand32(void)
-{
-  // use the true random number generator of the STM32L4
-  uint32_t rand_val = 0;
-  HAL_RNG_GenerateRandomNumber(&hrng, &rand_val);
-  return rand_val;
-}
 #endif /* HAL_RNG_MODULE_ENABLED */
 
 

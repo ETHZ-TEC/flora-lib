@@ -95,6 +95,11 @@ void flocklab_reset_pins(void);
  */
 void flocklab_blink(flocklab_trace_pin_t pin, uint8_t count);
 
+/*
+ * returns the node ID (= FlockLab observer ID)
+ */
+uint16_t flocklab_node_id(void);
+
 
 #else /* FLOCKLAB */
 

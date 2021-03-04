@@ -22,7 +22,7 @@
 #endif /* ABS */
 
 #ifndef RAND
-#define RAND()        random_rand16()
+#define RAND()        random_rand32()
 #endif /* RAND */
 
 
@@ -61,10 +61,7 @@ bool swo_println(const char* str);
 bool swo_print(const char* str, uint32_t len);
 
 void     random_init(void);
-uint32_t random_rand16(void);        /* returns a 16-bit random number (c-lib) */
-#ifdef HAL_RNG_MODULE_ENABLED
-uint32_t random_rand32(void);        /* returns a 32-bit random number (only available if the hardware RNG is enabled) */
-#endif /* HAL_RNG_MODULE_ENABLED */
+uint32_t random_rand32(void);        /* returns a 32-bit random number */
 
 bool check_hal_tick(void);           /* returns true if the HAL tick is enabled */
 

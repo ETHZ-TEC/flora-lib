@@ -132,5 +132,24 @@ void flocklab_blink(flocklab_trace_pin_t pin, uint8_t count)
   }
 }
 
+/*
+ * get the FlockLab node ID
+ */
+uint16_t flocklab_node_id(void)
+{
+  const uint32_t dev_id[] = {
+      0x62003e, 0x2b0059, 0x220039, 0x570026, 0x68003e, 0x41003c, 0x290059, 0x460027,   /* observers  1 -  8 */
+      0x230040, 0x380040, 0x310060, 0x370025, 0x270040, 0,        0x520040, 0x2b002a,   /* observers  9 - 16 */
+      0x43003a, 0,        0x57002c, 0x550029, 0x5b0060, 0x220060, 0x2b003c, 0x2c0070,   /* observers 17 - 24 */
+      0x67004b, 0x270060, 0x3c0040, 0x250040, 0x590026, 0x420035, 0x18003f, 0x4c004a    /* observers 25 - 32 */
+  };
+  uint32_t i;
+  for (i = 0; i < sizeof(dev_id) / sizeof(uint32_t); i++) {
+    if (dev_id[i] == REGVAL32(DEVICE_ID_REG)) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
 
 #endif /* FLOCKLAB */
