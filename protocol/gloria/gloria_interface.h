@@ -330,9 +330,9 @@ void gloria_get_received_timestamp(uint8_t* out_timestamp);
  */
 
 // flood duration in ms
-#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, n_hops, len)    (gloria_get_flood_time_sl(len, GLORIA_INTERFACE_MODULATION, n_tx + n_hops - 1) / 1000UL)
+#define GLORIA_INTERFACE_FLOOD_DURATION_MS(n_tx, n_hops, len)    (gloria_get_flood_time(len, n_tx + n_hops - 1) / 1000UL)
 // flood duration in lptimer ticks
-#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, n_hops, len)       (uint32_t)((uint64_t)(gloria_get_flood_time_sl(len, GLORIA_INTERFACE_MODULATION, n_tx + n_hops - 1)) * LPTIMER_SECOND / 1000000UL)
+#define GLORIA_INTERFACE_FLOOD_DURATION(n_tx, n_hops, len)       (uint32_t)((uint64_t)(gloria_get_flood_time(len, n_tx + n_hops - 1)) * LPTIMER_SECOND / 1000000UL)
 
 
 #endif /* PROTOCOL_GLORIA_GLORIA_INTERFACE_H_ */

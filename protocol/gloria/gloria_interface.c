@@ -23,9 +23,9 @@ static bool                   flood_completed;                                  
 static uint8_t                lastrun_n_rx_started = 0;                           // number of rx started events during the last Gloria run
 static bool                   lastrun_t_ref_updated = false;                      // indicates whether last_t_ref has been updated during the last flood
 static uint64_t               last_t_ref = 0;                                     // reference time (updated if gloria_start is called with sync_slot=true)
-static int8_t                 internal_power = GLORIA_INTERFACE_POWER;            // internal state for power (can be adapted from the GMW layer)
-static uint8_t                internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the GMW layer)
-static uint8_t                internal_band = GLORIA_INTERFACE_RF_BAND;           // internal state for the frequency band (can be adapted from the GMW layer)
+static int8_t                 internal_power = GLORIA_INTERFACE_POWER;            // internal state for power (can be adapted from the upper layer)
+static uint8_t                internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the upper layer)
+static uint8_t                internal_band = GLORIA_INTERFACE_RF_BAND;           // internal state for the frequency band (can be adapted from the upper layer)
 static bool                   internal_enable_flood_printing = false;             // enable printing of finished (i.e. completely received/transmitted) floods
 static gloria_flood_cb_t      flood_cb = 0;                                       // user-defined callback; only called if flood participation terminates before gloria_stop() is called
 static gloria_pkt_filter_cb_t pkt_filter_cb = 0;                                  // a user-defined packet filter callback function
