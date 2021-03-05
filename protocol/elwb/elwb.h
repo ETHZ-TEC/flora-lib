@@ -409,7 +409,10 @@ _Static_assert(sizeof(elwb_schedule_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_schedule_
 /*---------------------------------------------------------------------------*/
 
 /* global variables */
-
+extern uint32_t t_sched; // ELWB_CONF_T_SCHED
+extern uint32_t t_data;  // ELWB_CONF_T_DATA
+extern uint32_t t_cont;  // ELWB_CONF_T_CONT
+extern uint32_t t_dack;  // ELWB_CONF_T_DACK
 
 /*---------------------------------------------------------------------------*/
 
@@ -440,6 +443,10 @@ uint32_t    elwb_get_time_sec(void);
 const elwb_stats_t * const elwb_get_stats(void);
 
 void     elwb_set_drift(int32_t drift_ppm);
+
+void     elwb_update_slot_durations(void);
+void     elwb_set_n_tx(uint8_t n_tx_arg);
+void     elwb_set_num_hops(uint8_t num_hops_arg);
 
 /* scheduler functions */
 uint32_t elwb_sched_get_period(void);

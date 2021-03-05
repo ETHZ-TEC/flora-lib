@@ -38,22 +38,22 @@
 
 /* earliest start (offset) of the request round, + 10ms slack (necessary due
  * to rounding issue) */
-#define ELWB_T_IDLE_ROUND     (TICKS_TO_SCHEDUNITS(ELWB_CONF_T_SCHED + \
-                                2 * ELWB_CONF_T_CONT + 2 * ELWB_CONF_T_GAP +\
+#define ELWB_T_IDLE_ROUND     (TICKS_TO_SCHEDUNITS(t_sched + \
+                                2 * t_cont + 2 * ELWB_CONF_T_GAP +\
                                 ELWB_CONF_SCHED_COMP_TIME))
 
 /* duration of the 'request round' = start of the data round,
  * depends on the max. # nodes (= ELWB_CONF_MAX_N_NODES), + add 10ms slack */
 #define ELWB_T_REQ_ROUND_MAX  (TICKS_TO_SCHEDUNITS( \
-                                ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP + \
+                                t_sched + ELWB_CONF_T_GAP + \
                                 ELWB_CONF_MAX_NODES * \
-                                 (ELWB_CONF_T_CONT + ELWB_CONF_T_GAP) + \
+                                 (t_cont + ELWB_CONF_T_GAP) + \
                                 ELWB_CONF_SCHED_COMP_TIME))
 
 #define ELWB_T_DATA_ROUND_MAX (TICKS_TO_SCHEDUNITS( \
-                                ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP + \
+                                t_sched + ELWB_CONF_T_GAP + \
                                 ELWB_CONF_MAX_DATA_SLOTS * \
-                                 (ELWB_CONF_T_DATA + ELWB_CONF_T_GAP)))
+                                 (t_data + ELWB_CONF_T_GAP)))
 
 /* note: round up for the following values */
 #define ELWB_T_ROUND_MAX      (ELWB_T_IDLE_ROUND + ELWB_T_REQ_ROUND_MAX + \
@@ -372,9 +372,9 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     }
     sched->n_slots = n_slots_assigned;
     /* calculate next round period */
-    sched->period  = TICKS_TO_SCHEDUNITS(ELWB_CONF_T_SCHED +
+    sched->period  = TICKS_TO_SCHEDUNITS(t_sched +
                                          ELWB_CONF_T_GAP + n_slots_assigned *
-                                         (ELWB_CONF_T_CONT + ELWB_CONF_T_GAP) +
+                                         (t_cont + ELWB_CONF_T_GAP) +
                                          ELWB_CONF_SCHED_COMP_TIME);
     t_round += sched->period;   /* append period of previous sub-round */
 
@@ -435,10 +435,10 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     }
     sched->n_slots = n_slots_assigned;
     sched->period  = base_period - t_round;
-    t_round += TICKS_TO_SCHEDUNITS(ELWB_CONF_T_SCHED + ELWB_CONF_T_GAP +
-                n_slots_assigned * (ELWB_CONF_T_DATA + ELWB_CONF_T_GAP) +
+    t_round += TICKS_TO_SCHEDUNITS(t_sched + ELWB_CONF_T_GAP +
+                n_slots_assigned * (t_data + ELWB_CONF_T_GAP) +
 #if ELWB_CONF_DATA_ACK
-                ELWB_CONF_T_DACK + ELWB_CONF_T_GAP +
+                t_dack + ELWB_CONF_T_GAP +
 #endif /* ELWB_CONF_DATA_ACK */
                 ELWB_CONF_SCHED_COMP_TIME);
     ELWB_SCHED_SET_DATA_SLOTS(sched); /* mark the next round as 'data round' */
@@ -490,7 +490,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
     }
     sched->n_slots = n_slots_assigned;
     /* calculate round duration (standard idle round + #slots for host) */
-    t_round = ELWB_T_IDLE_ROUND + TICKS_TO_SCHEDUNITS(n_slots_assigned * (ELWB_CONF_T_DATA + ELWB_CONF_T_GAP));
+    t_round = ELWB_T_IDLE_ROUND + TICKS_TO_SCHEDUNITS(n_slots_assigned * (t_data + ELWB_CONF_T_GAP));
     sched->period = base_period;   /* assume idle period for next round */
     if (n_slots_assigned) {
       ELWB_SCHED_SET_DATA_SLOTS(sched);
