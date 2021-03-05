@@ -649,6 +649,12 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
     if (rand_backoff) {
       rand_backoff--;
     }
+
+    /* NOTE: do not move slot_cb call further down, otherwise the buffer "packet" can be overwritten by the following statements! */
+    if (slot_cb) {
+      slot_cb(packet.cont.node_id, ELWB_PHASE_CONT, &packet);
+    }
+
     if (is_host) {
       if (gloria_get_rx_cnt() &&
           ELWB_IS_PKT_HEADER_VALID(&packet) &&
@@ -670,12 +676,7 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
       }
       elwb_update_rssi_snr();
     }
-
-    if (slot_cb) {
-      slot_cb(packet.cont.node_id, ELWB_PHASE_CONT, &packet);
-    }
   }
-
 }
 
 
