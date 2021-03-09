@@ -122,15 +122,15 @@
 #endif /* ELWB_CONF_DATA_ACK */
 
 #ifndef ELWB_CONF_SCHED_PERIOD_IDLE
-#define ELWB_CONF_SCHED_PERIOD_IDLE 15
+#define ELWB_CONF_SCHED_PERIOD_IDLE 15      /* in seconds */
 #endif /* ELWB_CONF_SCHED_PERIOD_IDLE */
 
 #ifndef ELWB_CONF_SCHED_PERIOD_MIN
-#define ELWB_CONF_SCHED_PERIOD_MIN  3
+#define ELWB_CONF_SCHED_PERIOD_MIN  3       /* in seconds */
 #endif /* ELWB_CONF_SCHED_PERIOD_MIN */
 
 #ifndef ELWB_CONF_SCHED_PERIOD_MAX
-#define ELWB_CONF_SCHED_PERIOD_MAX  60
+#define ELWB_CONF_SCHED_PERIOD_MAX  60      /* in seconds */
 #endif /* ELWB_CONF_SCHED_PERIOD_MIN */
 
 /* slack time for schedule computation, in ticks */
@@ -404,15 +404,6 @@ _Static_assert(sizeof(elwb_schedule_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_schedule_
 #if ELWB_CONF_MAX_PKT_LEN < GLORIA_INTERFACE_MAX_PAYLOAD_LEN
 #error "ELWB_CONF_MAX_PKT_LEN must be larger than or equal to GLORIA_INTERFACE_MAX_PAYLOAD_LEN"
 #endif
-
-
-/*---------------------------------------------------------------------------*/
-
-/* global variables */
-extern uint32_t t_sched; // ELWB_CONF_T_SCHED
-extern uint32_t t_data;  // ELWB_CONF_T_DATA
-extern uint32_t t_cont;  // ELWB_CONF_T_CONT
-extern uint32_t t_dack;  // ELWB_CONF_T_DACK
 
 /*---------------------------------------------------------------------------*/
 

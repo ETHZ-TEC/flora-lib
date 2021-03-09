@@ -943,7 +943,6 @@ bool elwb_init(void* elwb_task,
   t_data       = ELWB_CONF_T_DATA;
   t_cont       = ELWB_CONF_T_CONT;
   t_dack       = ELWB_CONF_T_DACK;
-  elwb_running = true;
 
   /* clear all queues */
   ELWB_QUEUE_CLEAR(rx_queue);
@@ -961,6 +960,7 @@ bool elwb_init(void* elwb_task,
     schedule_len = elwb_sched_init(&schedule);
     if (!schedule_len) {
       LOG_ERROR("schedule has length 0");
+      return false;
     }
   } else {
     LOG_INFO("source node, network ID 0x%04x", (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK));
@@ -980,6 +980,8 @@ void elwb_start(void)
            (uint32_t)ELWB_TICKS_TO_MS(t_sched),
            (uint32_t)ELWB_TICKS_TO_MS(t_data),
            (uint32_t)ELWB_TICKS_TO_MS(t_cont));
+
+  elwb_running = true;
 
   /* instead of calling elwb_run(), schedule the start */
 #if ELWB_CONF_STARTUP_DELAY > 0

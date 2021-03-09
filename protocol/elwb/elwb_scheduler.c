@@ -82,6 +82,13 @@ typedef enum {
 } elwb_sched_state_t;
 
 
+/* defined in elwb.c */
+extern uint32_t t_sched;
+extern uint32_t t_data;
+extern uint32_t t_cont;
+extern uint32_t t_dack;
+
+
 static elwb_time_t         elwb_time;         /* global time in microseconds */
 static uint32_t            elwb_time_ofs;                     /* time offset */
 static uint32_t            base_period;     /* base (idle) period in seconds */
@@ -548,6 +555,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
      (SCHEDUNITS_TO_MS(ELWB_T_ROUND_MAX) +
       ((uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_PREPROCESS)))) {
     LOG_ERROR("invalid parameters");
+    return 0;
   }
   /* initialize node list */
   memset(node_list, 0, sizeof(elwb_node_list_t) * ELWB_CONF_MAX_NODES);
