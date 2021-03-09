@@ -283,7 +283,7 @@ static void elwb_bootstrap(void)
   }
 
   if (slot_cb) {
-    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, &packet);
+    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, (elwb_packet_t*)&schedule);
   }
 }
 
@@ -305,7 +305,7 @@ static void elwb_send_schedule(elwb_time_t start_of_round)
   }
 
   if (slot_cb) {
-    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, &packet);
+    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, (elwb_packet_t*)&schedule);
   }
 }
 
@@ -317,7 +317,7 @@ static void elwb_receive_schedule(elwb_time_t start_of_round)
   gloria_stop();
 
   if (slot_cb) {
-    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, &packet);
+    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, (elwb_packet_t*)&schedule);
   }
 }
 
