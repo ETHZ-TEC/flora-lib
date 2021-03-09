@@ -426,8 +426,10 @@ bool     elwb_init(void* elwb_task,
                    void* in_queue_handle,
                    void* out_queue_handle,         /* queue data type must be dpp_message_t */
                    void* retransmit_queue_handle,  /* buffer to queue packets for retransmission */
-                   elwb_timeout_cb_t listen_timeout_cb);
-void     elwb_start(bool host);
+                   elwb_timeout_cb_t listen_timeout_cb,
+                   bool host);
+
+void     elwb_start(void);
 void     elwb_stop(void);
 
 void     elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp);

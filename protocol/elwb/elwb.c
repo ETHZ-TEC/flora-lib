@@ -917,7 +917,8 @@ bool elwb_init(void* elwb_task,
                void* in_queue_handle,
                void* out_queue_handle,
                void* retransmit_queue_handle,
-               elwb_timeout_cb_t listen_timeout_cb)
+               elwb_timeout_cb_t listen_timeout_cb,
+               bool host)
 {
   if (!in_queue_handle || !out_queue_handle || !elwb_task) {
     LOG_ERROR("invalid parameters");
@@ -953,12 +954,6 @@ bool elwb_init(void* elwb_task,
 
   memset(&stats, 0, sizeof(elwb_stats_t));
 
-  return true;
-}
-
-
-void elwb_start(bool host)
-{
   is_host = host;
   if (is_host) {
     LOG_INFO("host node, network ID 0x%04x", (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK));
@@ -972,6 +967,12 @@ void elwb_start(bool host)
     sync_state = BOOTSTRAP;
   }
 
+  return true;
+}
+
+
+void elwb_start(void)
+{
   LOG_INFO("pkt_len: %u, slots: %u, n_tx: %u, t_sched: %lu, t_data: %lu, t_cont: %lu",
            ELWB_CONF_MAX_PKT_LEN,
            ELWB_CONF_MAX_DATA_SLOTS,
