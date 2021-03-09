@@ -281,6 +281,10 @@ static void elwb_bootstrap(void)
     }
     elwb_wait_until(ELWB_TIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
   }
+
+  if (slot_cb) {
+    slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, &packet);
+  }
 }
 
 

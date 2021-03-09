@@ -121,8 +121,8 @@
 #define ELWB_CONF_DATA_ACK        0
 #endif /* ELWB_CONF_DATA_ACK */
 
-#ifndef ELWB_CONF_SCHED_PERIOD_IDLE
-#define ELWB_CONF_SCHED_PERIOD_IDLE 15      /* in seconds */
+#ifndef ELWB_CONF_SCHED_PERIOD
+#define ELWB_CONF_SCHED_PERIOD    15      /* in seconds */
 #endif /* ELWB_CONF_SCHED_PERIOD_IDLE */
 
 /* slack time for schedule computation, in ticks */

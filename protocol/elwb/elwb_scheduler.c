@@ -85,7 +85,7 @@ extern uint32_t t_dack;
 
 static elwb_time_t         elwb_time;         /* global time in microseconds */
 static uint32_t            elwb_time_ofs;                     /* time offset */
-static uint32_t            base_period = ELWB_CONF_SCHED_PERIOD_IDLE * ELWB_PERIOD_SCALE;   /* base (idle) period in seconds */
+static uint32_t            base_period = ELWB_CONF_SCHED_PERIOD * ELWB_PERIOD_SCALE;   /* base (idle) period in seconds */
 static uint32_t            n_nodes;                        /* # active nodes */
 static elwb_sched_state_t  sched_state;
 static elwb_node_list_t    node_list[ELWB_CONF_MAX_NODES];    /* actual list */
@@ -548,7 +548,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
   uint32_t t_round_max = elwb_max_round_duration();
 
   LOG_INFO("rounds [ms]: T=%u000 idle=%lu req=%lu data=%lu sum=%lu",
-           ELWB_CONF_SCHED_PERIOD_IDLE,
+           ELWB_CONF_SCHED_PERIOD,
            (uint32_t)SCHEDUNITS_TO_MS(ELWB_T_IDLE_ROUND),
            (uint32_t)SCHEDUNITS_TO_MS(ELWB_T_REQ_ROUND_MAX),
            (uint32_t)SCHEDUNITS_TO_MS(ELWB_T_DATA_ROUND_MAX),
@@ -556,7 +556,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
 
   /* make sure the minimal round period is not smaller than the max. round
    * duration! */
-  if (((uint32_t)ELWB_CONF_SCHED_PERIOD_IDLE * 1000) <=
+  if (((uint32_t)ELWB_CONF_SCHED_PERIOD * 1000) <=
       (SCHEDUNITS_TO_MS(t_round_max) + ((uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_PREPROCESS)))) {
     LOG_ERROR("invalid parameters");
     return 0;
