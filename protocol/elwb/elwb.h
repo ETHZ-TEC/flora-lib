@@ -283,7 +283,7 @@
 
 /* task related stuff */
 #ifndef ELWB_TASK_YIELD
-#define ELWB_TASK_YIELD()               ulTaskNotifyTake(pdTRUE, portMAX_DELAY) /* function used to yield the eLWB task (and allow other, lower priority tasks to run) */
+#define ELWB_TASK_YIELD()               xTaskNotifyWait(0, ULONG_MAX, NULL, portMAX_DELAY)  /* function used to yield the eLWB task (and allow other, lower priority tasks to run) */
 #endif /* ELWB_TASK_YIELD */
 #ifndef ELWB_TASK_NOTIFY
 #define ELWB_TASK_NOTIFY(task)          xTaskNotify(task, 0, eNoAction)         /* function used to notify (poll) a task, i.e. giving it permission to run */
