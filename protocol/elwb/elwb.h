@@ -125,14 +125,6 @@
 #define ELWB_CONF_SCHED_PERIOD_IDLE 15      /* in seconds */
 #endif /* ELWB_CONF_SCHED_PERIOD_IDLE */
 
-#ifndef ELWB_CONF_SCHED_PERIOD_MIN
-#define ELWB_CONF_SCHED_PERIOD_MIN  3       /* in seconds */
-#endif /* ELWB_CONF_SCHED_PERIOD_MIN */
-
-#ifndef ELWB_CONF_SCHED_PERIOD_MAX
-#define ELWB_CONF_SCHED_PERIOD_MAX  60      /* in seconds */
-#endif /* ELWB_CONF_SCHED_PERIOD_MIN */
-
 /* slack time for schedule computation, in ticks */
 #ifndef ELWB_CONF_SCHED_COMP_TIME
 #define ELWB_CONF_SCHED_COMP_TIME (ELWB_TIMER_SECOND / 50)          /* 20ms */
