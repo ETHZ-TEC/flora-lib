@@ -554,11 +554,10 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
            (uint32_t)SCHEDUNITS_TO_MS(ELWB_T_DATA_ROUND_MAX),
            (uint32_t)SCHEDUNITS_TO_MS(t_round_max));
 
-  /* make sure the minimal round period is not smaller than the max. round
-   * duration! */
-  if (((uint32_t)ELWB_CONF_SCHED_PERIOD * 1000) <=
-      (SCHEDUNITS_TO_MS(t_round_max) + ((uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_PREPROCESS)))) {
-    LOG_ERROR("invalid parameters");
+  /* make sure the minimal round period is not smaller than the max. round duration! */
+  uint32_t t_period_min = (SCHEDUNITS_TO_MS(t_round_max) + ((uint32_t)ELWB_TICKS_TO_MS(ELWB_CONF_T_PREPROCESS)));
+  if (((uint32_t)ELWB_CONF_SCHED_PERIOD * 1000) <= t_period_min) {
+    LOG_ERROR("invalid parameters (round period must be >%u)", t_period_min);
     return 0;
   }
   /* initialize node list */
