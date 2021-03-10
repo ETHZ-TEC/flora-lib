@@ -148,6 +148,30 @@ const elwb_stats_t * const elwb_get_stats(void)
 }
 
 
+/* returns the max. round duration in ticks, including the time allocated for the pre-process task */
+uint32_t elwb_get_max_round_duration(uint32_t t_sched_arg, uint32_t t_cont_arg, uint32_t t_data_arg)
+{
+  if (!t_sched_arg) {
+    t_sched_arg = t_sched;
+  }
+  if (!t_cont_arg) {
+    t_cont_arg = t_cont;
+  }
+  if (!t_data_arg) {
+    t_data_arg = t_data;
+  }
+  uint32_t t_round_max = (t_sched_arg + 2 * t_cont_arg + 2 * ELWB_CONF_T_GAP + ELWB_CONF_SCHED_COMP_TIME) +                                   /* idle round */
+                         (t_sched_arg + ELWB_CONF_T_GAP + ELWB_CONF_MAX_NODES * (t_cont_arg + ELWB_CONF_T_GAP) + ELWB_CONF_SCHED_COMP_TIME) + /* request round */
+                         (t_sched_arg + ELWB_CONF_T_GAP + ELWB_CONF_MAX_DATA_SLOTS * (t_data_arg + ELWB_CONF_T_GAP)) +                        /* data round */
+                         2 * ELWB_CONF_SCHED_COMP_TIME +                                                                                      /* schedule computation time */
+                         ELWB_CONF_T_PREPROCESS;                                                                                              /* execution of the pre-process task */
+#if ELWB_CONF_DATA_ACK
+  t_round_max += (t_data_arg + ELWB_CONF_T_GAP);
+#endif /* ELWB_CONF_DATA_ACK */
+  return t_round_max;
+}
+
+
 void elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp)
 {
   if (network_time) {
@@ -190,34 +214,48 @@ void elwb_register_slot_callback(elwb_slot_cb_t cb)
 }
 
 
-void elwb_update_slot_durations(void)
+bool elwb_update_slot_durations(uint8_t n_tx_arg, uint8_t num_hops_arg)
 {
-  t_sched   = GLORIA_INTERFACE_FLOOD_DURATION(n_tx, num_hops, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
-  t_data    = GLORIA_INTERFACE_FLOOD_DURATION(n_tx, num_hops, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
-  t_cont    = GLORIA_INTERFACE_FLOOD_DURATION(n_tx, num_hops, 2);
-  t_dack    = GLORIA_INTERFACE_FLOOD_DURATION(n_tx, num_hops, 2);
+  if (!n_tx_arg) {
+    n_tx_arg = n_tx;
+  }
+  if (!num_hops_arg) {
+    num_hops_arg = num_hops;
+  }
+  uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
+  uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
+  uint32_t t_cont_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN);
+  uint32_t t_dack_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8 + ELWB_PKT_HDR_LEN);
+
+  if (is_host && !elwb_sched_check_params(0, t_sched_new, t_cont_new, t_data_new)) {
+    return false;
+  }
+  t_sched = t_sched_new;
+  t_data  = t_data_new;
+  t_cont  = t_cont_new;
+  t_dack  = t_dack_new;
+
+  return true;
 }
 
 
 bool elwb_set_n_tx(uint8_t n_tx_arg)
 {
-  n_tx = n_tx_arg;
-  elwb_update_slot_durations();
-  if (is_host && !elwb_sched_check_period(0)) {
-    return false;
+  if (elwb_update_slot_durations(n_tx_arg, 0)) {
+    n_tx = n_tx_arg;
+    return true;
   }
-  return true;
+  return false;
 }
 
 
 bool elwb_set_num_hops(uint8_t num_hops_arg)
 {
-  num_hops = num_hops_arg;
-  elwb_update_slot_durations();
-  if (is_host && !elwb_sched_check_period(0)) {
-    return false;
+  if (elwb_update_slot_durations(0, num_hops_arg)) {
+    num_hops = num_hops_arg;
+    return true;
   }
-  return true;
+  return false;
 }
 
 
@@ -242,6 +280,14 @@ static void elwb_update_rssi_snr(void)
 }
 
 
+static bool elwb_packet_filter(uint8_t* pkt, uint8_t len)
+{
+  if (len > ELWB_PKT_HDR_LEN && ELWB_IS_PKT_HEADER_VALID((elwb_packet_t*)pkt)) {
+    return true;
+  }
+  return false;
+}
+
 static bool elwb_is_schedule_valid(elwb_schedule_t* schedule)
 {
   if (!gloria_is_t_ref_updated() || !ELWB_IS_PKT_HEADER_VALID(schedule) || !ELWB_IS_SCHEDULE_PACKET(schedule) || (gloria_get_payload_len() < (ELWB_SCHED_HDR_LEN + ELWB_SCHED_CRC_LEN))) {
@@ -253,38 +299,32 @@ static bool elwb_is_schedule_valid(elwb_schedule_t* schedule)
 
 static void elwb_bootstrap(void)
 {
-  elwb_wait_until(ELWB_TIMER_NOW() + ELWB_CONF_T_GUARD_ROUND);    /* this is required, otherwise we get "wakeup time in the past" warnings */
-  while (elwb_running) {
-    schedule.n_slots = 0;   /* reset */
-    stats.bootstrap_cnt++;
-    elwb_time_t bootstrap_started = ELWB_TIMER_NOW();
-    LOG_INFO("bootstrap");
-    /* synchronize first! wait for the first schedule... */
-    do {
-      gloria_register_flood_callback(elwb_schedule_received_callback);
-      gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
-      elwb_wait_until(ELWB_TIMER_NOW() + t_sched);
-      gloria_stop();
-      if ((ELWB_TIMER_NOW() - bootstrap_started) >= ELWB_CONF_BOOTSTRAP_TIMEOUT) {
-        break;
+  schedule.n_slots = 0;
+  stats.bootstrap_cnt++;
+  LOG_INFO("bootstrap");
+  elwb_time_t bootstrap_timeout = ELWB_TIMER_NOW() + ELWB_CONF_BOOTSTRAP_TIMEOUT;
+  /* keep listening until we receive a valid schedule packet */
+  do {
+    gloria_register_flood_callback(elwb_schedule_received_callback);
+    gloria_set_pkt_filter(elwb_packet_filter);
+    gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
+    elwb_wait_until(ELWB_TIMER_NOW() + t_sched);
+    gloria_stop();
+    if (ELWB_TIMER_NOW() > bootstrap_timeout) {
+      /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
+      stats.sleep_cnt++;
+      LOG_WARNING("timeout");
+      /* poll the post process */
+      if (post_task) {
+        ELWB_TASK_NOTIFY(post_task);
       }
-    } while (elwb_running && (!elwb_is_schedule_valid(&schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
-    /* exit bootstrap mode if schedule received, exit bootstrap state */
-    if (elwb_is_schedule_valid(&schedule) && ELWB_SCHED_IS_FIRST(&schedule)) {
-      break;
+      if (timeout_cb) {
+        timeout_cb();
+      }
+      elwb_wait_until(ELWB_TIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
+      bootstrap_timeout = ELWB_TIMER_NOW() + ELWB_CONF_BOOTSTRAP_TIMEOUT;
     }
-    /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
-    stats.sleep_cnt++;
-    LOG_WARNING("timeout");
-    /* poll the post process */
-    if (post_task) {
-      ELWB_TASK_NOTIFY(post_task);
-    }
-    if (timeout_cb) {
-      timeout_cb();
-    }
-    elwb_wait_until(ELWB_TIMER_NOW() + ELWB_CONF_T_DEEPSLEEP);
-  }
+  } while (elwb_running && (!elwb_is_schedule_valid(&schedule) || !ELWB_SCHED_IS_FIRST(&schedule)));
 
   if (slot_cb) {
     slot_cb(schedule.host_id, ELWB_PHASE_SCHED1, (elwb_packet_t*)&schedule);

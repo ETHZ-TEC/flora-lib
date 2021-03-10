@@ -418,6 +418,8 @@ uint32_t    elwb_get_time_sec(void);
 
 const elwb_stats_t * const elwb_get_stats(void);
 
+uint32_t elwb_get_max_round_duration(uint32_t t_sched_arg, uint32_t t_cont_arg, uint32_t t_data_arg);
+
 void     elwb_set_drift(int32_t drift_ppm);
 
 bool     elwb_set_n_tx(uint8_t n_tx_arg);                 /* sets the number of retransmissions, returns true on success */
@@ -426,7 +428,7 @@ bool     elwb_set_num_hops(uint8_t num_hops_arg);         /* sets the network si
 /* scheduler functions */
 uint32_t elwb_sched_get_period(void);                     /* returns the current period in seconds */
 bool     elwb_sched_set_period(uint32_t period_secs);     /* set the period in seconds */
-bool     elwb_sched_check_period(uint32_t period_secs);
+bool     elwb_sched_check_params(uint32_t period_secs, uint32_t sched_slot, uint32_t cont_slot, uint32_t data_slot);  /* checks whether the given parameters are valid (slot lengths are in ticks) */
 elwb_time_t elwb_sched_get_time(void);                    /* returns the current network time in microseconds */
 void     elwb_sched_set_time(elwb_time_t time_us);        /* set the current network time in microseconds */
 bool     elwb_sched_add_node(uint16_t node_id);
