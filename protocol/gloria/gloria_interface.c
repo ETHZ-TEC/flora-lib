@@ -144,6 +144,7 @@ void gloria_start(bool is_initiator,
   radio_reset_sync_counter();
 
 #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
+  HAL_NVIC_DisableIRQ(TIM1_UP_TIM16_IRQn);
   HAL_SuspendTick();
   SUSPEND_SYSTICK();
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
@@ -221,6 +222,7 @@ uint8_t gloria_stop(void)
     tx_start_timestamp = 0;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
+    HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
     HAL_ResumeTick();
     RESUME_SYSTICK();
   #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
