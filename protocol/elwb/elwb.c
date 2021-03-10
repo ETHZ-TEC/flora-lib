@@ -98,7 +98,6 @@ static elwb_syncstate_t   sync_state;
 static uint_fast16_t      period_idle;        /* last known base period */
 static uint_fast8_t       rand_backoff;
 
-
 /* private (not exposed) scheduler functions */
 uint32_t elwb_sched_init(elwb_schedule_t* sched);
 void     elwb_sched_process_req(uint16_t id, uint32_t n_pkts);
@@ -170,7 +169,7 @@ elwb_time_t elwb_get_time(const uint64_t* timestamp)
   } else {
     ts = ELWB_TIMER_NOW();
   }
-  return network_time + ((int64_t)ts - (int64_t)last_synced) * (1000000 - stats.drift) / (ELWB_TIMER_SECOND);
+  return network_time + ((int64_t)ts - (int64_t)last_synced) * (1000000 - stats.drift) / (ELWB_TIMER_FREQUENCY);
 }
 
 uint32_t elwb_get_time_sec(void)
@@ -200,17 +199,25 @@ void elwb_update_slot_durations(void)
 }
 
 
-void elwb_set_n_tx(uint8_t n_tx_arg)
+bool elwb_set_n_tx(uint8_t n_tx_arg)
 {
   n_tx = n_tx_arg;
   elwb_update_slot_durations();
+  if (is_host && !elwb_sched_check_period(0)) {
+    return false;
+  }
+  return true;
 }
 
 
-void elwb_set_num_hops(uint8_t num_hops_arg)
+bool elwb_set_num_hops(uint8_t num_hops_arg)
 {
   num_hops = num_hops_arg;
   elwb_update_slot_durations();
+  if (is_host && !elwb_sched_check_period(0)) {
+    return false;
+  }
+  return true;
 }
 
 
@@ -352,8 +359,8 @@ static elwb_time_t elwb_sync(elwb_time_t start_of_round, bool expected_first_sch
       t_ref = gloria_get_t_ref();
       /* do some basic drift estimation:
        * measured elapsed time minus effective elapsed time (given by host) */
-      int32_t elapsed_network_us = (schedule.time - network_time);   // NOTE: max. difference is ~2100s
-      int32_t elapsed_local_us   = (t_ref - last_synced) * 1000000 / ELWB_TIMER_SECOND;
+      int64_t elapsed_network_us = (schedule.time - network_time);
+      int64_t elapsed_local_us   = (t_ref - last_synced) * 1000000 / ELWB_TIMER_FREQUENCY;
       int32_t delta_us           = (elapsed_local_us - elapsed_network_us);
       /* now scale the difference from ticks to ppm (note: a negative drift means the local clock runs slower than the network clock) */
       int32_t drift_ppm = (delta_us * 1000) / (elapsed_network_us / 1000);
@@ -754,7 +761,7 @@ static void elwb_print_stats(void)
     LOG_INFO("%s %llu | T: %us, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
              elwb_syncstate_to_string[sync_state],
              schedule.time,
-             schedule.period / ELWB_PERIOD_SCALE,
+             schedule.period / ELWB_TIMER_FREQUENCY,
              ELWB_SCHED_N_SLOTS(&schedule),
              stats.pkt_rcvd,
              stats.pkt_sent,
@@ -895,7 +902,7 @@ static void elwb_run(void)
       call_preprocess = false;
     }
 
-    uint32_t round_ticks = (uint32_t)schedule.period * ELWB_TIMER_SECOND / ELWB_PERIOD_SCALE;
+    uint32_t round_ticks = schedule.period;
     ELWB_SCHED_CLR_SLOTS(&schedule);
     if (is_host) {
       /* --- COMPUTE NEW SCHEDULE (for the next round) --- */

@@ -53,7 +53,7 @@
 #endif /* ELWB_CONF_N_TX */
 
 #ifndef ELWB_CONF_BOOTSTRAP_TIMEOUT
-#define ELWB_CONF_BOOTSTRAP_TIMEOUT   (120 * ELWB_TIMER_SECOND)     /* in ticks */
+#define ELWB_CONF_BOOTSTRAP_TIMEOUT   (120 * ELWB_TIMER_FREQUENCY)     /* in ticks */
 #endif /* ELWB_CONF_BOOTSTRAP_TIMEOUT */
 
 /* max. number of nodes in the network */
@@ -74,18 +74,18 @@
 /* duration of a schedule slot in ticks, if not defined, the minimum
  * required slot time is calculated based on the network N_HOPS and N_TX */
 #ifndef ELWB_CONF_T_SCHED
-#define ELWB_CONF_T_SCHED         (ELWB_TIMER_SECOND / 50)      /* 20ms */
+#define ELWB_CONF_T_SCHED         (ELWB_TIMER_FREQUENCY / 50)      /* 20ms */
 #endif /* ELWB_CONF_T_SCHED */
 
 /* duration of a data slot in ticks, if not defined, the minimum required
  * slot time is calculated based on the network N_HOPS and N_TX */
 #ifndef ELWB_CONF_T_DATA
-#define ELWB_CONF_T_DATA          (ELWB_TIMER_SECOND / 50)      /* 20ms */
+#define ELWB_CONF_T_DATA          (ELWB_TIMER_FREQUENCY / 50)      /* 20ms */
 #endif /* ELWB_CONF_T_DATA */
 
 /* duration of a contention slot in ticks */
 #ifndef ELWB_CONF_T_CONT
-#define ELWB_CONF_T_CONT          (ELWB_TIMER_SECOND / 100)     /* 10ms */
+#define ELWB_CONF_T_CONT          (ELWB_TIMER_FREQUENCY / 100)     /* 10ms */
 #endif /* ELWB_CONF_T_CONT */
 
 /* duration of a data ACK slot in ticks */
@@ -95,26 +95,26 @@
 
 /* gap time between 2 slots in ticks */
 #ifndef ELWB_CONF_T_GAP
-#define ELWB_CONF_T_GAP           (ELWB_TIMER_SECOND / 200)     /* 5ms */
+#define ELWB_CONF_T_GAP           (ELWB_TIMER_FREQUENCY / 200)     /* 5ms */
 #endif /* ELWB_CONF_T_GAP */
 
 /* guard time before RX slots in ticks */
 #ifndef ELWB_CONF_T_GUARD_SLOT
-#define ELWB_CONF_T_GUARD_SLOT    (ELWB_TIMER_SECOND / 4000)    /* 0.25ms */
+#define ELWB_CONF_T_GUARD_SLOT    (ELWB_TIMER_FREQUENCY / 4000)    /* 0.25ms */
 #endif /* ELWB_CONF_T_GUARD_SLOT */
 
 /* guard time before a round in LF ticks */
 #ifndef ELWB_CONF_T_GUARD_ROUND
-#define ELWB_CONF_T_GUARD_ROUND   (ELWB_TIMER_SECOND / 1000)    /* 1ms */
+#define ELWB_CONF_T_GUARD_ROUND   (ELWB_TIMER_FREQUENCY / 1000)    /* 1ms */
 #endif /* ELWB_CONF_T_GUARD_ROUND */
 
 /* time reserved for the preprocess task (before a round) in LF ticks */
 #ifndef ELWB_CONF_T_PREPROCESS
-#define ELWB_CONF_T_PREPROCESS    (ELWB_TIMER_SECOND / 10)      /* 100ms */
+#define ELWB_CONF_T_PREPROCESS    (ELWB_TIMER_FREQUENCY / 10)      /* 100ms */
 #endif /* ELWB_CONF_T_PREPROCESS */
 
 #ifndef ELWB_CONF_T_DEEPSLEEP
-#define ELWB_CONF_T_DEEPSLEEP     (ELWB_TIMER_SECOND * 3600)    /* 1h */
+#define ELWB_CONF_T_DEEPSLEEP     (ELWB_TIMER_FREQUENCY * 3600)    /* 1h */
 #endif /* ELWB_CONF_T_DEEPSLEEP */
 
 #ifndef ELWB_CONF_DATA_ACK
@@ -123,11 +123,11 @@
 
 #ifndef ELWB_CONF_SCHED_PERIOD
 #define ELWB_CONF_SCHED_PERIOD    15      /* in seconds */
-#endif /* ELWB_CONF_SCHED_PERIOD_IDLE */
+#endif /* ELWB_CONF_SCHED_PERIOD */
 
 /* slack time for schedule computation, in ticks */
 #ifndef ELWB_CONF_SCHED_COMP_TIME
-#define ELWB_CONF_SCHED_COMP_TIME (ELWB_TIMER_SECOND / 50)          /* 20ms */
+#define ELWB_CONF_SCHED_COMP_TIME (ELWB_TIMER_FREQUENCY / 50)          /* 20ms */
 #endif /* ELWB_CONF_SCHED_COMP_TIME */
 
 /* use a 'fair' scheduler which tries to assign slots to all nodes */
@@ -177,33 +177,17 @@
 /* --------------- END OF CONFIG, do not change values below --------------- */
 
 
-#define ELWB_PERIOD_SCALE         100     // 1/scale = granularity (10ms -> allows for periods between 10 and 655350ms)
-#define ELWB_REQ_PKT_LEN          2       // request packet length without header
-#define ELWB_2ND_SCHED_LEN        2       // schedule length without header
+#define ELWB_REQ_PKT_LEN          2                                   /* request packet length without header */
+#define ELWB_2ND_SCHED_LEN        2                                   /* schedule length without header */
 #define ELWB_SCHED_CRC_LEN        (ELWB_CONF_SCHED_CRC ? 2 : 0)
-#define ELWB_SCHED_PERIOD_MAX     (65535 / ELWB_PERIOD_SCALE)
+#define ELWB_SCHED_PERIOD_MAX_S   (ULONG_MAX / ELWB_TIMER_FREQUENCY)  /* max period in seconds */
 #define ELWB_NETWORK_ID_BITMASK   0x7fff
 #define ELWB_PKT_TYPE_BITMASK     0x8000
-
-#define ELWB_TICKS_TO_MS(t)       ((uint32_t)(t) * 1000UL / ELWB_TIMER_SECOND)
-#define ELWB_MS_TO_TICKS(t)       ((uint32_t)(t) * ELWB_TIMER_SECOND / 1000UL)
 
 
 /*---------------------------------------------------------------------------*/
 
 /* parameter sanity checks */
-
-#if ELWB_PERIOD_SCALE == 0 || ELWB_PERIOD_SCALE > 1000
-#error "invalid ELWB_PERIOD_SCALE"
-#endif
-
-#if ELWB_CONF_SCHED_PERIOD_IDLE > ELWB_SCHED_PERIOD_MAX
-#error "ELWB_CONF_SCHED_PERIOD_IDLE invalid"
-#endif
-
-#if ELWB_CONF_SCHED_PERIOD_IDLE < ELWB_CONF_SCHED_PERIOD_MIN
-#error "ELWB_CONF_SCHED_PERIOD_IDLE < ELWB_CONF_SCHED_PERIOD_MIN"
-#endif
 
 #if ELWB_CONF_WRITE_TO_BOLT && !BOLT_CONF_ON
 #error "ELWB_CONF_WRITE_TO_BOLT requires BOLT to be enabled!"
@@ -257,12 +241,16 @@
 #define ELWB_SET_PKT_HEADER(p)          ((p)->header_raw = (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))      // set the header of a regular packet (all except schedule packets)
 
 /* timer */
-#define ELWB_TIMER_SECOND               LPTIMER_SECOND
+#define ELWB_TIMER_FREQUENCY            LPTIMER_SECOND
 #define ELWB_TIMER_NOW()                lptimer_now()
 #define ELWB_TIMER_LAST_EXP()           lptimer_get()
 #define ELWB_TIMER_SET(t, cb)           lptimer_set(t, cb)                      /* low-power timer */
 #define ELWB_TIMER_STOP()               lptimer_set(0, 0)
 #define ELWB_TIMER_HS_SET(t, cb)        hs_timer_schedule_start(t, cb)          /* high-speed timer */
+#define ELWB_TICKS_TO_S(t)              ((t) / ELWB_TIMER_FREQUENCY)
+#define ELWB_TICKS_TO_MS(t)             ((t) * 1000UL / ELWB_TIMER_FREQUENCY)
+#define ELWB_TICKS_TO_US(t)             ((uint64_t)(t) * 1000000ULL / ELWB_TIMER_FREQUENCY)
+#define ELWB_MS_TO_TICKS(t)             ((t) * ELWB_TIMER_FREQUENCY / 1000UL)
 
 /* message passing */
 #ifndef ELWB_QUEUE_SIZE
@@ -350,15 +338,15 @@ typedef struct {
   uint16_t type   : 1;    /* MSB indicates the packet type (1 = schedule packet) */
 } elwb_header_t;
 
-#define ELWB_SCHED_HDR_LEN   16
+#define ELWB_SCHED_HDR_LEN   18
 #define ELWB_SCHED_MAX_SLOTS ((ELWB_CONF_MAX_PKT_LEN - ELWB_SCHED_HDR_LEN - ELWB_SCHED_CRC_LEN) / 2)
 /* note: ELWB_SCHED_MAX_SLOTS != ELWB_CONF_MAX_DATA_SLOTS */
 typedef struct {
   elwb_header_t header;
   uint16_t      n_slots;
-  uint16_t      host_id;
-  uint16_t      period;
+  uint32_t      period;
   uint64_t      time;          /* current time in microseconds */
+  uint16_t      host_id;
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
   uint16_t      slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2 + 1];
@@ -432,15 +420,15 @@ const elwb_stats_t * const elwb_get_stats(void);
 
 void     elwb_set_drift(int32_t drift_ppm);
 
-void     elwb_update_slot_durations(void);
-void     elwb_set_n_tx(uint8_t n_tx_arg);
-void     elwb_set_num_hops(uint8_t num_hops_arg);
+bool     elwb_set_n_tx(uint8_t n_tx_arg);                 /* sets the number of retransmissions, returns true on success */
+bool     elwb_set_num_hops(uint8_t num_hops_arg);         /* sets the network size in number of hops (used to calculate slot sizes), returns true on success */
 
 /* scheduler functions */
-uint32_t elwb_sched_get_period(void);
-bool     elwb_sched_set_period(uint32_t period);
-elwb_time_t elwb_sched_get_time(void);
-void     elwb_sched_set_time(elwb_time_t new_time);
+uint32_t elwb_sched_get_period(void);                     /* returns the current period in seconds */
+bool     elwb_sched_set_period(uint32_t period_secs);     /* set the period in seconds */
+bool     elwb_sched_check_period(uint32_t period_secs);
+elwb_time_t elwb_sched_get_time(void);                    /* returns the current network time in microseconds */
+void     elwb_sched_set_time(elwb_time_t time_us);        /* set the current network time in microseconds */
 bool     elwb_sched_add_node(uint16_t node_id);
 
 /*---------------------------------------------------------------------------*/
