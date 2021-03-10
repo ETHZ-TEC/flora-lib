@@ -509,7 +509,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
 {
   uint32_t t_round_max = elwb_get_max_round_duration(0, 0, 0);
 
-  LOG_INFO("rounds [ms]: T=%u000 idle=%lu req=%lu data=%lu sum=%lu",
+  LOG_INFO("rounds [ms]: T=%u000 round_max=%lu",
            ELWB_CONF_SCHED_PERIOD,
            (uint32_t)ELWB_TICKS_TO_MS(t_round_max));
 
