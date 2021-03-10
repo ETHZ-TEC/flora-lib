@@ -164,9 +164,9 @@
 
 /* use more accurate high frequency reference clock to schedule the contention slot
  * (requires an implementation of ELWB_GLORIA_GET_T_REF_HF()) */
-#ifndef ELWB_CONF_CONT_USE_HFTIMER
-#define ELWB_CONF_CONT_USE_HFTIMER  0
-#endif /* ELWB_CONF_CONT_USE_HFTIMER */
+#ifndef ELWB_CONF_CONT_USE_HSTIMER
+#define ELWB_CONF_CONT_USE_HSTIMER  0
+#endif /* ELWB_CONF_CONT_USE_HSTIMER */
 
 /* max. number of rounds for random backoff */
 #ifndef ELWB_CONF_RAND_BACKOFF
@@ -252,17 +252,17 @@
 #define ELWB_SCHED_SET_DATA_SLOTS(s)    ((s)->n_slots |= 0x8000)
 #define ELWB_SCHED_SET_STATE_IDLE(s)    ((s)->n_slots |= 0x2000)
 
-#define ELWB_IS_SCHEDULE_PACKET(s)      ((s)->header.type)
-#define ELWB_IS_PKT_HEADER_VALID(p)     ((p)->header.net_id == (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))   // checks whether the packet header is valid
-#define ELWB_SET_PKT_HEADER(p)          ((p)->header.net_id = ELWB_CONF_NETWORK_ID)    // set the header of a regular packet (all except schedule packets)
+#define ELWB_IS_SCHEDULE_PACKET(s)      ((s)->header.type != 0)
+#define ELWB_IS_PKT_HEADER_VALID(p)     ((p)->header.net_id == (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))  // checks whether the packet header is valid
+#define ELWB_SET_PKT_HEADER(p)          ((p)->header_raw = (ELWB_CONF_NETWORK_ID & ELWB_NETWORK_ID_BITMASK))      // set the header of a regular packet (all except schedule packets)
 
 /* timer */
 #define ELWB_TIMER_SECOND               LPTIMER_SECOND
 #define ELWB_TIMER_NOW()                lptimer_now()
 #define ELWB_TIMER_LAST_EXP()           lptimer_get()
-#define ELWB_TIMER_SET(t, cb)           lptimer_set(t, cb)
+#define ELWB_TIMER_SET(t, cb)           lptimer_set(t, cb)                      /* low-power timer */
 #define ELWB_TIMER_STOP()               lptimer_set(0, 0)
-#define ELWB_HFTIMER_SCHEDULE()         //TODO
+#define ELWB_TIMER_HS_SET(t, cb)        hs_timer_schedule_start(t, cb)          /* high-speed timer */
 
 /* message passing */
 #ifndef ELWB_QUEUE_SIZE
@@ -346,8 +346,8 @@ typedef enum {
 
 #define ELWB_PKT_HDR_LEN  2   // packet header length
 typedef struct {
-  uint16_t type   : 1;    /* MSB indicates the packet type (1 = schedule packet) */
   uint16_t net_id : 15;   /* network ID and packet type indicator */
+  uint16_t type   : 1;    /* MSB indicates the packet type (1 = schedule packet) */
 } elwb_header_t;
 
 #define ELWB_SCHED_HDR_LEN   16
@@ -367,7 +367,10 @@ typedef struct {
 typedef uint64_t elwb_time_t;
 
 typedef struct {
-  elwb_header_t header;
+  union {
+    elwb_header_t header;
+    uint16_t      header_raw;
+  };
   union {
     struct {
       uint16_t    node_id;

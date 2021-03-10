@@ -75,9 +75,6 @@ static elwb_timeout_cb_t  timeout_cb   = 0;
 static elwb_slot_cb_t     slot_cb      = 0;
 static elwb_schedule_t    schedule;
 static uint_fast8_t       schedule_len;
-
-static uint32_t           drift_counter = 0;
-static uint32_t           drift_comp    = 0;
 static elwb_packet_t      packet;             /* packet buffer */
 
 static uint8_t            n_tx      = ELWB_CONF_N_TX;
@@ -94,9 +91,9 @@ static uint_fast16_t      my_slots;
 #endif /* ELWB_CONF_DATA_ACK */
 
 /* variables specific to a source node */
-#if ELWB_CONF_CONT_USE_HFTIMER
-static elwb_time_t        t_ref_hf;
-#endif /* ELWB_CONF_CONT_USE_HFTIMER */
+#if ELWB_CONF_CONT_USE_HSTIMER
+static elwb_time_t        last_synced_hs;
+#endif /* ELWB_CONF_CONT_USE_HSTIMER */
 static elwb_syncstate_t   sync_state;
 static uint_fast16_t      period_idle;        /* last known base period */
 static uint_fast8_t       rand_backoff;
@@ -350,10 +347,6 @@ static elwb_time_t elwb_sync(elwb_time_t start_of_round, bool expected_first_sch
     }
     /* update the sync state machine */
     sync_state = next_state[EVT_SCHED_RCVD][sync_state];
-#if ELWB_CONF_CONT_USE_HFTIMER
-    /* also store the HF timestamp in case LF is used for slot wakeups */
-    t_ref_hf = gloria_get_t_ref_hs();
-#endif /* ELWB_CONF_CONT_USE_HFTIMER */
 
     if (ELWB_SCHED_IS_FIRST(&schedule)) {
       t_ref = gloria_get_t_ref();
@@ -372,6 +365,10 @@ static elwb_time_t elwb_sync(elwb_time_t start_of_round, bool expected_first_sch
       period_idle  = schedule.period;
       network_time = schedule.time;
       last_synced  = t_ref;
+#if ELWB_CONF_CONT_USE_HSTIMER
+      /* also store the HF timestamp in case LF is used for slot wakeups */
+      last_synced_hs = gloria_get_t_ref_hs();
+#endif /* ELWB_CONF_CONT_USE_HSTIMER */
 
     } else {
       /* just use the previous wakeup time as start time */
@@ -623,16 +620,16 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
       LOG_INFO("transmitting node ID");
     }
     ELWB_SET_PKT_HEADER(&packet);
-#if ELWB_CONF_CONT_USE_HFTIMER
-    /* contention slot requires precise timing: better to use HF timer for this wake-up! */
-    ELWB_HFTIMER_SCHEDULE(t_ref_hf + (slot_ofs - start_of_round) * RTIMER_HF_LF_RATIO, elwb_notify);
+#if ELWB_CONF_CONT_USE_HSTIMER
+    /* contention slot requires precise timing: use the high-speed timer for this wake-up! */
+    ELWB_TIMER_HS_SET(last_synced_hs + LPTIMER_TICKS_TO_HS_TIMER(slot_start - last_synced), elwb_notify);
     ELWB_SUSPENDED();
     ELWB_TASK_YIELD();
     ELWB_RESUMED();
-#else /* ELWB_CONF_CONT_USE_HFTIMER */
+#else /* ELWB_CONF_CONT_USE_HSTIMER */
     /* wait until the contention slot starts */
     elwb_wait_until(slot_start);
-#endif /* ELWB_CONF_CONT_USE_HFTIMER */
+#endif /* ELWB_CONF_CONT_USE_HSTIMER */
     gloria_start(true, (uint8_t*)&packet, packet_len, n_tx, 0);
     elwb_wait_until(slot_start + t_cont);
     gloria_stop();
@@ -705,7 +702,7 @@ static void elwb_send_rcv_sched2(elwb_time_t slot_start)
     gloria_stop();
     if (gloria_get_rx_cnt() &&
         ELWB_IS_PKT_HEADER_VALID(&packet) &&
-        (gloria_get_payload_len() == (ELWB_2ND_SCHED_LEN + ELWB_PKT_HDR_LEN))) {     /* packet received? */
+        (gloria_get_payload_len() == packet_len)) {     /* packet received? */
       if (packet.sched2.period != 0) {             /* zero means no change */
         schedule.period  = packet.sched2.period;   /* extract updated period */
         schedule.n_slots = 0;
@@ -720,6 +717,22 @@ static void elwb_send_rcv_sched2(elwb_time_t slot_start)
   if (slot_cb) {
     slot_cb(schedule.host_id, ELWB_PHASE_SCHED2, &packet);
   }
+}
+
+
+int32_t elwb_calc_drift_comp(uint32_t elapsed_ticks)
+{
+  static uint32_t drift_counter = 0;
+  int32_t         drift_comp    = 0;
+  if (stats.drift != 0) {
+    drift_counter    += elapsed_ticks;
+    int32_t drift_div = 1000000 / stats.drift;
+    drift_comp        = drift_counter / drift_div;
+    drift_counter    -= drift_comp * drift_div;
+  } else {
+    drift_counter = 0;
+  }
+  return drift_comp;
 }
 
 
@@ -890,15 +903,7 @@ static void elwb_run(void)
     }
 
     /* calculate extra ticks for drift compensation */
-    if (stats.drift != 0) {
-      drift_counter    += round_ticks;
-      int32_t drift_div = 1000000 / stats.drift;
-      drift_comp        = drift_counter / drift_div;
-      drift_counter    -= drift_comp * drift_div;
-    } else {
-      drift_counter = 0;
-      drift_comp = 0;
-    }
+    int32_t drift_comp = elwb_calc_drift_comp(round_ticks);
 
     /* schedule the wakeup for the next round */
     start_of_round += round_ticks + drift_comp;
