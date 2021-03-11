@@ -248,9 +248,10 @@
 #define ELWB_TIMER_STOP()               lptimer_set(0, 0)
 #define ELWB_TIMER_HS_SET(t, cb)        hs_timer_schedule_start(t, cb)          /* high-speed timer */
 #define ELWB_TICKS_TO_S(t)              ((t) / ELWB_TIMER_FREQUENCY)
-#define ELWB_TICKS_TO_MS(t)             ((t) * 1000UL / ELWB_TIMER_FREQUENCY)
+#define ELWB_TICKS_TO_MS(t)             ((uint64_t)(t) * 1000UL / ELWB_TIMER_FREQUENCY)
 #define ELWB_TICKS_TO_US(t)             ((uint64_t)(t) * 1000000ULL / ELWB_TIMER_FREQUENCY)
-#define ELWB_MS_TO_TICKS(t)             ((t) * ELWB_TIMER_FREQUENCY / 1000UL)
+#define ELWB_MS_TO_TICKS(ms)            ((uint64_t)(ms) * ELWB_TIMER_FREQUENCY / 1000UL)
+#define ELWB_S_TO_TICKS(s)              ((uint64_t)(s) * ELWB_TIMER_FREQUENCY)
 
 /* message passing */
 #ifndef ELWB_QUEUE_SIZE

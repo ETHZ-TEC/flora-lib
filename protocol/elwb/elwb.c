@@ -828,8 +828,7 @@ static void elwb_run(void)
   while (elwb_running) {
 
     /* --- PREPROCESS --- */
-  #if ELWB_CONF_T_PREPROCESS
-    if (call_preprocess) {    /* call the preprocess task? */
+    if (ELWB_CONF_T_PREPROCESS && call_preprocess) {    /* call the preprocess task? */
       if (pre_task) {
         ELWB_TASK_NOTIFY(pre_task);
         /* note: this is cooperative multitasking, the pre-task must complete within ELWB_CONF_T_PREPROCESS time */
@@ -837,7 +836,6 @@ static void elwb_run(void)
       start_of_round += ELWB_CONF_T_PREPROCESS;
       elwb_wait_until(start_of_round);
     }
-  #endif /* ELWB_CONF_T_PREPROCESS */
 
     /* --- ROUND STARTS --- */
 
@@ -935,9 +933,7 @@ static void elwb_run(void)
       if (post_task) {
         ELWB_TASK_NOTIFY(post_task);
       }
-    #if ELWB_CONF_T_PREPROCESS
       call_preprocess = true;
-    #endif /* ELWB_CONF_T_PREPROCESS */
     } else {
       call_preprocess = false;
     }
