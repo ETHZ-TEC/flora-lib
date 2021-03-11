@@ -52,6 +52,10 @@
 #define ELWB_CONF_N_TX            3     /* how many times a packet is retransmitted */
 #endif /* ELWB_CONF_N_TX */
 
+#ifndef ELWB_NUM_HOPS
+#define ELWB_NUM_HOPS             3     /* network diameter in number of hops */
+#endif /* ELWB_NUM_HOPS */
+
 #ifndef ELWB_CONF_BOOTSTRAP_TIMEOUT
 #define ELWB_CONF_BOOTSTRAP_TIMEOUT   (120 * ELWB_TIMER_FREQUENCY)     /* in ticks */
 #endif /* ELWB_CONF_BOOTSTRAP_TIMEOUT */
@@ -70,28 +74,6 @@
 #ifndef ELWB_CONF_MAX_SLOTS_HOST
 #define ELWB_CONF_MAX_SLOTS_HOST  (ELWB_CONF_MAX_DATA_SLOTS / 2)
 #endif /* ELWB_CONF_MAX_SLOTS_HOST */
-
-/* duration of a schedule slot in ticks, if not defined, the minimum
- * required slot time is calculated based on the network N_HOPS and N_TX */
-#ifndef ELWB_CONF_T_SCHED
-#define ELWB_CONF_T_SCHED         (ELWB_TIMER_FREQUENCY / 50)      /* 20ms */
-#endif /* ELWB_CONF_T_SCHED */
-
-/* duration of a data slot in ticks, if not defined, the minimum required
- * slot time is calculated based on the network N_HOPS and N_TX */
-#ifndef ELWB_CONF_T_DATA
-#define ELWB_CONF_T_DATA          (ELWB_TIMER_FREQUENCY / 50)      /* 20ms */
-#endif /* ELWB_CONF_T_DATA */
-
-/* duration of a contention slot in ticks */
-#ifndef ELWB_CONF_T_CONT
-#define ELWB_CONF_T_CONT          (ELWB_TIMER_FREQUENCY / 100)     /* 10ms */
-#endif /* ELWB_CONF_T_CONT */
-
-/* duration of a data ACK slot in ticks */
-#ifndef ELWB_CONF_T_DACK
-#define ELWB_CONF_T_DACK          (ELWB_CONF_T_CONT)
-#endif /* ELWB_CONF_T_DACK */
 
 /* gap time between 2 slots in ticks */
 #ifndef ELWB_CONF_T_GAP
@@ -423,7 +405,11 @@ uint32_t elwb_get_max_round_duration(uint32_t t_sched_arg, uint32_t t_cont_arg, 
 
 void     elwb_set_drift(int32_t drift_ppm);
 
+
+
+uint8_t  elwb_get_n_tx(void);                             /* gets the number of retransmissions */
 bool     elwb_set_n_tx(uint8_t n_tx_arg);                 /* sets the number of retransmissions, returns true on success */
+uint8_t  elwb_get_num_hops(void);                         /* gets the network size in number of hops */
 bool     elwb_set_num_hops(uint8_t num_hops_arg);         /* sets the network size in number of hops (used to calculate slot sizes), returns true on success */
 
 /* scheduler functions */

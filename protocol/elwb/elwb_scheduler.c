@@ -568,7 +568,7 @@ bool elwb_sched_check_params(uint32_t period_secs, uint32_t sched_slot, uint32_t
 uint32_t elwb_sched_get_period(void)
 {
   /* period in seconds */
-  return base_period / ELWB_TIMER_FREQUENCY;
+  return ELWB_TICKS_TO_S(base_period);
 }
 
 
@@ -577,7 +577,7 @@ bool elwb_sched_set_period(uint32_t period_secs)
   if (!elwb_sched_check_params(period_secs, 0, 0, 0)) {
     return false;
   }
-  base_period = (period_secs * ELWB_TIMER_FREQUENCY);
+  base_period = ELWB_S_TO_TICKS(period_secs);
   return true;
 }
 

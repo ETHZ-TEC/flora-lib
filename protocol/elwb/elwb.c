@@ -239,6 +239,12 @@ bool elwb_update_slot_durations(uint8_t n_tx_arg, uint8_t num_hops_arg)
 }
 
 
+uint8_t elwb_get_n_tx(void)
+{
+  return n_tx;
+}
+
+
 bool elwb_set_n_tx(uint8_t n_tx_arg)
 {
   if (elwb_update_slot_durations(n_tx_arg, 0)) {
@@ -246,6 +252,12 @@ bool elwb_set_n_tx(uint8_t n_tx_arg)
     return true;
   }
   return false;
+}
+
+
+uint8_t elwb_get_num_hops(void)
+{
+  return num_hops;
 }
 
 
@@ -993,10 +1005,7 @@ bool elwb_init(void* elwb_task,
   tx_queue     = out_queue_handle;
   re_tx_queue  = retransmit_queue_handle;
   timeout_cb   = listen_timeout_cb;
-  t_sched      = ELWB_CONF_T_SCHED;
-  t_data       = ELWB_CONF_T_DATA;
-  t_cont       = ELWB_CONF_T_CONT;
-  t_dack       = ELWB_CONF_T_DACK;
+  elwb_update_slot_durations(0, 0);
 
   /* clear all queues */
   ELWB_QUEUE_CLEAR(rx_queue);
