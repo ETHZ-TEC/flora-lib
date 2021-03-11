@@ -79,10 +79,10 @@ static elwb_packet_t      packet;             /* packet buffer */
 
 static uint8_t            n_tx      = ELWB_CONF_N_TX;
 static uint8_t            num_hops  = ELWB_NUM_HOPS;
-uint32_t                  t_sched   = 0; // ELWB_CONF_T_SCHED
-uint32_t                  t_data    = 0; // ELWB_CONF_T_DATA
-uint32_t                  t_cont    = 0; // ELWB_CONF_T_CONT
-uint32_t                  t_dack    = 0; // ELWB_CONF_T_DACK
+uint32_t                  t_sched   = 0;      /* slot length for schedule packets */
+uint32_t                  t_data    = 0;      /* slot length for data packets */
+uint32_t                  t_cont    = 0;      /* slot length for contention, request and sched2 packets */
+uint32_t                  t_dack    = 0;      /* slot length for data ACKs */
 
 /* variables specific to the host node */
 #if ELWB_CONF_DATA_ACK
@@ -224,7 +224,7 @@ bool elwb_update_slot_durations(uint8_t n_tx_arg, uint8_t num_hops_arg)
   }
   uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
   uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
-  uint32_t t_cont_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN);
+  uint32_t t_cont_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, MAX(ELWB_REQ_PKT_LEN, ELWB_2ND_SCHED_LEN) + ELWB_PKT_HDR_LEN);
   uint32_t t_dack_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8 + ELWB_PKT_HDR_LEN);
 
   if (is_host && !elwb_sched_check_params(0, t_sched_new, t_cont_new, t_data_new)) {
@@ -798,10 +798,10 @@ static void elwb_print_stats(void)
              stats.rssi_avg);
   } else {
     /* print out some stats (note: takes ~2ms to compose this string!) */
-    LOG_INFO("%s %llu | T: %us, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
+    LOG_INFO("%s %llu | T: %lus, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
              elwb_syncstate_to_string[sync_state],
              schedule.time,
-             schedule.period / ELWB_TIMER_FREQUENCY,
+             ELWB_TICKS_TO_S(schedule.period),
              ELWB_SCHED_N_SLOTS(&schedule),
              stats.pkt_rcvd,
              stats.pkt_sent,
@@ -933,7 +933,9 @@ static void elwb_run(void)
       if (post_task) {
         ELWB_TASK_NOTIFY(post_task);
       }
-      call_preprocess = true;
+      if (ELWB_CONF_T_PREPROCESS) {
+        call_preprocess = true;
+      }
     } else {
       call_preprocess = false;
     }

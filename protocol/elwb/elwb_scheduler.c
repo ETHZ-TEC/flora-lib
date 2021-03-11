@@ -226,7 +226,7 @@ bool elwb_sched_add_node(uint16_t node_id)
     return false;     /* invalid argument */
   }
   if (n_nodes >= ELWB_CONF_MAX_NODES) {
-    LOG_WARNING("request ignored, max #nodes reached");
+    LOG_WARNING("request ignored (max #nodes reached)");
     return false;
   }
   elwb_node_list_t* node = 0;
@@ -499,7 +499,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
 #endif /* ELWB_CONF_SCHED_CRC */
 
   /* log the parameters of the new schedule */
-  LOG_INFO("schedule updated (s=%lu T=%u0 n=%lu x=%u l=%lu)", n_nodes, sched->period, n_slots_assigned, sched->n_slots >> 13, compressed_size);
+  LOG_INFO("schedule updated (s=%lu T=%lums n=%lu x=%u l=%lu)", n_nodes, ELWB_TICKS_TO_MS(sched->period), n_slots_assigned, sched->n_slots >> 13, compressed_size);
 
   return compressed_size;
 }
@@ -509,7 +509,7 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
 {
   uint32_t t_round_max = elwb_get_max_round_duration(0, 0, 0);
 
-  LOG_INFO("rounds [ms]: T=%u000 round_max=%lu",
+  LOG_INFO("rounds [ms]: T=%lu000ms round_max=%lums",
            ELWB_TICKS_TO_S(base_period),
            (uint32_t)ELWB_TICKS_TO_MS(t_round_max));
 
@@ -558,7 +558,7 @@ bool elwb_sched_check_params(uint32_t period_secs, uint32_t sched_slot, uint32_t
   if (period_secs == 0) {
     period_secs = ELWB_TICKS_TO_S(base_period);
   }
-  if ((period_secs >= ELWB_TICKS_TO_S(elwb_get_max_round_duration(sched_slot, cont_slot, data_slot))) && (period_secs <= ELWB_SCHED_PERIOD_MAX_S)) {
+  if ((period_secs > ELWB_TICKS_TO_S(elwb_get_max_round_duration(sched_slot, cont_slot, data_slot))) && (period_secs <= ELWB_SCHED_PERIOD_MAX_S)) {
     return true;
   }
   return false;
@@ -597,7 +597,7 @@ void elwb_sched_set_time(elwb_time_t time_us)
 void elwb_sched_set_time_offset(uint32_t ofs)
 {
   /* convert from ticks to us */
-  elwb_time_ofs = ofs * 1000000 / ELWB_TIMER_FREQUENCY;
+  elwb_time_ofs = ELWB_TICKS_TO_US(ofs);
 }
 
 #endif /* ELWB_ENABLE */

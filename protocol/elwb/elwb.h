@@ -176,9 +176,6 @@
 
 /* --------------- END OF CONFIG, do not change values below --------------- */
 
-
-#define ELWB_REQ_PKT_LEN          2                                   /* request packet length without header */
-#define ELWB_2ND_SCHED_LEN        2                                   /* schedule length without header */
 #define ELWB_SCHED_CRC_LEN        (ELWB_CONF_SCHED_CRC ? 2 : 0)
 #define ELWB_SCHED_PERIOD_MAX_S   (ULONG_MAX / ELWB_TIMER_FREQUENCY)  /* max period in seconds */
 #define ELWB_NETWORK_ID_BITMASK   0x7fff
@@ -355,6 +352,9 @@ typedef struct {
 
 typedef uint64_t elwb_time_t;
 
+#define ELWB_REQ_PKT_LEN    2         /* request packet length without header */
+#define ELWB_2ND_SCHED_LEN  4         /* schedule length without header */
+
 typedef struct {
   union {
     elwb_header_t header;
@@ -365,7 +365,7 @@ typedef struct {
       uint16_t    node_id;
     } cont;     // contention packet
     struct {
-      uint16_t    period;
+      uint32_t    period;
     } sched2;   // 2nd schedule
     struct {
       uint16_t    num_slots;
