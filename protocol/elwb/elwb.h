@@ -43,18 +43,18 @@
 #define ELWB_CONF_NETWORK_ID      0x1111      /* custom 15-bit network ID */
 #endif /* ELWB_CONF_NETWORK_ID */
 
-/* max. packet length */
-#ifndef ELWB_CONF_MAX_PKT_LEN
-#define ELWB_CONF_MAX_PKT_LEN     GLORIA_INTERFACE_MAX_PAYLOAD_LEN
-#endif /* ELWB_CONF_MAX_PKT_LEN */
+/* max. payload size in bytes (data packets) */
+#ifndef ELWB_CONF_MAX_PAYLOAD_LEN
+#define ELWB_CONF_MAX_PAYLOAD_LEN (GLORIA_INTERFACE_MAX_PAYLOAD_LEN - ELWB_PKT_HDR_LEN)
+#endif /* ELWB_CONF_MAX_PAYLOAD_LEN */
 
 #ifndef ELWB_CONF_N_TX
 #define ELWB_CONF_N_TX            3     /* how many times a packet is retransmitted */
 #endif /* ELWB_CONF_N_TX */
 
-#ifndef ELWB_NUM_HOPS
-#define ELWB_NUM_HOPS             3     /* network diameter in number of hops */
-#endif /* ELWB_NUM_HOPS */
+#ifndef ELWB_CONF_NUM_HOPS
+#define ELWB_CONF_NUM_HOPS        3     /* network diameter in number of hops */
+#endif /* ELWB_CONF_NUM_HOPS */
 
 #ifndef ELWB_CONF_BOOTSTRAP_TIMEOUT
 #define ELWB_CONF_BOOTSTRAP_TIMEOUT   (120 * ELWB_TIMER_FREQUENCY)     /* in ticks */
@@ -162,6 +162,7 @@
 #define ELWB_SCHED_PERIOD_MAX_S   (ULONG_MAX / ELWB_TIMER_FREQUENCY)  /* max period in seconds */
 #define ELWB_NETWORK_ID_BITMASK   0x7fff
 #define ELWB_PKT_TYPE_BITMASK     0x8000
+#define ELWB_PKT_BUFFER_SIZE      GLORIA_INTERFACE_MAX_PAYLOAD_LEN    /* must be at least as large as the gloria interface buffer */
 
 
 /*---------------------------------------------------------------------------*/
@@ -176,8 +177,12 @@
 #error "ELWB_CONF_MAX_N_NODES is invalid"
 #endif
 
-#if (ELWB_CONF_MAX_DATA_SLOTS * 2 + ELWB_SCHED_HDR_LEN) > ELWB_CONF_MAX_PKT_LEN
+#if (ELWB_CONF_MAX_DATA_SLOTS * 2 + ELWB_SCHED_HDR_LEN + ELWB_SCHED_CRC_LEN) > GLORIA_INTERFACE_MAX_PAYLOAD_LEN
 #error "ELWB_CONF_MAX_DATA_SLOTS exceeds the packet size limit"
+#endif
+
+#if (ELWB_CONF_MAX_PAYLOAD_LEN + ELWB_PKT_HDR_LEN) > GLORIA_INTERFACE_MAX_PAYLOAD_LEN
+#error "ELWB_CONF_MAX_PAYLOAD_LEN must not exceed GLORIA_INTERFACE_MAX_PAYLOAD_LEN"
 #endif
 
 #if ELWB_CONF_MAX_SLOTS_HOST > ELWB_CONF_MAX_DATA_SLOTS
@@ -319,8 +324,6 @@ typedef struct {
 } elwb_header_t;
 
 #define ELWB_SCHED_HDR_LEN   18
-#define ELWB_SCHED_MAX_SLOTS ((ELWB_CONF_MAX_PKT_LEN - ELWB_SCHED_HDR_LEN - ELWB_SCHED_CRC_LEN) / 2)
-/* note: ELWB_SCHED_MAX_SLOTS != ELWB_CONF_MAX_DATA_SLOTS */
 typedef struct {
   elwb_header_t header;
   uint16_t      n_slots;
@@ -329,7 +332,10 @@ typedef struct {
   uint16_t      host_id;
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
-  uint16_t      slot[ELWB_SCHED_MAX_SLOTS + ELWB_SCHED_CRC_LEN / 2 + 1];
+  union {
+    uint16_t    slot[ELWB_CONF_MAX_DATA_SLOTS];
+    uint8_t     rxbuffer[ELWB_PKT_BUFFER_SIZE - ELWB_SCHED_HDR_LEN];  /* to make sure that potentially larger received packets don't cause a buffer overflow */
+  };
 } elwb_schedule_t;
 
 typedef uint64_t elwb_time_t;
@@ -352,8 +358,9 @@ typedef struct {
     struct {
       uint16_t    num_slots;
     } req;      // request packet
-    uint8_t     payload[ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN];
-    uint16_t    payload16[(ELWB_CONF_MAX_PKT_LEN - ELWB_PKT_HDR_LEN) / 2];
+    uint8_t     payload[ELWB_CONF_MAX_PAYLOAD_LEN];
+    uint16_t    payload16[ELWB_CONF_MAX_PAYLOAD_LEN / 2];
+    uint8_t     rxbuffer[ELWB_PKT_BUFFER_SIZE - ELWB_PKT_HDR_LEN];    /* to make sure that potentially larger received packets don't cause a buffer overflow */
   };
 } elwb_packet_t;
 
@@ -363,13 +370,6 @@ typedef struct {
 typedef void (* elwb_timeout_cb_t)(void);
 typedef void (* elwb_slot_cb_t)(uint16_t, elwb_phases_t, elwb_packet_t*);      // initiator ID, eLWB phase, pointer to the packet buffer
 
-
-_Static_assert(sizeof(elwb_packet_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_packet_t size is invalid!");
-_Static_assert(sizeof(elwb_schedule_t) >= ELWB_CONF_MAX_PKT_LEN, "elwb_schedule_t size is invalid!");
-
-#if ELWB_CONF_MAX_PKT_LEN < GLORIA_INTERFACE_MAX_PAYLOAD_LEN
-#error "ELWB_CONF_MAX_PKT_LEN must be larger than or equal to GLORIA_INTERFACE_MAX_PAYLOAD_LEN"
-#endif
 
 /*---------------------------------------------------------------------------*/
 
@@ -404,8 +404,6 @@ const elwb_stats_t * const elwb_get_stats(void);
 uint32_t elwb_get_max_round_duration(uint32_t t_sched_arg, uint32_t t_cont_arg, uint32_t t_data_arg);
 
 void     elwb_set_drift(int32_t drift_ppm);
-
-
 
 uint8_t  elwb_get_n_tx(void);                             /* gets the number of retransmissions */
 bool     elwb_set_n_tx(uint8_t n_tx_arg);                 /* sets the number of retransmissions, returns true on success */

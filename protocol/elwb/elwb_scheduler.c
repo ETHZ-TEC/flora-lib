@@ -175,7 +175,7 @@ uint32_t elwb_sched_compress(uint8_t* compressed_data, uint32_t n_slots)
 
 bool elwb_sched_uncompress(uint8_t* compressed_data, uint32_t n_slots)
 {
-  if (!compressed_data || n_slots > ELWB_SCHED_MAX_SLOTS) {
+  if (!compressed_data || n_slots > ELWB_CONF_MAX_DATA_SLOTS) {
     return false;
   }
   if (n_slots < 2) {  /* don't do anything in case there is only 0 or 1 slot */
@@ -479,7 +479,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
   compressed_size = elwb_sched_compress((uint8_t*)sched->slot, n_slots_assigned);
   if ((compressed_size == 0) && (n_slots_assigned > 0)) {
     LOG_ERROR("schedule compression failed");
-  } else if ((compressed_size + ELWB_SCHED_HDR_LEN) > ELWB_CONF_MAX_PKT_LEN) {
+  } else if ((compressed_size + ELWB_SCHED_HDR_LEN + ELWB_SCHED_CRC_LEN) > ELWB_PKT_BUFFER_SIZE) {
     LOG_ERROR("compressed schedule is too big!");
   }
 #else

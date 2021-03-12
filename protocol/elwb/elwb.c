@@ -78,7 +78,7 @@ static uint_fast8_t       schedule_len;
 static elwb_packet_t      packet;             /* packet buffer */
 
 static uint8_t            n_tx      = ELWB_CONF_N_TX;
-static uint8_t            num_hops  = ELWB_NUM_HOPS;
+static uint8_t            num_hops  = ELWB_CONF_NUM_HOPS;
 uint32_t                  t_sched   = 0;      /* slot length for schedule packets */
 uint32_t                  t_data    = 0;      /* slot length for data packets */
 uint32_t                  t_cont    = 0;      /* slot length for contention, request and sched2 packets */
@@ -222,8 +222,8 @@ bool elwb_update_slot_durations(uint8_t n_tx_arg, uint8_t num_hops_arg)
   if (!num_hops_arg) {
     num_hops_arg = num_hops;
   }
-  uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
-  uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, DPP_MSG_PKT_LEN / 2);   /* note: use estimated max. packet length in bytes to calculate slot length */
+  uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS * sizeof(uint16_t) + ELWB_SCHED_HDR_LEN + ELWB_SCHED_CRC_LEN));
+  uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_CONF_MAX_PAYLOAD_LEN);
   uint32_t t_cont_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, MAX(ELWB_REQ_PKT_LEN, ELWB_2ND_SCHED_LEN) + ELWB_PKT_HDR_LEN);
   uint32_t t_dack_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8 + ELWB_PKT_HDR_LEN);
 
@@ -292,9 +292,9 @@ static void elwb_update_rssi_snr(void)
 }
 
 
-static bool elwb_packet_filter(uint8_t* pkt, uint8_t len)
+static bool elwb_bootstrap_sched_pkt_filter(uint8_t* pkt, uint8_t len)
 {
-  if (len > ELWB_PKT_HDR_LEN && ELWB_IS_PKT_HEADER_VALID((elwb_packet_t*)pkt)) {
+  if ((len > ELWB_PKT_HDR_LEN) && ELWB_IS_PKT_HEADER_VALID((elwb_packet_t*)pkt) && ELWB_IS_SCHEDULE_PACKET((elwb_packet_t*)pkt) && ELWB_SCHED_IS_FIRST((elwb_schedule_t*)pkt)) {
     return true;
   }
   return false;
@@ -318,7 +318,7 @@ static void elwb_bootstrap(void)
   /* keep listening until we receive a valid schedule packet */
   do {
     gloria_register_flood_callback(elwb_schedule_received_callback);
-    gloria_set_pkt_filter(elwb_packet_filter);
+    gloria_set_pkt_filter(elwb_bootstrap_sched_pkt_filter);
     gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
     elwb_wait_until(ELWB_TIMER_NOW() + t_sched);
     gloria_stop();
@@ -399,10 +399,10 @@ static elwb_time_t elwb_sync(elwb_time_t start_of_round, bool expected_first_sch
 #endif /* ELWB_CONF_SCHED_CRC */
 
     /* schedule sanity check (#slots mustn't exceed the compile-time fixed max. # slots!) */
-    if (ELWB_SCHED_N_SLOTS(&schedule) > ELWB_SCHED_MAX_SLOTS) {
+    if (ELWB_SCHED_N_SLOTS(&schedule) > ELWB_CONF_MAX_DATA_SLOTS) {
       LOG_ERROR("n_slots exceeds limit!");
       ELWB_SCHED_CLR_SLOTS(&schedule);
-      schedule.n_slots += ELWB_SCHED_MAX_SLOTS;
+      schedule.n_slots += ELWB_CONF_MAX_DATA_SLOTS;
     }
     /* update the sync state machine */
     sync_state = next_state[EVT_SCHED_RCVD][sync_state];
@@ -481,7 +481,7 @@ static void elwb_send_packet(elwb_time_t slot_start, uint32_t slot_length, uint3
       if (ELWB_QUEUE_POP(tx_queue, packet.payload)) {
         packet_len = ELWB_PAYLOAD_LEN(packet.payload);
         /* sanity check for packet size */
-        if (packet_len > ELWB_CONF_MAX_PKT_LEN) {
+        if (packet_len > ELWB_CONF_MAX_PAYLOAD_LEN) {
           LOG_ERROR("invalid packet length detected");
           packet_len = 0;
         }
@@ -1037,7 +1037,7 @@ bool elwb_init(void* elwb_task,
 void elwb_start(void)
 {
   LOG_INFO("pkt_len: %u, slots: %u, n_tx: %u, t_sched: %lu, t_data: %lu, t_cont: %lu",
-           ELWB_CONF_MAX_PKT_LEN,
+           ELWB_CONF_MAX_PAYLOAD_LEN,
            ELWB_CONF_MAX_DATA_SLOTS,
            n_tx,
            (uint32_t)ELWB_TICKS_TO_MS(t_sched),
