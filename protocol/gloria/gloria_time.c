@@ -98,21 +98,15 @@ uint32_t gloria_calculate_flood_time(uint8_t payload_len, uint8_t modulation, ui
 {
   const gloria_timings_t* timings = &(gloria_timings[modulation]);
 
-  uint32_t offset = timings->floodInitOverhead + GLORIA_FLOOD_FINISH_OVERHEAD;
-
-  uint8_t slot_count = data_slots;
-  uint8_t msg_size = payload_len + (ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN) + (sync ? GLORIA_TIMESTAMP_LENGTH : 0);
+  uint8_t  msg_size       = payload_len + (ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN) + (sync ? GLORIA_TIMESTAMP_LENGTH : 0);
   uint32_t slot_time_data = gloria_calculate_slot_time(modulation, ack_mode, 0, msg_size);
+  uint32_t flood_time     = timings->floodInitOverhead + GLORIA_FLOOD_FINISH_OVERHEAD + data_slots * slot_time_data;
 
   if (ack_mode) {
-    uint32_t slot_time_ack = gloria_calculate_slot_time(modulation, ack_mode, 1, GLORIA_ACK_LENGTH);
-    offset += slot_count * slot_time_data + slot_count * slot_time_ack;
-  }
-  else {
-    offset += slot_count * slot_time_data;
+    flood_time += data_slots * gloria_calculate_slot_time(modulation, ack_mode, 1, GLORIA_ACK_LENGTH);
   }
 
-  return offset;
+  return flood_time;
 }
 
 
