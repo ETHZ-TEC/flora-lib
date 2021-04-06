@@ -216,6 +216,11 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size)
       current_flood->acked = true;
       current_flood->ack_message.dst = header->src;
     }
+
+    if (!current_flood->ack_mode) {
+      // add the TX delay
+      current_flood->header.slot_index += current_flood->tx_delay_slots;
+    }
   }
 
   gloria_finish_slot();

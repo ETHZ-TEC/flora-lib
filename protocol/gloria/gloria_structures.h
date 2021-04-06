@@ -83,6 +83,7 @@ typedef struct {
   bool     stop;                          // if set to true, the flood will be stopped at the end of the current slot
 
   uint16_t node_id;
+  uint8_t  tx_delay_slots;                // TX delay after a reception, in number of slots (default: 0)
 
 } gloria_flood_t;
 

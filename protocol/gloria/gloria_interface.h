@@ -305,6 +305,13 @@ void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb);
 void gloria_set_tx_marker(uint64_t timestamp_hs);
 
 /**
+ * \brief           Set the offset of the first transmission slot relative to the
+ *                  first successful reception.
+ * \param           offset in number of slots
+ */
+void gloria_set_tx_delay(uint8_t delay_slots);
+
+/**
  * \brief           Get the RSSI value of the last received packet.
  * \return          RSSI value in dBm
  */

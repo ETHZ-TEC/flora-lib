@@ -30,6 +30,7 @@ static bool                   internal_enable_flood_printing = false;           
 static gloria_flood_cb_t      flood_cb = 0;                                       // user-defined callback; only called if flood participation terminates before gloria_stop() is called
 static gloria_pkt_filter_cb_t pkt_filter_cb = 0;                                  // a user-defined packet filter callback function
 static uint64_t               tx_start_timestamp = 0;                             // an optional user-defined TX start marker
+static uint8_t                tx_delay_slots = 0;                                 // TX delay after reception, in number of slots
 #if GLORIA_INTERFACE_APPEND_TIMESTAMP
 static uint8_t                last_timestamp[GLORIA_TIMESTAMP_LENGTH];            // last received 64-bit hstimer timestamp
 #endif /* GLORIA_INTERFACE_APPEND_TIMESTAMP */
@@ -107,6 +108,7 @@ void gloria_start(bool is_initiator,
   flood.lp_listening        = false;
   flood.radio_no_sleep      = true;
   flood.node_id             = 0;      // unused
+  flood.tx_delay_slots      = tx_delay_slots;
   flood.pkt_filter          = pkt_filter_cb;
 
   flood.header.type         = 0;
@@ -219,6 +221,7 @@ uint8_t gloria_stop(void)
     arg_sync_slot      = false;
     flood_cb           = NULL;
     pkt_filter_cb      = NULL;
+    tx_delay_slots     = 0;
     tx_start_timestamp = 0;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
@@ -364,6 +367,12 @@ void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb)
 void gloria_set_tx_marker(uint64_t timestamp_hs)
 {
   tx_start_timestamp = timestamp_hs;
+}
+
+
+void gloria_set_tx_delay(uint8_t delay_slots)
+{
+  tx_delay_slots = delay_slots;
 }
 
 
