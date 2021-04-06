@@ -28,7 +28,7 @@ inline uint8_t gloria_calculate_last_active_slot(gloria_flood_t* flood) {
     uint8_t las;
     switch (flood->ack_mode) {
       case 0:
-        las = flood->first_rx_index + flood->max_retransmissions;
+        las = flood->first_rx_index + flood->tx_delay_slots + flood->max_retransmissions;
         return MIN(las, flood->data_slots - 1);
         break;
       case 1:
