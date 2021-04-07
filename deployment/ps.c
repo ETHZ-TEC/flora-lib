@@ -115,7 +115,7 @@ uint8_t ps_compose_msg(uint16_t recipient,
     /* fill in the additional header fields */
     out_msg->header.target_id       = recipient;
     out_msg->header.seqnr           = seq_no++;
-    out_msg->header.generation_time = get_time(0);
+    out_msg->header.generation_time = PS_TIMESTAMP();
     /* copy the payload if valid */
     if (out_msg->header.payload_len && data) {
       memcpy(out_msg->payload, data, out_msg->header.payload_len);
