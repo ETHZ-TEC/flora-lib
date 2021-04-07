@@ -4,7 +4,7 @@
  * communication primitive for neighbor discovery & synchronization
  */
 
-#include "main.h"
+#include "flora_lib.h"
 
 
 // Macros and defines

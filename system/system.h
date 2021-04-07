@@ -14,8 +14,9 @@
 #include "system/gpio.h"
 #include "system/gpio_exti.h"
 #include "system/platform.h"
-#include "system_boot.h"
-#include "system_backup_registers.h"
+#include "system/system_boot.h"
+#include "system/system_backup_registers.h"
+#include "system/lpm.h"
 
 
 void system_boot(void);
