@@ -52,6 +52,7 @@
 #include "utils/nvcfg.h"
 #include "utils/dcstat.h"
 #include "utils/led.h"
+#include "utils/fw_ota.h"
 #include "cli/cli.h"
 
 
