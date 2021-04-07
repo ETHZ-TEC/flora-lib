@@ -71,6 +71,7 @@ static dpp_message_min_t  fw_msg_buffer;
 static bool               pkt_rcvd = false;
 
 /* prototypes of private functions */
+static void fw_compose_msg(dpp_message_type_t type, uint8_t len);
 static void fw_transmit_msg(void);
 static void fw_receive_msg(void);
 static bool fw_process_msg(dpp_message_t* msg);
@@ -90,21 +91,6 @@ static bool fw_program_data(const uint32_t dest_addr, uint32_t src_addr, uint32_
 
 
 /* functions */
-
-/* composes a valid DPP message from fw_msg_buffer (type MIN with reduced header) */
-void fw_compose_msg(dpp_message_type_t type, uint8_t len)
-{
-  /* compose the message header */
-  fw_msg_buffer.header.device_id   = FW_OTA_NODE_ID;
-  fw_msg_buffer.header.type        = type;
-  type &= ~DPP_MSG_TYPE_MIN;
-  fw_msg_buffer.header.payload_len = len;
-
-  /* calculate and append the CRC */
-  uint32_t msg_buffer_len = DPP_MSG_MIN_LEN(&fw_msg_buffer);
-  uint16_t crc = crc16((uint8_t*)&fw_msg_buffer, msg_buffer_len - DPP_MSG_CRC_LEN, 0);
-  DPP_MSG_SET_CRC16(&fw_msg_buffer, crc);
-}
 
 
 #if !FW_OTA_MASTER
@@ -172,6 +158,22 @@ void fw_ota(uint8_t radio_mod, uint8_t radio_band, int8_t radio_txpwr)
   }
 
   LOG_INFO("timeout");
+}
+
+
+/* composes a valid DPP message from fw_msg_buffer (type MIN with reduced header) */
+static void fw_compose_msg(dpp_message_type_t type, uint8_t len)
+{
+  /* compose the message header */
+  fw_msg_buffer.header.device_id   = FW_OTA_NODE_ID;
+  fw_msg_buffer.header.type        = type;
+  type &= ~DPP_MSG_TYPE_MIN;
+  fw_msg_buffer.header.payload_len = len;
+
+  /* calculate and append the CRC */
+  uint32_t msg_buffer_len = DPP_MSG_MIN_LEN(&fw_msg_buffer);
+  uint16_t crc = crc16((uint8_t*)&fw_msg_buffer, msg_buffer_len - DPP_MSG_CRC_LEN, 0);
+  DPP_MSG_SET_CRC16(&fw_msg_buffer, crc);
 }
 
 

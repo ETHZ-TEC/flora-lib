@@ -25,6 +25,7 @@ uint32_t rtc_get_daytime_sec(void);
 uint32_t rtc_get_unix_timestamp(void);
 uint64_t rtc_get_unix_timestamp_ms(void);
 uint64_t rtc_get_timestamp(bool hs_timer);
+uint32_t rtc_get_next_timestamp_at_daytime(time_t curr_time, uint32_t hour, uint32_t minute, uint32_t second);
 void rtc_delay(uint32_t delay);
 bool rtc_format_time(char* buffer, uint8_t buffer_size);
 

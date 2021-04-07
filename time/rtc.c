@@ -351,6 +351,28 @@ uint64_t rtc_get_timestamp(bool hs_timer)
 }
 
 
+uint32_t rtc_get_next_timestamp_at_daytime(time_t curr_time, uint32_t hour, uint32_t minute, uint32_t second)
+{
+  struct tm ts;
+
+  /* make sure the values are within the valid range */
+  if (hour > 23 || minute > 59 || second > 59) {
+    return 0;
+  }
+  /* split up the UNIX timestamp into components */
+  gmtime_r(&curr_time, &ts);
+  ts.tm_hour = hour;
+  ts.tm_min  = minute;
+  ts.tm_sec  = second;
+  /* convert back to UNIX timestamp */
+  uint32_t timestamp = mktime(&ts);
+  if (timestamp <= curr_time) {
+    timestamp += 86400;           /* add one day */
+  }
+  return timestamp;
+}
+
+
 bool rtc_set_alarm(uint64_t timestamp, void* callback)
 {
   rtc_alarm_callback = callback;
