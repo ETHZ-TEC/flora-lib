@@ -9,7 +9,7 @@
 
 
 #ifndef FW_OTA_ENABLE
-#define FW_OTA_ENABLE           1
+#define FW_OTA_ENABLE           0
 #endif /* FW_OTA_ENABLE */
 
 #ifndef FW_OTA_MASTER

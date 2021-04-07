@@ -33,7 +33,6 @@
 #include "dpp/definitions/messages/dpp_message.h"
 #include "dpp/libraries/dpp_lib.h"
 
-
 /* drivers */
 #include "system/system.h"
 #include "time/rtc.h"
@@ -54,6 +53,9 @@
 #include "utils/led.h"
 #include "utils/fw_ota.h"
 #include "cli/cli.h"
+
+/* deployments */
+#include "deployment/ps.h"
 
 
 /* --- application specific pin configuration --- */
