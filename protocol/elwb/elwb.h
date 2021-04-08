@@ -268,6 +268,9 @@
   #define ELWB_RESUMED()
   #define ELWB_SUSPENDED()
 #endif /* ELWB_RESUMED */
+#ifndef ELWB_ON_WAKEUP
+#define ELWB_ON_WAKEUP()
+#endif /* ELWB_ON_WAKEUP */
 
 /* whether the node is a sink (by default, a host node is a sink node) */
 #ifndef ELWB_IS_SINK

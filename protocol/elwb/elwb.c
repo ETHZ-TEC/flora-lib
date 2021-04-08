@@ -583,6 +583,8 @@ static void elwb_receive_packet(elwb_time_t slot_start, uint32_t slot_length, ui
 }
 
 
+#if ELWB_CONF_DATA_ACK
+
 /* data acknowledgment slot */
 static void elwb_data_ack(elwb_time_t slot_start)
 {
@@ -663,10 +665,12 @@ static void elwb_data_ack(elwb_time_t slot_start)
   }
 }
 
+#endif /* ELWB_CONF_DATA_ACK */
+
 
 static void elwb_contention(elwb_time_t slot_start, bool node_registered)
 {
-  uint8_t  packet_len = ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN;
+  const uint8_t packet_len = ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN;
   packet.cont.node_id = 0;
 
   /* if there is data in the output buffer, then request a slot */
@@ -718,7 +722,7 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
     if (is_host) {
       if (gloria_get_rx_cnt() &&
           ELWB_IS_PKT_HEADER_VALID(&packet) &&
-          (gloria_get_payload_len() == (ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN)) &&
+          (gloria_get_payload_len() == packet_len) &&
           (packet.cont.node_id != 0)) {
         /* process the request only if there is a valid node ID */
         elwb_sched_process_req(packet.cont.node_id, 0);
