@@ -157,7 +157,7 @@ uint32_t lwb_get_max_round_duration(uint32_t t_sched_arg, uint32_t t_cont_arg, u
 
 void lwb_get_last_syncpoint(lwb_time_t* time, lwb_time_t* rx_timestamp)
 {
-  if (network_time) {
+  if (time) {
     *time = network_time;
   }
   if (rx_timestamp) {
@@ -823,7 +823,7 @@ bool lwb_init(void* lwb_task,
 
 void lwb_start(void)
 {
-  LOG_INFO("pkt_len: %u, slots: %u, n_tx: %u, t_sched: %lu, t_data: %lu, t_cont: %lu",
+  LOG_INFO("pkt_len=%u slots=%u n_tx=%u t_sched=%lums t_data=%lums t_cont=%lums",
            LWB_MAX_PAYLOAD_LEN,
            LWB_MAX_DATA_SLOTS,
            n_tx,

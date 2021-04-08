@@ -117,11 +117,6 @@
 #define LWB_SCHED_COMP_TIME       (LWB_TIMER_FREQUENCY / 50)          /* 20ms */
 #endif /* LWB_SCHED_COMP_TIME */
 
-/* use a 'fair' scheduler which tries to assign slots to all nodes */
-#ifndef LWB_SCHED_FAIR
-#define LWB_SCHED_FAIR            1
-#endif /* LWB_SCHED_FAIR */
-
 /* append CRC to the schedule? */
 #ifndef LWB_SCHED_ADD_CRC
 #define LWB_SCHED_ADD_CRC         1

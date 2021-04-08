@@ -148,74 +148,48 @@ void lwb_sched_process_req(uint16_t id,
 uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
                            uint32_t reserve_slots_host)
 {
-  uint32_t req_nodes         = 0;
-  uint32_t req_slots         = 0;
-  uint32_t n_slots_assigned  = 0;
-  lwb_node_list_t *curr_node = 0;
+  /* clear schedule content */
+  memset(sched->slot, 0, sizeof(sched->slot));
+  sched->n_slots = 0;
 
-  memset(sched->slot, 0, sizeof(sched->slot));  /* clear schedule content */
+  /* first, assign slots to the host */
+  while (reserve_slots_host && sched->n_slots < LWB_MAX_SLOTS_HOST) {
+    sched->slot[sched->n_slots++] = DPP_DEVICE_ID_SINK;     /* use ID 0 for the HOST */
+    reserve_slots_host--;
+  }
 
-  /* first, go through the list of nodes and calculate the total traffic demand */
-  curr_node = head;
-  while (curr_node != 0) {
-    if (curr_node->n_pkts) {
-      req_nodes++;
-      req_slots += curr_node->n_pkts;
+  /* go through the list of nodes and assign the requested slots */
+  lwb_node_list_t* curr_node = head;
+  while (curr_node != 0 && (sched->n_slots < LWB_MAX_DATA_SLOTS)) {
+    /* assign as many slots as the node requested */
+    uint16_t n_slots = curr_node->n_pkts;
+    while (n_slots &&
+          (sched->n_slots < LWB_MAX_DATA_SLOTS)) {
+      sched->slot[sched->n_slots++] = curr_node->id;
+      n_slots--;
     }
     curr_node = curr_node->next;
   }
-#if LWB_SCHED_FAIR
-  /* if total demand exceeds the avail. bandwidth, then scale each request */
-  if (req_slots > LWB_MAX_DATA_SLOTS) {
-    /* note: don't use floating point calculations here, takes up a lot of
-     * flash memory space! */
-    /* assumption: n_pkts < 100 and LWB_MAX_DATA_SLOTS < 100 */
-    uint32_t scale = LWB_MAX_DATA_SLOTS * 256 / req_slots;
-    /* go again through the list of nodes and assign slots in a 'fair' way */
-    curr_node = head;
-    while (curr_node != 0 &&
-          (n_slots_assigned < LWB_MAX_DATA_SLOTS)) {
-      if (curr_node->n_pkts) {
-        uint32_t n = (scale * curr_node->n_pkts + 128) / 256;
-        while (n && (n_slots_assigned < LWB_MAX_DATA_SLOTS)) {
-          sched->slot[n_slots_assigned++] = curr_node->id;
-          n--;
-        }
-      }
-      curr_node = curr_node->next;
-    }
-  } else
-#endif /* LWB_SCHED_FAIR */
-  {
-    /* go again through the list of nodes and assign the requested slots */
-    curr_node = head;
-    while (curr_node != 0 && (n_slots_assigned < LWB_MAX_DATA_SLOTS)) {
-      /* assign as many slots as the node requested */
-      while (curr_node->n_pkts &&
-            (n_slots_assigned < LWB_MAX_DATA_SLOTS)) {
-        sched->slot[n_slots_assigned++] = curr_node->id;
-        curr_node->n_pkts--;
-      }
-      curr_node = curr_node->next;
-    }
-  }
-  sched->n_slots = n_slots_assigned;
+  /* increment time */
+  lwb_time += LWB_TICKS_TO_US(sched->period);
+
   sched->period  = base_period;
   sched->time    = lwb_time + lwb_time_ofs;
+  sched->host_id = NODE_ID;
 
-  uint16_t sched_len = LWB_SCHED_HDR_LEN + n_slots_assigned * 2;
+  uint16_t sched_len = LWB_SCHED_HDR_LEN + sched->n_slots * 2;
 
   /* set the network ID */
   sched->header.net_id = LWB_NETWORK_ID;
   sched->header.type   = 1;
 
 #if LWB_SCHED_ADD_CRC
-  sched->slot[n_slots_assigned] = crc16((uint8_t*)sched, sched_len, 0);
+  sched->slot[sched->n_slots] = crc16((uint8_t*)sched, sched_len, 0);
   sched_len += LWB_SCHED_CRC_LEN;
 #endif /* LWB_SCHED_ADD_CRC */
 
   /* log the parameters of the new schedule */
-  LOG_INFO("schedule updated (s=%lu T=%lums n=%lu l=%lu)", n_nodes, LWB_TICKS_TO_MS(sched->period), n_slots_assigned, sched_len);
+  LOG_INFO("schedule updated (s=%lu T=%lums n=%lu l=%lu)", n_nodes, LWB_TICKS_TO_MS(sched->period), sched->n_slots, sched_len);
 
   return sched_len;
 }
@@ -236,33 +210,18 @@ uint32_t lwb_sched_init(lwb_schedule_t* sched)
   }
   /* initialize node list */
   memset(node_list, 0, sizeof(lwb_node_list_t) * LWB_MAX_NODES);
-  head           = 0;
-  n_nodes        = 0;
-  sched->n_slots = 0;
-  sched->time    = lwb_time + lwb_time_ofs;
-  sched->period  = base_period;
-  sched->host_id = NODE_ID;
-  sched->header.net_id = LWB_NETWORK_ID;
-  sched->header.type   = 1;
+  head    = 0;
+  n_nodes = 0;
 
 #ifdef LWB_SCHED_NODE_LIST
   const uint16_t node_ids[] = { LWB_SCHED_NODE_LIST };
   uint32_t i;
   for (i = 0; i < sizeof(node_ids) / 2; i++) {
-    if (lwb_sched_add_node(node_ids[i], 1)) {     /* add one slot per node by default */
-      sched->slot[sched->n_slots++] = node_ids[i];
-    }
+    lwb_sched_add_node(node_ids[i], 1);         /* add one slot per node by default (TODO) */
   }
-  LOG_INFO("%u source nodes registered:", sched->n_slots);
 #endif /* LWB_SCHED_NODE_LIST */
 
-#if LWB_SCHED_ADD_CRC
-  uint16_t crc = crc16((uint8_t*)sched, LWB_SCHED_HDR_LEN, 0);
-  memcpy((uint8_t*)sched + LWB_SCHED_HDR_LEN, &crc, 2);
-  return LWB_SCHED_HDR_LEN + 2;   /* empty schedule, no slots allocated yet */
-#else
-  return LWB_SCHED_HDR_LEN;       /* empty schedule, no slots allocated yet */
-#endif /* LWB_SCHED_ADD_CRC */
+  return lwb_sched_compute(sched, 0);
 }
 
 

@@ -174,7 +174,7 @@ uint32_t elwb_get_max_round_duration(uint32_t t_sched_arg, uint32_t t_cont_arg, 
 
 void elwb_get_last_syncpoint(elwb_time_t* time, elwb_time_t* rx_timestamp)
 {
-  if (network_time) {
+  if (time) {
     *time = network_time;
   }
   if (rx_timestamp) {
