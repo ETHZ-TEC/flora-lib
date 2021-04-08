@@ -48,6 +48,9 @@
 #if ELWB_ENABLE
 #include "protocol/elwb/elwb.h"
 #endif /* ELWB_ENABLE */
+#if LWB_ENABLE
+#include "protocol/lwb/lwb.h"
+#endif /* LWB_ENABLE */
 #include "protocol/discosync/discosync.h"
 
 
