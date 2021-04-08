@@ -17,7 +17,7 @@
 #endif /* FW_OTA_MASTER */
 
 #ifndef FW_OTA_NODE_ID
-#define FW_OTA_NODE_ID          config.node_id
+#define FW_OTA_NODE_ID          NODE_ID
 #endif /* FW_OTA_NODE_ID */
 
 #ifndef FW_OTA_ALLOW_DOWNGRADE

@@ -64,7 +64,7 @@ uint8_t ps_compose_msg(uint16_t recipient,
   }
 
   /* compose the message header */
-  out_msg->header.device_id   = config.node_id;
+  out_msg->header.device_id   = PS_DEVICE_ID;
   out_msg->header.type        = type;
   type &= ~DPP_MSG_TYPE_MIN;
   out_msg->header.payload_len = len;
@@ -162,7 +162,7 @@ void ps_update_msg_crc(dpp_message_t* msg)
 }
 
 
-void ps_compose_nodeinfo(dpp_message_t* out_msg, uint32_t cfg_field)
+void ps_compose_nodeinfo(dpp_message_t* out_msg, uint16_t rst_cnt, uint32_t cfg_field)
 {
   if (!out_msg) {
     return;
@@ -171,11 +171,13 @@ void ps_compose_nodeinfo(dpp_message_t* out_msg, uint32_t cfg_field)
   memset((uint8_t*)&out_msg->node_info, 0, sizeof(dpp_node_info_t));
   out_msg->node_info.component_id = DPP_COMPONENT_ID_SX1262;
   out_msg->node_info.compiler_ver = (__GNUC__ * 1000000 + __GNUC_MINOR__ * 1000 + __GNUC_PATCHLEVEL__);
+#ifdef BUILD_TIME
   out_msg->node_info.compile_date = BUILD_TIME;   // UNIX timestamp
+#endif /* BUILD_TIME */
 #ifdef FW_VERSION
   out_msg->node_info.fw_ver       = (uint16_t)FW_VERSION;
 #endif /* FW_VERSION */
-  out_msg->node_info.rst_cnt      = config.rst_cnt;
+  out_msg->node_info.rst_cnt      = rst_cnt;
   system_get_reset_cause(&out_msg->node_info.rst_flag);
 #ifdef GIT_REV_INT
   out_msg->node_info.sw_rev_id    = GIT_REV_INT;
