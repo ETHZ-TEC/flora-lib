@@ -610,6 +610,7 @@ static void lwb_send_rcv_sched2(lwb_time_t slot_start)
       schedule.period = packet.sched2.period;         /* extract updated period */
       if (packet.sched2.cont_winner == NODE_ID) {
         ipi_changed = false;
+        LOG_VERBOSE("IPI change confirmed");
       }
       stats.pkt_rx_all++;
 

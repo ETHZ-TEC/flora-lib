@@ -126,7 +126,7 @@ void lwb_sched_process_req(uint16_t id,
 {
   uint16_t n_pkts = 0;
   if (ipi) {
-    n_pkts = MAX(base_period / ipi, 1);     //TODO: make it compatible with dynamic round periods
+    n_pkts = MAX(LWB_TICKS_TO_S(base_period) / ipi, 1);     //TODO: make it compatible with dynamic round periods
     if (n_pkts > LWB_MAX_DATA_SLOTS) {
       n_pkts = LWB_MAX_DATA_SLOTS;
     }
@@ -137,6 +137,7 @@ void lwb_sched_process_req(uint16_t id,
     if (id == node->id) {
       node->n_pkts     = n_pkts;
       node->t_last_req = lwb_time / 1000000;
+      LOG_VERBOSE("IPI of node %u adjusted (n_pkts: %u)", id, node->n_pkts);
       return;
     }
   }
