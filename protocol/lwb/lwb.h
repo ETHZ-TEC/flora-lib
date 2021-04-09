@@ -48,6 +48,16 @@
 #define LWB_NETWORK_ID            0x2222      /* custom 15-bit network ID */
 #endif /* LWB_NETWORK_ID */
 
+/* the smallest node ID in the network (the host will ignore requests from nodes with smaller IDs) */
+#ifndef LWB_MIN_NODE_ID
+#define LWB_MIN_NODE_ID           1
+#endif /* LWB_MIN_NODE_ID */
+
+/* the largest node ID in the network (the host will ignore requests from nodes with larger IDs) */
+#ifndef LWB_MAX_NODE_ID
+#define LWB_MAX_NODE_ID           32
+#endif /* LWB_MAX_NODE_ID */
+
 /* max. payload size in bytes (data packets) */
 #ifndef LWB_MAX_PAYLOAD_LEN
 #define LWB_MAX_PAYLOAD_LEN       (GLORIA_INTERFACE_MAX_PAYLOAD_LEN - LWB_PKT_HDR_LEN)
@@ -65,17 +75,12 @@
 #define LWB_BOOTSTRAP_TIMEOUT     (120 * LWB_TIMER_FREQUENCY)     /* in ticks */
 #endif /* LWB_BOOTSTRAP_TIMEOUT */
 
-/* max. number of nodes in the network */
-#ifndef LWB_MAX_NODES
-#define LWB_MAX_NODES             10
-#endif /* LWB_MAX_NODES */
-
 /* max. number of data or request slots per round */
 #ifndef LWB_MAX_DATA_SLOTS
 #define LWB_MAX_DATA_SLOTS        10
 #endif /* LWB_MAX_DATA_SLOTS */
 
-/* how many slots the host may allocate for himself, per round */
+/* how many slots the host may allocate for itself, per round */
 #ifndef LWB_MAX_SLOTS_HOST
 #define LWB_MAX_SLOTS_HOST        (LWB_MAX_DATA_SLOTS / 2)
 #endif /* LWB_MAX_SLOTS_HOST */
@@ -145,14 +150,21 @@
 #define LWB_RAND_BACKOFF          4
 #endif /* LWB_RAND_BACKOFF */
 
+/* TX delay feature: allows the host to tell certain nodes to delay the retransmission of data packets by one Gloria slot */
+#ifndef LWB_USE_TX_DELAY
+#define LWB_USE_TX_DELAY          0
+#endif /* LWB_USE_TX_DELAY */
+
 
 /* --------------- END OF CONFIG, do not change values below --------------- */
 
+#define LWB_MAX_NUM_NODES         (LWB_MAX_NODE_ID - LWB_MIN_NODE_ID + 1)
 #define LWB_SCHED_CRC_LEN         (LWB_SCHED_ADD_CRC ? 2 : 0)
 #define LWB_SCHED_PERIOD_MAX_S    (ULONG_MAX / LWB_TIMER_FREQUENCY)  /* max period in seconds */
 #define LWB_NETWORK_ID_BITMASK    0x7fff
 #define LWB_PKT_TYPE_BITMASK      0x8000
 #define LWB_PKT_BUFFER_SIZE       GLORIA_INTERFACE_MAX_PAYLOAD_LEN    /* must be at least as large as the gloria interface buffer */
+#define LWB_TX_DELAY_MASK_SIZE    (LWB_USE_TX_DELAY ? ((LWB_MAX_NUM_NODES + 7) / 8) : 0)
 
 
 /*---------------------------------------------------------------------------*/
@@ -179,22 +191,23 @@
 #error "LWB_MAX_SLOTS_HOST > LWB_MAX_DATA_SLOTS!"
 #endif
 
-#if LWB_SCHED_FAIR
-  /* make sure #slots is <= 100 to prevent an overflow in the calculations */
-  #if LWB_MAX_DATA_SLOTS > 100
-  #error "LWB_MAX_DATA_SLOTS > 100 not allowed"
-  #endif
+#if LWB_MAX_NODE_ID < LWB_MIN_NODE_ID || LWB_MAX_NODE_ID >= DPP_DEVICE_ID_BROADCAST
+#error "invalid value for LWB_MAX_NODE_ID"
 #endif
 
-#if LWB_MAX_DATA_SLOTS < LWB_MAX_NODES
-#error "LWB_MAX_DATA_SLOTS must be larger than LWB_MAX_NODES"
-#endif
+#if LWB_PKT_BUFFER_SIZE < (LWB_SCHED_HDR_LEN + LWB_MAX_DATA_SLOTS * 2 + LWB_SCHED_CRC_LEN + LWB_TX_DELAY_MASK_SIZE)
+#error "invalid schedule packet size"
+#endif /* LWB_PKT_BUFFER_SIZE */
 
 /*---------------------------------------------------------------------------*/
 
 /* macros */
 
 /* schedule-related macros */
+#define LWB_SCHED_N_SLOTS(s)           ((s)->n_slots & 0x7fff)
+#define LWB_SCHED_SET_N_SLOTS(s, n)    ((s)->n_slots = ((s)->n_slots & ~0x7fff) | (n))
+#define LWB_SCHED_HAS_DELAY_MASK(s)    (((s)->n_slots & 0x8000) != 0)
+#define LWB_SCHED_SET_DELAY_MASK(s)    ((s)->n_slots |= 0x8000)
 #define LWB_IS_SCHEDULE_PACKET(s)      ((s)->header.type != 0)
 #define LWB_IS_PKT_HEADER_VALID(p)     ((p)->header.net_id == (LWB_NETWORK_ID & LWB_NETWORK_ID_BITMASK))  // checks whether the packet header is valid
 #define LWB_SET_PKT_HEADER(p)          ((p)->header_raw = (LWB_NETWORK_ID & LWB_NETWORK_ID_BITMASK))      // set the header of a regular packet (all except schedule packets)
@@ -290,7 +303,7 @@ typedef enum {
 
 #pragma pack(1)           /* force alignment to 1 byte for the following structs */
 
-#define LWB_PKT_HDR_LEN  2      /* packet header length */
+#define LWB_PKT_HDR_LEN     2      /* packet header length */
 typedef struct {
   uint16_t net_id : 15;   /* network ID and packet type indicator */
   uint16_t type   : 1;    /* MSB indicates the packet type (1 = schedule packet) */
@@ -306,7 +319,7 @@ typedef struct {
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
   union {
-    uint16_t    slot[LWB_MAX_DATA_SLOTS];
+    uint16_t    slot[LWB_MAX_DATA_SLOTS + LWB_SCHED_ADD_CRC];
     uint8_t     rxbuffer[LWB_PKT_BUFFER_SIZE - LWB_SCHED_HDR_LEN];  /* to make sure that potentially larger received packets don't cause a buffer overflow */
   };
 } lwb_schedule_t;
@@ -389,6 +402,7 @@ bool     lwb_sched_set_period(uint32_t period_secs);    /* set the period in sec
 bool     lwb_sched_check_params(uint32_t period_secs, uint32_t sched_slot, uint32_t cont_slot, uint32_t data_slot);  /* checks whether the given parameters are valid (slot lengths are in ticks) */
 lwb_time_t lwb_sched_get_time(void);                    /* returns the current network time in microseconds */
 void     lwb_sched_set_time(lwb_time_t time_us);        /* set the current network time in microseconds */
+void     lwb_sched_set_delay_nodes(const uint16_t* node_list, uint8_t num_nodes);   /* define which source nodes should delay the retransmission of data packets */
 
 /*---------------------------------------------------------------------------*/
 

@@ -48,9 +48,13 @@ static uint32_t           lwb_time_ofs;                                         
 static uint32_t           base_period = LWB_SCHED_PERIOD * LWB_TIMER_FREQUENCY;   /* base (idle) period in ticks */
 static uint32_t           min_period;
 static uint32_t           n_nodes;                                                /* # active nodes */
-static lwb_node_list_t    node_list[LWB_MAX_NODES];                               /* actual list */
+static lwb_node_list_t    node_list[LWB_MAX_NUM_NODES];                           /* actual list */
 static lwb_node_list_t*   head;                                                   /* head of the linked list */
 
+#if LWB_USE_TX_DELAY
+static uint8_t            delay_mask[LWB_TX_DELAY_MASK_SIZE];
+static bool               delay_mask_set;
+#endif /* LWB_USE_TX_DELAY */
 
 /* returns true if a stream with the requested IPI can be added to the schedule */
 bool lwb_sched_check_utilization(uint16_t requested_ipi)
@@ -74,11 +78,16 @@ bool lwb_sched_check_utilization(uint16_t requested_ipi)
 
 bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
 {
-  if (node_id == DPP_DEVICE_ID_SINK || node_id == DPP_DEVICE_ID_BROADCAST || node_id == NODE_ID) {
-    return false;     /* invalid argument */
-  }
-  if (n_nodes >= LWB_MAX_NODES) {
+  if (n_nodes >= LWB_MAX_NUM_NODES) {
     LOG_WARNING("request ignored (max #nodes reached)");
+    return false;
+  }
+  if (node_id == DPP_DEVICE_ID_SINK      ||
+      node_id == DPP_DEVICE_ID_BROADCAST ||
+      node_id == NODE_ID                 ||
+      node_id < LWB_MIN_NODE_ID          ||
+      node_id > LWB_MAX_NODE_ID) {
+    LOG_WARNING("invalid node ID %u", node_id);
     return false;
   }
   /* check utilization */
@@ -89,7 +98,7 @@ bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
   lwb_node_list_t* node = 0;
   uint32_t i;
   /* find a free spot */
-  for (i = 0; i < LWB_MAX_NODES; i++) {
+  for (i = 0; i < LWB_MAX_NUM_NODES; i++) {
     if (node_list[i].id == 0) {
       node = &node_list[i];   /* use this spot */
       break;
@@ -227,13 +236,23 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
 
   uint16_t sched_len = LWB_SCHED_HDR_LEN + sched->n_slots * 2;
 
+#if LWB_USE_TX_DELAY
+  if (delay_mask_set) {
+    memcpy(&sched->slot[sched->n_slots], delay_mask, LWB_TX_DELAY_MASK_SIZE);
+    LWB_SCHED_SET_DELAY_MASK(sched);
+    sched_len += LWB_TX_DELAY_MASK_SIZE;
+  }
+#endif /* LWB_USE_TX_DELAY */
+
 #if LWB_SCHED_ADD_CRC
-  sched->slot[sched->n_slots] = crc16((uint8_t*)sched, sched_len, 0);
+  uint16_t crc = crc16((uint8_t*)sched, sched_len, 0);
+  sched->rxbuffer[sched_len - LWB_SCHED_HDR_LEN] = crc & 0xff;
+  sched->rxbuffer[sched_len - LWB_SCHED_HDR_LEN + 1] = (crc >> 8) & 0xff;
   sched_len += LWB_SCHED_CRC_LEN;
 #endif /* LWB_SCHED_ADD_CRC */
 
   /* log the parameters of the new schedule */
-  LOG_INFO("schedule updated (s=%lu T=%lums n=%u l=%u)", n_nodes, (uint32_t)LWB_TICKS_TO_MS(sched->period), sched->n_slots, sched_len);
+  LOG_INFO("schedule updated (s=%lu T=%lums n=%u l=%u)", n_nodes, (uint32_t)LWB_TICKS_TO_MS(sched->period), LWB_SCHED_N_SLOTS(sched), sched_len);
 
   return sched_len;
 }
@@ -253,10 +272,15 @@ uint32_t lwb_sched_init(lwb_schedule_t* sched)
     return 0;
   }
   /* initialize node list */
-  memset(node_list, 0, sizeof(lwb_node_list_t) * LWB_MAX_NODES);
+  memset(node_list, 0, sizeof(lwb_node_list_t) * LWB_MAX_NUM_NODES);
   head       = 0;
   n_nodes    = 0;
   min_period = t_round_max + LWB_TIMER_FREQUENCY / 10;    /* add some slack time */
+
+#if LWB_USE_TX_DELAY
+  memset(delay_mask, 0, LWB_TX_DELAY_MASK_SIZE);
+  delay_mask_set = false;
+#endif /* LWB_USE_TX_DELAY */
 
 #ifdef LWB_SCHED_NODE_LIST
   const uint16_t node_ids[] = { LWB_SCHED_NODE_LIST };
@@ -316,5 +340,28 @@ void lwb_sched_set_time_offset(uint32_t ofs)
   /* convert from ticks to us */
   lwb_time_ofs = LWB_TICKS_TO_US(ofs);
 }
+
+
+#if LWB_USE_TX_DELAY
+
+void lwb_sched_set_delay_nodes(const uint16_t* node_list, uint8_t num_nodes)
+{
+  /* clear delay node mask */
+  memset(delay_mask, 0, LWB_USE_TX_DELAY);
+  delay_mask_set = false;
+
+  if (node_list && num_nodes) {
+    uint32_t i;
+    for (i = 0; i < num_nodes; i++) {
+      if (node_list[i] >= LWB_MIN_NODE_ID && node_list[i] <= LWB_MAX_NODE_ID) {
+        uint16_t ofs = node_list[i] - LWB_MIN_NODE_ID;
+        delay_mask[ofs / 8] |= 1 << (ofs & 0x7);
+        delay_mask_set = true;
+      }
+    }
+  }
+}
+
+#endif /* LWB_USE_TX_DELAY */
 
 #endif /* LWB_ENABLE */
