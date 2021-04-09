@@ -92,7 +92,7 @@ static uint_fast16_t      period_idle;        /* last known base period */
 
 /* private (not exposed) scheduler functions */
 uint32_t lwb_sched_init(lwb_schedule_t* sched);
-void     lwb_sched_process_req(uint16_t id, uint16_t n_pkts);
+bool     lwb_sched_process_req(uint16_t id, uint16_t ipi);
 uint32_t lwb_sched_compute(lwb_schedule_t * const sched, uint32_t reserve_slots_host);
 void     lwb_sched_set_time_offset(uint32_t ofs);
 
@@ -568,15 +568,15 @@ static void lwb_contention(lwb_time_t slot_start)
     }
 
     if (is_host) {
+      packet.sched2.cont_winner = 0;
       if (gloria_get_rx_cnt() &&
           LWB_IS_PKT_HEADER_VALID(&packet) &&
           (gloria_get_payload_len() == packet_len) &&
           (packet.cont.node_id != 0)) {
         /* process the request only if there is a valid node ID */
-        lwb_sched_process_req(packet.cont.node_id, packet.cont.ipi);
-        packet.sched2.cont_winner = packet.cont.node_id;
-      } else {
-        packet.sched2.cont_winner = 0;
+        if (lwb_sched_process_req(packet.cont.node_id, packet.cont.ipi)) {
+          packet.sched2.cont_winner = packet.cont.node_id;
+        }
       }
       lwb_update_rssi_snr();
     }
