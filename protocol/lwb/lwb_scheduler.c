@@ -239,7 +239,7 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
 #if LWB_USE_TX_DELAY
   if (delay_mask_set) {
     memcpy(&sched->slot[sched->n_slots], delay_mask, LWB_TX_DELAY_MASK_SIZE);
-    LWB_SCHED_SET_DELAY_MASK(sched);
+    sched->has_delay_mask = 1;
     sched_len += LWB_TX_DELAY_MASK_SIZE;
   }
 #endif /* LWB_USE_TX_DELAY */
@@ -252,7 +252,7 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
 #endif /* LWB_SCHED_ADD_CRC */
 
   /* log the parameters of the new schedule */
-  LOG_INFO("schedule updated (s=%lu T=%lums n=%u l=%u)", n_nodes, (uint32_t)LWB_TICKS_TO_MS(sched->period), LWB_SCHED_N_SLOTS(sched), sched_len);
+  LOG_INFO("schedule updated (s=%lu T=%lums n=%u l=%u)", n_nodes, (uint32_t)LWB_TICKS_TO_MS(sched->period), sched->n_slots, sched_len);
 
   return sched_len;
 }

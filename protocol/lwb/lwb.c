@@ -386,9 +386,9 @@ static lwb_time_t lwb_sync(lwb_time_t start_of_round)
 #endif /* LWB_SCHED_ADD_CRC */
 
     /* schedule sanity check (#slots mustn't exceed the compile-time fixed max. # slots!) */
-    if (LWB_SCHED_N_SLOTS(&schedule) > LWB_MAX_DATA_SLOTS) {
+    if (schedule.n_slots > LWB_MAX_DATA_SLOTS) {
       LOG_ERROR("n_slots exceeds limit!");
-      LWB_SCHED_SET_N_SLOTS(&schedule, LWB_MAX_DATA_SLOTS);
+      schedule.n_slots = LWB_MAX_DATA_SLOTS;
     }
     /* update the sync state machine */
     sync_state = next_state[EVT_SCHED_RCVD][sync_state];
@@ -480,7 +480,7 @@ static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint
   memset(&packet, 0, sizeof(packet));    /* clear packet before receiving the packet */
 
 #if LWB_USE_TX_DELAY
-  uint8_t* delay_mask = (uint8_t*)&schedule.slot[LWB_SCHED_N_SLOTS(&schedule)];
+  uint8_t* delay_mask = (uint8_t*)&schedule.slot[schedule.n_slots];  /* delay mask starts after the last slot in the schedule */
   uint16_t id_ofs     = (NODE_ID - LWB_MIN_NODE_ID);
   if (delay_mask[id_ofs / 8] & (1 << (id_ofs & 0x7))) {
     gloria_set_tx_delay(1);
@@ -654,7 +654,7 @@ static void lwb_print_stats(void)
     LOG_INFO("%llu | T: %lus, slots: %u, rx/tx/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu, rssi: %ddBm",
              network_time,
              lwb_sched_get_period(),
-             LWB_SCHED_N_SLOTS(&schedule),
+             schedule.n_slots,
              stats.pkt_rcvd,
              stats.pkt_sent,
              stats.pkt_dropped,
@@ -667,7 +667,7 @@ static void lwb_print_stats(void)
              lwb_syncstate_to_string[sync_state],
              schedule.time,
              LWB_TICKS_TO_S(schedule.period),
-             LWB_SCHED_N_SLOTS(&schedule),
+             schedule.n_slots,
              stats.pkt_rcvd,
              stats.pkt_sent,
              stats.pkt_ack,
@@ -731,7 +731,7 @@ static void lwb_run(void)
 
       /* loop through all slots in this round */
       uint32_t slot_idx;
-      for (slot_idx = 0; slot_idx < LWB_SCHED_N_SLOTS(&schedule); slot_idx++) {
+      for (slot_idx = 0; slot_idx < schedule.n_slots; slot_idx++) {
         /* note: slots with node ID 0 belong to the host */
         bool is_initiator = (schedule.slot[slot_idx] == NODE_ID) || (is_host && schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK);
         if (is_initiator) {

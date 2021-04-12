@@ -204,10 +204,6 @@
 /* macros */
 
 /* schedule-related macros */
-#define LWB_SCHED_N_SLOTS(s)           ((s)->n_slots & 0x7fff)
-#define LWB_SCHED_SET_N_SLOTS(s, n)    ((s)->n_slots = ((s)->n_slots & ~0x7fff) | (n))
-#define LWB_SCHED_HAS_DELAY_MASK(s)    (((s)->n_slots & 0x8000) != 0)
-#define LWB_SCHED_SET_DELAY_MASK(s)    ((s)->n_slots |= 0x8000)
 #define LWB_IS_SCHEDULE_PACKET(s)      ((s)->header.type != 0)
 #define LWB_IS_PKT_HEADER_VALID(p)     ((p)->header.net_id == (LWB_NETWORK_ID & LWB_NETWORK_ID_BITMASK))  // checks whether the packet header is valid
 #define LWB_SET_PKT_HEADER(p)          ((p)->header_raw = (LWB_NETWORK_ID & LWB_NETWORK_ID_BITMASK))      // set the header of a regular packet (all except schedule packets)
@@ -312,12 +308,11 @@ typedef struct {
 #define LWB_SCHED_HDR_LEN   18
 typedef struct {
   lwb_header_t  header;
-  uint16_t      n_slots;
-  uint32_t      period;
-  uint64_t      time;           /* current time in microseconds */
-  uint16_t      host_id;
-  /* store num. of data slots and last two bits to indicate whether there is
-   * a contention or an s-ack slot in this round */
+  uint16_t      n_slots        : 15;  /* number of data slots in the schedule */
+  uint16_t      has_delay_mask : 1;   /* whether a delay mask is included in the schedule */
+  uint32_t      period;               /* round period in LWB ticks */
+  uint64_t      time;                 /* current time in microseconds */
+  uint16_t      host_id;              /* node ID of the host */
   union {
     uint16_t    slot[LWB_MAX_DATA_SLOTS + LWB_SCHED_ADD_CRC];
     uint8_t     rxbuffer[LWB_PKT_BUFFER_SIZE - LWB_SCHED_HDR_LEN];  /* to make sure that potentially larger received packets don't cause a buffer overflow */
