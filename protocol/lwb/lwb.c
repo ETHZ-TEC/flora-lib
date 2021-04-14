@@ -480,10 +480,12 @@ static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint
   memset(&packet, 0, sizeof(packet));    /* clear packet before receiving the packet */
 
 #if LWB_USE_TX_DELAY
-  uint8_t* delay_mask = (uint8_t*)&schedule.slot[schedule.n_slots];  /* delay mask starts after the last slot in the schedule */
-  uint16_t id_ofs     = (NODE_ID - LWB_MIN_NODE_ID);
-  if (delay_mask[id_ofs / 8] & (1 << (id_ofs & 0x7))) {
-    gloria_set_tx_delay(1);
+  if (schedule.has_delay_mask) {
+    uint8_t* delay_mask = (uint8_t*)&schedule.slot[schedule.n_slots];  /* delay mask starts after the last slot in the schedule */
+    uint16_t id_ofs     = (NODE_ID - LWB_MIN_NODE_ID);
+    if (delay_mask[id_ofs / 8] & (1 << (id_ofs & 0x7))) {
+      gloria_set_tx_delay(1);
+    }
   }
 #endif /* LWB_USE_TX_DELAY */
 
