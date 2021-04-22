@@ -620,3 +620,16 @@ uint32_t radio_get_rx_bandwidth(uint32_t freq, uint32_t tx_bandwidth)
 
   return tx_bandwidth + 2 * (tx_bandwidth / 2 + freq) / (1000000 / RADIO_CLOCK_DRIFT_PPM);
 }
+
+
+uint32_t radio_get_error_count(void)
+{
+  return SX126xCheckCmdError(false);
+}
+
+
+uint16_t radio_get_error_flags(void)
+{
+  return SX126xGetDeviceErrors().Value;
+}
+

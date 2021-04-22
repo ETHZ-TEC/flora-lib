@@ -57,6 +57,9 @@ RadioState_t          radio_get_status(void);       // returns the current radio
 RadioOperatingModes_t radio_get_chipmode(void);     // reads the current chip mode from the radio (sends a radio command)
 void                  radio_print_status(void);
 
+uint32_t  radio_get_error_count(void);    // returns the error counter of the radio driver (bus access and command errors)
+uint16_t  radio_get_error_flags(void);    // returns the hardware error flags from the radio chip (see datasheet p.98)
+
 /*!
  * \brief Get time-on-air for arbitrary radio settings.
  * (arb = arbitrary radio settings)
