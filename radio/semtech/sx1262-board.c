@@ -5,7 +5,7 @@
 #include "flora_lib.h"
 
 
-#define SX126x_CMD_STATUS_VALID(status)     ((status & 0xe) < (0x3 << 1) || (status & 0xe) > (0x5 << 1))      // see datasheet p.95
+#define SX126x_CMD_STATUS_VALID(status)     ((status & 0xe) < (0x4 << 1) || (status & 0xe) > (0x5 << 1))      // see datasheet p.95
 
 
 #if SX126x_PRINT_ERRORS
@@ -108,7 +108,12 @@ static bool SX126xSPIWrite( RadioCommands_t command, uint8_t *buffer, uint8_t si
 #if SX126x_CHECK_CMD_RETVAL
 
     uint8_t status = 0;
-
+    // in case the command does not have any arguments, make sure the pointer is still valid and size is at least 1 to be able to read the status
+    if (size == 0 || buffer == 0)
+    {
+      buffer = &status;
+      size   = 1;
+    }
     if (HAL_SPI_Transmit(&RADIO_SPI, (uint8_t*) &command, 1, SX126x_CMD_TIMEOUT)               != HAL_OK ||
         HAL_SPI_TransmitReceive(&RADIO_SPI, buffer, &status, 1, SX126x_CMD_TIMEOUT)            != HAL_OK ||
         !SX126x_CMD_STATUS_VALID(status)                                                                 ||
