@@ -32,7 +32,7 @@
 
 #if LWB_ENABLE
 
-/* internal sync state of the eLWB */
+/* internal sync state of the LWB */
 typedef enum {
   BOOTSTRAP = 0,
   SYNCED,
@@ -68,6 +68,7 @@ static void*              post_task    = 0;
 static void*              pre_task     = 0;
 static void*              rx_queue     = 0;
 static void*              tx_queue     = 0;
+static void*              re_tx_queue  = 0;
 static bool               lwb_running  = false;
 static bool               is_host      = 0;
 static lwb_timeout_cb_t   timeout_cb   = 0;
@@ -83,6 +84,12 @@ static uint32_t           t_data       = 0;      /* slot length for data packets
 static uint32_t           t_cont       = 0;      /* slot length for contention, request and sched2 packets */
 static uint16_t           ipi          = 0;
 static bool               ipi_changed  = false;
+
+#if LWB_DATA_ACK
+static uint8_t            data_ack[LWB_DATA_ACK_SIZE] = { 0 };
+static uint8_t            data_ack_first_slot = 0;
+static uint8_t            data_ack_slot_cnt   = 0;
+#endif /* LWB_DATA_ACK */
 
 #if LWB_CONT_USE_HSTIMER
 static lwb_time_t         last_synced_hs;
@@ -166,7 +173,7 @@ void lwb_get_last_syncpoint(lwb_time_t* time, lwb_time_t* rx_timestamp)
 }
 
 
-/* if argument is given, converts the timestamp (in elwb timer ticks) to global network time
+/* if argument is given, converts the timestamp (in LWB timer ticks) to global network time
  * returns the current network time if no argument is given */
 lwb_time_t lwb_get_time(const uint64_t* timestamp)
 {
@@ -379,7 +386,7 @@ static lwb_time_t lwb_sync(lwb_time_t start_of_round)
                        *((uint8_t*)&schedule + packet_len - 2);
     if (crc16((uint8_t*)&schedule, packet_len - 2, 0) != pkt_crc) {
       /* not supposed to happen => go back to bootstrap */
-      LOG_ERROR("invalid CRC for eLWB schedule");
+      LOG_ERROR("invalid CRC for LWB schedule");
       sync_state = BOOTSTRAP;
       return 0;
     }
@@ -453,6 +460,19 @@ static void lwb_send_packet(lwb_time_t slot_start, uint32_t slot_length, uint32_
     if (packet_len) {
       LWB_SET_PKT_HEADER(&packet);
       packet_len += LWB_PKT_HDR_LEN;
+#if LWB_DATA_ACK
+      /* only source nodes receive a D-ACK */
+      if (!is_host) {
+        if (data_ack_slot_cnt == 0) {
+          data_ack_first_slot = slot_idx;   /* store the index of the first assigned slot in the upper 8 bytes */
+        }
+        data_ack_slot_cnt++;
+        /* copy the packet into the queue for retransmission (in case we don't receive a D-ACK for this packet) */
+        if (!LWB_QUEUE_PUSH(re_tx_queue, packet.payload)) {
+          LOG_ERROR("failed to insert packet into retransmit queue");
+        }
+      }
+#endif /* LWB_DATA_ACK */
       /* wait until the data slot starts */
       lwb_wait_until(slot_start);
       gloria_start(true, (uint8_t*)&packet, packet_len, n_tx, 0);
@@ -473,7 +493,7 @@ static void lwb_send_packet(lwb_time_t slot_start, uint32_t slot_length, uint32_
 }
 
 
-static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint16_t initiator_id)
+static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint8_t slot_idx, uint16_t initiator_id)
 {
   uint8_t packet_len = 0;
 
@@ -505,6 +525,12 @@ static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint
     if (keep_packet) {
       LOG_VERBOSE("data received from node %u (%lub)", initiator_id, packet_len);
       if (LWB_QUEUE_PUSH(rx_queue, packet.payload)) {
+#if LWB_DATA_ACK
+        if (is_host) {
+          /* set the corresponding bit in the data ack packet */
+          data_ack[slot_idx >> 3] |= (1 << (slot_idx & 0x07));
+        }
+#endif /* LWB_DATA_ACK */
         stats.pkt_rcvd++;
       } else {
         stats.pkt_dropped++;
@@ -595,17 +621,26 @@ static void lwb_contention(lwb_time_t slot_start)
 
 static void lwb_send_rcv_sched2(lwb_time_t slot_start)
 {
-  uint8_t packet_len = LWB_2ND_SCHED_LEN + LWB_PKT_HDR_LEN;
+  uint8_t packet_len = LWB_2ND_SCHED_LEN + LWB_PKT_HDR_LEN + LWB_DATA_ACK_SIZE;
 
   if (is_host) {
     /* note: packet content is set above during the contention slot */
     packet.sched2.period = schedule.period;
     LWB_SET_PKT_HEADER(&packet);
+#if LWB_DATA_ACK
+    memcpy(packet.sched2.dack, data_ack, LWB_DATA_ACK_SIZE);
+#endif /* LWB_DATA_ACK */
+
     lwb_wait_until(slot_start);
     /* send as normal packet without sync */
     gloria_start(true, (uint8_t*)&packet, packet_len, n_tx, 0);
     lwb_wait_until(slot_start + t_cont);       /* length of a contention slot is sufficient for this short packet */
     gloria_stop();
+
+#if LWB_DATA_ACK
+    memset(data_ack, 0, LWB_DATA_ACK_SIZE);    /* clear */
+#endif /* LWB_DATA_ACK */
+
     stats.pkt_tx_all++;
 
   } else {
@@ -621,12 +656,56 @@ static void lwb_send_rcv_sched2(lwb_time_t slot_start)
         ipi_changed = false;
         LOG_VERBOSE("IPI change confirmed");
       }
+#if LWB_DATA_ACK
+      /* note: copy payload since 'packet' will be overwritten below (used to copy packets into the retransmit queue) */
+      if (data_ack_slot_cnt) {
+        memcpy(data_ack, packet.sched2.dack, LWB_DATA_ACK_SIZE);
+        uint32_t i;
+        for (i = data_ack_first_slot; i < data_ack_first_slot + data_ack_slot_cnt; i++) {
+          if (LWB_QUEUE_POP(re_tx_queue, packet.payload)) {
+            /* bit not set? => not acknowledged */
+            if (!(data_ack[i >> 3] & (1 << (i & 0x07)))) {
+              /* resend the packet (re-insert it into the output FIFO) */
+              if (LWB_QUEUE_PUSH(tx_queue, packet.payload)) {
+                LOG_VERBOSE("packet queued for retransmission");
+              } else {
+                LOG_ERROR("failed to requeue packet");
+              }
+            } else {
+              LOG_INFO("packet reception ACK");
+              stats.pkt_ack++;
+            }
+          } else {
+            LOG_ERROR("retransmit queue empty");
+            break;
+          }
+        }
+        data_ack_slot_cnt = 0;
+      }
+#endif /* LWB_DATA_ACK */
+
       stats.pkt_rx_all++;
 
     } else {
       LOG_WARNING("2nd schedule missed");
+
+#if LWB_DATA_ACK
+      while (LWB_QUEUE_POP(re_tx_queue, packet.payload)) {
+        if (!LWB_QUEUE_PUSH(tx_queue, packet.payload)) {
+          LOG_ERROR("failed to requeue packet");
+          break;
+        }
+      }
+      LOG_WARNING("%u packets requeued", data_ack_slot_cnt);
+      data_ack_slot_cnt = 0;
+#endif /* LWB_DATA_ACK */
     }
   }
+
+#if LWB_DATA_ACK
+  /* make sure the retransmit queue is empty */
+  LWB_QUEUE_CLEAR(re_tx_queue);
+#endif /* LWB_DATA_ACK */
 
   if (slot_cb) {
     slot_cb(schedule.host_id, LWB_PHASE_SCHED2, &packet);
@@ -684,12 +763,12 @@ static void lwb_print_stats(void)
 }
 
 
-/* ELWB MAIN FUNCTION */
+/* LWB MAIN FUNCTION */
 static void lwb_run(void)
 {
   lwb_time_t start_of_round = LWB_TIMER_NOW();
 
-  /* --- begin MAIN LOOP for eLWB --- */
+  /* --- begin MAIN LOOP for LWB --- */
   while (lwb_running) {
 
     /* --- PREPROCESS --- */
@@ -739,7 +818,7 @@ static void lwb_run(void)
         if (is_initiator) {
           lwb_send_packet(slot_ofs, t_data, slot_idx);                    /* initiator -> send packet */
         } else {
-          lwb_receive_packet(slot_ofs, t_data, schedule.slot[slot_idx]);  /* not initiator -> receive / relay packets */
+          lwb_receive_packet(slot_ofs, t_data, slot_idx, schedule.slot[slot_idx]);  /* not initiator -> receive / relay packets */
         }
         slot_ofs += (t_data + LWB_T_GAP);
       }
@@ -791,6 +870,7 @@ bool lwb_init(void* lwb_task,
               void* post_lwb_task,
               void* in_queue_handle,
               void* out_queue_handle,
+              void* retransmit_queue_handle,
               lwb_timeout_cb_t listen_timeout_cb,
               bool host)
 {
@@ -798,18 +878,28 @@ bool lwb_init(void* lwb_task,
     LOG_ERROR("invalid parameters");
     return false;
   }
+#if LWB_DATA_ACK
+  if (!retransmit_queue_handle) {
+    LOG_ERROR("invalid parameters");
+    return false;
+  }
+#endif /* LWB_DATA_ACK */
 
   task_handle  = lwb_task;
   pre_task     = pre_lwb_task;
   post_task    = post_lwb_task;
   rx_queue     = in_queue_handle;
   tx_queue     = out_queue_handle;
+  re_tx_queue  = retransmit_queue_handle;
   timeout_cb   = listen_timeout_cb;
   lwb_update_slot_durations(0, 0);
 
   /* clear all queues */
   LWB_QUEUE_CLEAR(rx_queue);
   LWB_QUEUE_CLEAR(tx_queue);
+#if LWB_DATA_ACK
+  LWB_QUEUE_CLEAR(re_tx_queue);
+#endif /* LWB_DATA_ACK */
 
   memset(&stats, 0, sizeof(lwb_stats_t));
 

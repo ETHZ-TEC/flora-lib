@@ -109,6 +109,7 @@
 #define LWB_T_DEEPSLEEP           (LWB_TIMER_FREQUENCY * 3600)    /* 1h */
 #endif /* LWB_T_DEEPSLEEP */
 
+/* if set to 1, the host will append data ACKs to the 2nd schedule */
 #ifndef LWB_DATA_ACK
 #define LWB_DATA_ACK              0
 #endif /* LWB_DATA_ACK */
@@ -165,6 +166,7 @@
 #define LWB_PKT_TYPE_BITMASK      0x8000
 #define LWB_PKT_BUFFER_SIZE       GLORIA_INTERFACE_MAX_PAYLOAD_LEN    /* must be at least as large as the gloria interface buffer */
 #define LWB_TX_DELAY_MASK_SIZE    (LWB_USE_TX_DELAY ? ((LWB_MAX_NUM_NODES + 7) / 8) : 0)
+#define LWB_DATA_ACK_SIZE         (LWB_DATA_ACK ? ((LWB_MAX_DATA_SLOTS + 7) / 8) : 0)
 
 
 /*---------------------------------------------------------------------------*/
@@ -240,7 +242,7 @@
 
 /* task related stuff */
 #ifndef LWB_TASK_YIELD
-#define LWB_TASK_YIELD()               xTaskNotifyWait(0, ULONG_MAX, NULL, portMAX_DELAY)  /* function used to yield the eLWB task (and allow other, lower priority tasks to run) */
+#define LWB_TASK_YIELD()               xTaskNotifyWait(0, ULONG_MAX, NULL, portMAX_DELAY)  /* function used to yield the LWB task (and allow other, lower priority tasks to run) */
 #endif /* LWB_TASK_YIELD */
 #ifndef LWB_TASK_NOTIFY
 #define LWB_TASK_NOTIFY(task)          xTaskNotify(task, 0, eNoAction)         /* function used to notify (poll) a task, i.e. giving it permission to run */
@@ -337,6 +339,9 @@ typedef struct {
     struct {
       uint32_t   period;
       uint16_t   cont_winner;
+#if LWB_DATA_ACK
+      uint8_t    dack[LWB_DATA_ACK_SIZE];
+#endif /* LWB_DATA_ACK */
     } sched2;
     uint8_t      payload[LWB_MAX_PAYLOAD_LEN];
     uint16_t     payload16[LWB_MAX_PAYLOAD_LEN / 2];
@@ -348,7 +353,7 @@ typedef struct {
 
 
 typedef void (* lwb_timeout_cb_t)(void);
-typedef void (* lwb_slot_cb_t)(uint16_t, lwb_phases_t, lwb_packet_t*);      /* initiator ID, eLWB phase, pointer to the packet buffer */
+typedef void (* lwb_slot_cb_t)(uint16_t, lwb_phases_t, lwb_packet_t*);      /* initiator ID, LWB phase, pointer to the packet buffer */
 
 
 /*---------------------------------------------------------------------------*/
@@ -362,6 +367,7 @@ bool     lwb_init(void* lwb_task,
                   void* post_lwb_task,
                   void* in_queue_handle,
                   void* out_queue_handle,         /* queue data type must be dpp_message_t */
+                  void* retransmit_queue_handle,
                   lwb_timeout_cb_t listen_timeout_cb,
                   bool host);
 
@@ -373,7 +379,7 @@ void     lwb_get_last_syncpoint(lwb_time_t* time, lwb_time_t* rx_timestamp);
 /* register a custom callback function that will be executed after each communication slot, can e.g. be used to collect stats */
 void     lwb_register_slot_callback(lwb_slot_cb_t cb);
 
-/* if argument is given, converts the timestamp (in ELWB timer ticks) to global network time
+/* if argument is given, converts the timestamp (in LWB timer ticks) to global network time
  * returns the current network time if no argument is given */
 lwb_time_t lwb_get_time(const uint64_t* timestamp);
 uint32_t lwb_get_time_sec(void);
