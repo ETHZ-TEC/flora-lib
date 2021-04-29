@@ -323,8 +323,8 @@ typedef struct {
 
 typedef uint64_t lwb_time_t;
 
-#define LWB_CONT_PKT_LEN    4   /* contention packet length without header */
-#define LWB_2ND_SCHED_LEN   6   /* schedule packet length without header */
+#define LWB_CONT_PKT_LEN    4                         /* contention packet length without header */
+#define LWB_2ND_SCHED_LEN   (6 + LWB_DATA_ACK_SIZE)   /* schedule packet length without header */
 
 typedef struct {
   union {

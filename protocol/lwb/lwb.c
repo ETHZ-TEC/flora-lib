@@ -621,7 +621,7 @@ static void lwb_contention(lwb_time_t slot_start)
 
 static void lwb_send_rcv_sched2(lwb_time_t slot_start)
 {
-  uint8_t packet_len = LWB_2ND_SCHED_LEN + LWB_PKT_HDR_LEN + LWB_DATA_ACK_SIZE;
+  uint8_t packet_len = LWB_2ND_SCHED_LEN + LWB_PKT_HDR_LEN;
 
   if (is_host) {
     /* note: packet content is set above during the contention slot */
