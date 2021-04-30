@@ -135,7 +135,7 @@ bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
 
 void lwb_sched_remove_node(lwb_node_list_t* node)
 {
-  while (node == 0 || n_nodes == 0) {
+  if (node == 0 || n_nodes == 0) {
     LOG_ERROR("invalid argument for remove_node");
     return;
   }
@@ -193,7 +193,9 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
   curr_node = head;
   float pkt_rate = 0;
   while (curr_node != 0) {
-    pkt_rate += 1.0 / curr_node->ipi;
+    if (curr_node->ipi) {
+      pkt_rate += 1.0 / curr_node->ipi;
+    }
     curr_node = curr_node->next;
   }
   uint32_t curr_period = LWB_TIMER_FREQUENCY * (LWB_MAX_DATA_SLOTS / pkt_rate);
@@ -347,7 +349,7 @@ void lwb_sched_set_time_offset(uint32_t ofs)
 void lwb_sched_set_delay_nodes(const uint16_t* node_list, uint8_t num_nodes)
 {
   /* clear delay node mask */
-  memset(delay_mask, 0, LWB_USE_TX_DELAY);
+  memset(delay_mask, 0, LWB_TX_DELAY_MASK_SIZE);
   delay_mask_set = false;
 
   if (node_list && num_nodes) {
