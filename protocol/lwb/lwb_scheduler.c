@@ -346,17 +346,17 @@ void lwb_sched_set_time_offset(uint32_t ofs)
 
 #if LWB_USE_TX_DELAY
 
-void lwb_sched_set_delay_nodes(const uint16_t* node_list, uint8_t num_nodes)
+void lwb_sched_set_delay_nodes(const uint16_t* delay_node_list, uint8_t num_nodes)
 {
   /* clear delay node mask */
-  memset(delay_mask, 0, LWB_TX_DELAY_MASK_SIZE);
+  memset(delay_mask, 0, LSR_TX_DELAY_MASK_SIZE);
   delay_mask_set = false;
 
-  if (node_list && num_nodes) {
+  if (delay_node_list && num_nodes) {
     uint32_t i;
     for (i = 0; i < num_nodes; i++) {
-      if (node_list[i] >= LWB_MIN_NODE_ID && node_list[i] <= LWB_MAX_NODE_ID) {
-        uint16_t ofs = node_list[i] - LWB_MIN_NODE_ID;
+      if (delay_node_list[i] >= LSR_MIN_NODE_ID && delay_node_list[i] <= LSR_MAX_NODE_ID) {
+        uint16_t ofs = delay_node_list[i] - LSR_MIN_NODE_ID;
         delay_mask[ofs / 8] |= 1 << (ofs & 0x7);
         delay_mask_set = true;
       }

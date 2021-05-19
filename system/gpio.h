@@ -20,6 +20,16 @@
 #define SWO_GPIO_Port     COM_GPIO2_GPIO_Port
 #endif /* SWO_PIN */
 
+#ifndef SWCLK_Pin
+#define SWCLK_Pin         GPIO_PIN_14
+#define SWCLK_GPIO_Port   GPIOA
+#endif /* SWCLK_Pin */
+
+#ifndef SWDIO_Pin
+#define SWDIO_Pin         GPIO_PIN_13
+#define SWDIO_GPIO_Port   GPIOA
+#endif /* SWDIO_Pin */
+
 #ifndef BASEBOARD
 #define BASEBOARD         0
 #endif /* BASEBOARD */
