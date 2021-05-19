@@ -25,6 +25,14 @@
 #define LPM_RADIO_COLD_SLEEP        1
 #endif /* LPM_RADIO_COLD_SLEEP */
 
+#ifndef LPM_DISABLE_SWO_PIN
+#define LPM_DISABLE_SWO_PIN         0
+#endif /* LPM_DISABLE_SWO_PIN */
+
+#ifndef LPM_DISABLE_DEBUG
+#define LPM_DISABLE_DEBUG           0
+#endif /* LPM_DISABLE_DEBUG */
+
 
 typedef enum
 {

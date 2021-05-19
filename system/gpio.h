@@ -69,6 +69,10 @@
 /* Function Prototypes */
 
 void gpio_init(void);
+void gpio_init_swd(void);
+void gpio_init_swo(void);
+void gpio_deinit_swd(void);
+void gpio_deinit_swo(void);
 
 
 #endif /* SYSTEM_GPIO_H_ */

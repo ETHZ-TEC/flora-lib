@@ -97,6 +97,11 @@ void lpm_init(bool (* deepsleep_entry_cb)(void),
   prepare_cb = deepsleep_entry_cb;
   resume_cb  = wakeup_cb;
 
+#if LPM_DISABLE_DEBUG
+  HAL_DBGMCU_DisableDBGStopMode();
+  HAL_DBGMCU_DisableDBGStandbyMode();
+#endif /* LPM_DISABLE_DEBUG */
+
   lpm_update_opmode(OP_MODE_EVT_INIT);
 }
 
@@ -159,9 +164,9 @@ bool lpm_prepare(void)
       __HAL_UART_DISABLE(&huart1);
       __HAL_SPI_DISABLE(&hspi1);
       __HAL_SPI_DISABLE(&hspi2);
-    #ifdef HAL_RNG_MODULE_ENABLED
+  #ifdef HAL_RNG_MODULE_ENABLED
       __HAL_RNG_DISABLE(&hrng);
-    #endif /* HAL_RNG_MODULE_ENABLED */
+  #endif /* HAL_RNG_MODULE_ENABLED */
 
       /* for STANDBY and SHUTDOWN: also disable LPTIM1 */
       if (LOW_POWER_MODE == LP_MODE_STANDBY || LOW_POWER_MODE == LP_MODE_SHUTDOWN) {
@@ -189,6 +194,10 @@ bool lpm_prepare(void)
 
       /* configure unused GPIOs for minimal current drain (make sure there are no floating inputs) */
       /* currently nothing to do */
+
+  #if LPM_DISABLE_SWO_PIN
+      gpio_deinit_swo();
+  #endif /* LPM_DISABLE_SWO_PIN */
 
       /* turn off LEDs */
       led_off(LED_EVENT);
@@ -275,6 +284,10 @@ void lpm_resume(void)
 
     /* restore GPIO config */
     /* currently nothing to do */
+
+  #if LPM_DISABLE_SWO_PIN
+    gpio_init_swo();
+  #endif /* LPM_DISABLE_SWO_PIN */
 
     /* restore peripherals */
     __HAL_TIM_ENABLE(&htim1);

@@ -84,3 +84,60 @@ void gpio_init(void)
 #endif /* BASEBOARD */
 }
 
+
+/* init SWD interface pins */
+void gpio_init_swd(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  HAL_GPIO_DeInit(SWDIO_GPIO_Port, SWDIO_Pin | SWCLK_Pin);
+  GPIO_InitStruct.Pin       = SWDIO_Pin | SWCLK_Pin;
+  GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Alternate = GPIO_AF0_SWJ;
+  GPIO_InitStruct.Pull      = GPIO_NOPULL;
+  GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(SWDIO_GPIO_Port, &GPIO_InitStruct);
+}
+
+
+/* init SWO pin */
+void gpio_init_swo(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  HAL_GPIO_DeInit(SWO_GPIO_Port, SWO_Pin);
+  GPIO_InitStruct.Pin       = SWO_Pin;
+  GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Alternate = GPIO_AF0_SWJ;
+  GPIO_InitStruct.Pull      = GPIO_NOPULL;
+  GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(SWO_GPIO_Port, &GPIO_InitStruct);
+}
+
+
+/* de-init SWD pins */
+void gpio_deinit_swd(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  HAL_GPIO_DeInit(SWO_GPIO_Port, SWO_Pin);
+  GPIO_InitStruct.Pin   = SWO_Pin;
+  GPIO_InitStruct.Mode  = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SWO_GPIO_Port, &GPIO_InitStruct);
+}
+
+
+/* de-init SWO pin */
+void gpio_deinit_swo(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  HAL_GPIO_DeInit(SWDIO_GPIO_Port, SWDIO_Pin | SWCLK_Pin);
+  GPIO_InitStruct.Pin   = SWDIO_Pin | SWCLK_Pin;
+  GPIO_InitStruct.Mode  = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SWDIO_GPIO_Port, &GPIO_InitStruct);
+}
