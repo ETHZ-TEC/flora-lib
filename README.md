@@ -1,19 +1,18 @@
 # Library Overview
 
-This file gives a short overview of all existing libraries in this folder and a short description of each of them.
+The Flora library provides drivers and helper functions for the DPP2 LoRa comboard with the STM32L433CC MCU and the Semtech SX1262 radio.
 
 ## Folders
 
 | Name | Description |
 |----|----|
-|`arch/`         ||
 |`bolt/`         | Contains Bolt files and its functions |
-|`cli/`          ||
-|`config/`       ||
-|`dpp/`          | Submodule, contains message/events definitions and some library functions (CRC, data structures, ...). [Common Git](https://gitlab.ethz.ch/tec/research/dpp/software/common) |
+|`cli/`          | Command line interface |
+|`deployment/`   | Deployment-specific code |
+|`dpp/`          | Submodule, contains message definitions and some library functions (CRC, data structures, ...). |
 |`flocklab/`     | Defines all FlockLab pins, provides functions to set and clear the FlockLab LEDs |
-|`protocol/`     ||
-|`radio/`        | Radio helper functions for the Semtech SX1262 Radio. Most important file: `radio_helpers.h`. There are all helper functions defined. |
-|`system/`       ||
-|`time/`         | Provides functions for HS Timer, LPTIM and RTC |
+|`protocol/`     | Wireless protocols |
+|`radio/`        | Radio driver and helper functions for the Semtech SX1262 radio. |
+|`system/`       | General system initialization and helper functions (UART, GPIO, ...). |
+|`time/`         | Timers (LPTIM, TIM, RTC) |
 |`utils/`        | Misc helper functions / utilities (LEDs, logging, etc.) |
