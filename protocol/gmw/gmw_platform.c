@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Swiss Federal Institute of Technology (ETH Zurich).
+ * Copyright (c) 2018 - 2021, ETH Zurich, Computer Engineering Group (TEC)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,12 +26,8 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * \author
- *         Jonas Baechli   jonas.baechli@bluewin.ch
- *         Reto Da Forno   rdaforno@ee.ethz.ch
- *         Romain Jacob    jacobr@ethz.ch
  */
+
 /*---------------------------------------------------------------------------*/
 /**
  * \addtogroup gmw-platform
@@ -42,7 +38,6 @@
  * \file
  *
  *            Platform dependent implementation for GMW
- *            Platform: dpp-cc430
  */
 /*---------------------------------------------------------------------------*/
 #include "flora_lib.h"
@@ -150,100 +145,7 @@ gmw_get_rssi_last(void)
 }
 /*---------------------------------------------------------------------------*/
 #if GMW_CONF_USE_MULTI_PRIMITIVES
-/*---------------------- RF1A callback implementation -----------------------*/
-void
-rf1a_cb_rx_started(lptimer_ext_clock_t *timestamp)
-{
-#if GMW_PRIM2_ENABLE
-  if(gmw_primitive == 2) {    /* strobing */
-    strobing_rx_started(timestamp);
-  } else
-#endif /* GMW_PRIM2_ENABLE */
-  {
-    glossy_rx_started(timestamp);
-  }
-}
-/*---------------------------------------------------------------------------*/
-void
-rf1a_cb_tx_started(lptimer_ext_clock_t *timestamp)
-{
-#if GMW_PRIM2_ENABLE
-  if(gmw_primitive == 2) {    /* strobing */
-    strobing_tx_started(timestamp);
-  } else
-#endif /* GMW_PRIM2_ENABLE */
-  {
-    glossy_tx_started(timestamp);
-  }
-}
-/*---------------------------------------------------------------------------*/
-void
-rf1a_cb_header_received(lptimer_ext_clock_t *timestamp,
-                        uint8_t *header,
-                        uint8_t packet_len)
-{
-#if GMW_PRIM2_ENABLE
-  if(gmw_primitive == 2) {    /* strobing */
-    strobing_header_received(timestamp, header, packet_len);
-  } else
-#endif /* GMW_PRIM2_ENABLE */
-  {
-    glossy_header_received(timestamp, header, packet_len);
-  }
-}
-/*---------------------------------------------------------------------------*/
-void
-rf1a_cb_rx_ended(lptimer_ext_clock_t *timestamp, uint8_t *pkt, uint8_t pkt_len)
-{
-#if GMW_PRIM2_ENABLE
-  if(gmw_primitive == 2) {    /* strobing */
-    strobing_rx_ended(timestamp, pkt, pkt_len);
-  } else
-#endif /* GMW_PRIM2_ENABLE */
-  {
-    glossy_rx_ended(timestamp, pkt, pkt_len);
-  }
-}
-/*---------------------------------------------------------------------------*/
-void
-rf1a_cb_tx_ended(lptimer_ext_clock_t *timestamp)
-{
-#if GMW_PRIM2_ENABLE
-  if(gmw_primitive == 2) {    /* strobing */
-    strobing_tx_ended(timestamp);
-  } else
-#endif /* GMW_PRIM2_ENABLE */
-  {
-    glossy_tx_ended(timestamp);
-  }
-}
-/*---------------------------------------------------------------------------*/
-void
-rf1a_cb_rx_failed(lptimer_ext_clock_t *timestamp)
-{
-#if GMW_PRIM2_ENABLE
-  if(gmw_primitive == 2) {    /* strobing */
-    strobing_rx_failed(timestamp);
-  } else
-#endif /* GMW_PRIM2_ENABLE */
-  {
-    glossy_rx_failed(timestamp);
-  }
-}
-/*---------------------------------------------------------------------------*/
-void
-rf1a_cb_rx_tx_error(lptimer_ext_clock_t *timestamp)
-{
-#if GMW_PRIM2_ENABLE
-  if(gmw_primitive == 2) {    /* strobing */
-    strobing_rx_tx_error(timestamp);
-  } else
-#endif /* GMW_PRIM2_ENABLE */
-  {
-    glossy_rx_tx_error(timestamp);
-  }
-}
-/*---------------------------------------------------------------------------*/
+//TODO
 #endif /* GMW_CONF_USE_MULTI_PRIMITIVES */
 /*---------------------------------------------------------------------------*/
 
