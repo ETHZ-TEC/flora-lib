@@ -1,10 +1,32 @@
 /*
- * misc.c
+ * Copyright (c) 2018 - 2021, ETH Zurich, Computer Engineering Group (TEC)
+ * All rights reserved.
  *
- *  Created on: 2018
- *      Author: rdaforno
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
+ * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 
 #ifndef UTILS_NVCFG_H_
 #define UTILS_NVCFG_H_
@@ -23,9 +45,11 @@
 #define NVCFG_BLOCK_SIZE   8         /* length without CRC */
 #endif /* NVCFG_BLOCK_SIZE */
 
-#define NVCFG_BLOCK_SIZE_WITH_CRC   ((((NVCFG_BLOCK_SIZE + 2) + 7) / 8) * 8)      /* must be a multiple of 8 */
+#define NVCFG_CRC_SIZE     2
 
-#define NVCFG_FLASH_EMPTY_VALUE     0xffff   /* on the STM32L4, flash values are all zeros after an erase */
+#define NVCFG_BLOCK_SIZE_WITH_CRC   ((((NVCFG_BLOCK_SIZE + NVCFG_CRC_SIZE) + 7) / 8) * 8)     /* must be a multiple of 8 */
+
+#define NVCFG_FLASH_EMPTY_VALUE     0xffffffff   /* on the STM32L4, flash values are all zeros after an erase */
 
 /* how many times the flash memory should be erased at max. (if unsuccessful) */
 #ifndef NVCFG_ERASE_RETRY
@@ -33,7 +57,7 @@
 #endif /* NVCFG_ERASE_RETRY */
 
 #ifndef NVCFG_ONLY_SAVE_IF_CHANGED
-#define NVCFG_ONLY_SAVE_IF_CHANGED  0       /* if set to 1, nvcfg_save() will only write the new config into the memory if it is different from the previous config */
+#define NVCFG_ONLY_SAVE_IF_CHANGED  1       /* if set to 1, nvcfg_save() will only write the new config into the memory if it is different from the previous config */
 #endif /* NVCFG_ONLY_SAVE_IF_CHANGED */
 
 #if NVCFG_ERASE_RETRY == 0
