@@ -340,7 +340,7 @@ typedef struct {
   /* store num. of data slots and last two bits to indicate whether there is
    * a contention or an s-ack slot in this round */
   union {
-    uint16_t    slot[ELWB_CONF_MAX_DATA_SLOTS + LWB_SCHED_ADD_CRC];
+    uint16_t    slot[ELWB_CONF_MAX_DATA_SLOTS + ELWB_SCHED_CRC_LEN / 2];
     uint8_t     rxbuffer[ELWB_PKT_BUFFER_SIZE - ELWB_SCHED_HDR_LEN];  /* to make sure that potentially larger received packets don't cause a buffer overflow */
   };
 } elwb_schedule_t;
