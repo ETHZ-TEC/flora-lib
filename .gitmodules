@@ -1,3 +1,3 @@
 [submodule "dpp"]
 	path = dpp
-	url = git@gitlab.ethz.ch:tec/research/dpp/software/common.git
+	url = git@gitlab.ethz.ch:tec/public/dpp/common.git
