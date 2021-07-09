@@ -2,6 +2,8 @@
 
 The Flora library provides drivers and helper functions for the DPP2 LoRa comboard with the STM32L433CC MCU and the Semtech SX1262 radio.
 
+Further information and a list of example apps are available in the [Flora wiki page](https://gitlab.ethz.ch/tec/public/flora/wiki). 
+
 ## Folders
 
 | Name | Description |
