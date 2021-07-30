@@ -39,8 +39,8 @@
 #endif /* SWO_ENABLE */
 
 #ifndef SWO_Pin
-#define SWO_Pin           COM_GPIO2_Pin
-#define SWO_GPIO_Port     COM_GPIO2_GPIO_Port
+#define SWO_Pin           GPIO_PIN_3
+#define SWO_GPIO_Port     GPIOB
 #endif /* SWO_PIN */
 
 #ifndef SWCLK_Pin
@@ -57,6 +57,7 @@
 #define BASEBOARD         0
 #endif /* BASEBOARD */
 
+#if BASEBOARD
 /* pin definitions for the Baseboard */
 #define BASEBOARD_ENABLE_Pin              COM_GPIO2_Pin
 #define BASEBOARD_ENABLE_GPIO_Port        COM_GPIO2_GPIO_Port
@@ -70,6 +71,7 @@
 #define BASEBOARD_IS_ENABLED()            PIN_STATE(BASEBOARD_ENABLE)
 #define BASEBOARD_ENABLE()                PIN_SET(BASEBOARD_ENABLE)
 #define BASEBOARD_DISABLE()               PIN_CLR(BASEBOARD_ENABLE)
+#endif /* BASEBOARD */
 
 
 /* Macros */
@@ -96,6 +98,7 @@ void gpio_init_swd(void);
 void gpio_init_swo(void);
 void gpio_deinit_swd(void);
 void gpio_deinit_swo(void);
+void gpio_config(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, bool output);
 
 
 #endif /* SYSTEM_GPIO_H_ */

@@ -31,9 +31,10 @@
 #include "flora_lib.h"
 
 
-
 void gpio_check_baseboard(void)
 {
+#ifdef BASEBOARD_ENABLE_Pin
+
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* store pin config */
@@ -71,6 +72,8 @@ void gpio_check_baseboard(void)
   BASEBOARD_ENABLE_GPIO_Port->MODER  = prev_mode;
   /* make sure no interrupt is triggered by reconfiguring the pin */
   __HAL_GPIO_EXTI_CLEAR_IT(BASEBOARD_ENABLE_Pin);
+
+#endif /* BASEBOARD_ENABLE_Pin */
 }
 
 
@@ -139,7 +142,7 @@ void gpio_init_swo(void)
 
 
 /* de-init SWD pins */
-void gpio_deinit_swd(void)
+void gpio_deinit_swo(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -153,7 +156,7 @@ void gpio_deinit_swd(void)
 
 
 /* de-init SWO pin */
-void gpio_deinit_swo(void)
+void gpio_deinit_swd(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -163,4 +166,18 @@ void gpio_deinit_swo(void)
   GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SWDIO_GPIO_Port, &GPIO_InitStruct);
+}
+
+
+/* configure a pin in GPIO mode (input or output) */
+void gpio_config(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, bool output)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  HAL_GPIO_DeInit(GPIOx, GPIO_Pin);
+  GPIO_InitStruct.Pin = GPIO_Pin;
+  GPIO_InitStruct.Mode = (output ? GPIO_MODE_OUTPUT_PP : GPIO_MODE_INPUT);
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
 }
