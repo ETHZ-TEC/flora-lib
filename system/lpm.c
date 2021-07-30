@@ -39,15 +39,21 @@
 
 /* --- globals --- */
 
-extern LPTIM_HandleTypeDef hlptim1;
-extern TIM_HandleTypeDef   htim1;
-extern TIM_HandleTypeDef   htim2;
-extern TIM_HandleTypeDef   htim16;
-extern SPI_HandleTypeDef   hspi1;
-extern SPI_HandleTypeDef   hspi2;
-extern UART_HandleTypeDef  huart1;
+extern LPTIM_HandleTypeDef   hlptim1;
+extern TIM_HandleTypeDef     htim1;
+extern TIM_HandleTypeDef     htim2;
+extern TIM_HandleTypeDef     htim16;
+extern SPI_HandleTypeDef     hspi1;
+#ifndef DEVKIT
+  #define UART               huart1
+  extern UART_HandleTypeDef  huart1;
+  extern SPI_HandleTypeDef   hspi2;
+#else /* DEVKIT */
+  #define UART               huart2
+  extern UART_HandleTypeDef  huart2;
+#endif /* DEVKIT */
 #ifdef HAL_RNG_MODULE_ENABLED
-extern RNG_HandleTypeDef   hrng;
+extern RNG_HandleTypeDef     hrng;
 #endif /* HAL_RNG_MODULE_ENABLED */
 
 extern void SystemClock_Config(void);        /* typically defined in main.c */
@@ -160,10 +166,12 @@ bool lpm_prepare(void)
       /* disable all unused peripherals */
       __HAL_TIM_DISABLE(&htim1);
       __HAL_TIM_DISABLE(&htim2);
-      __HAL_TIM_DISABLE(&htim16);
-      __HAL_UART_DISABLE(&huart1);
+      __HAL_UART_DISABLE(&UART);
       __HAL_SPI_DISABLE(&hspi1);
+  #ifndef DEVKIT
+      __HAL_TIM_DISABLE(&htim16);
       __HAL_SPI_DISABLE(&hspi2);
+  #endif /* DEVKIT */
   #ifdef HAL_RNG_MODULE_ENABLED
       __HAL_RNG_DISABLE(&hrng);
   #endif /* HAL_RNG_MODULE_ENABLED */
@@ -173,6 +181,8 @@ bool lpm_prepare(void)
         LPTIM_Disable(&hlptim1);    /* use this instead of __HAL_LPTIM_DISABLE(), implements an errata workaround */
       }
 
+  #ifndef DEVKIT /* note: devkit uses MSI clock by default, no need to reconfigure the system clock */
+
       /* configure HSI as clock source (16MHz) */
       RCC_OscInitTypeDef RCC_OscInitStruct = {0};
       RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
@@ -180,17 +190,24 @@ bool lpm_prepare(void)
       RCC_OscInitStruct.HSIState              = RCC_HSI_ON;
       RCC_OscInitStruct.HSICalibrationValue   = RCC_HSICALIBRATION_DEFAULT;
       RCC_OscInitStruct.PLL.PLLState          = RCC_PLL_NONE;
-      if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) { Error_Handler(); }
+      if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        Error_Handler();
+      }
       /* select HSI as system clock */
       RCC_ClkInitStruct.ClockType     = RCC_CLOCKTYPE_SYSCLK;
       RCC_ClkInitStruct.SYSCLKSource  = RCC_SYSCLKSOURCE_HSI;
-      if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) { Error_Handler(); }
+      if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
+        Error_Handler();
+      }
       HAL_RCCEx_WakeUpStopCLKConfig(RCC_STOP_WAKEUPCLOCK_HSI);
       /* disable MSI */
       RCC_OscInitStruct.OscillatorType    = RCC_OSCILLATORTYPE_MSI;
       RCC_OscInitStruct.MSIState          = RCC_MSI_OFF;
       RCC_OscInitStruct.PLL.PLLState      = RCC_PLL_NONE;
-      if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) { Error_Handler(); }
+      if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        Error_Handler();
+      }
+  #endif /* DEVKIT */
 
       /* configure unused GPIOs for minimal current drain (make sure there are no floating inputs) */
       /* currently nothing to do */
@@ -202,7 +219,7 @@ bool lpm_prepare(void)
       /* turn off LEDs */
       led_off(LED_EVENT);
       led_off(LED_SYSTEM);
-  #if !FLOCKLAB
+  #if !FLOCKLAB && defined(COM_GPIO1_Pin)
       PIN_CLR(COM_GPIO1);     /* has external pulldown */
   #endif /* FLOCKLAB */
 
@@ -225,7 +242,9 @@ bool lpm_prepare(void)
       /* note: do not disable LPTIM ARRM interrupt in LPM (see errata sheet) */
 
       /* configure RF_DIO1 on PC13 interrupt for wakeup from LPM */
+  #ifdef RADIO_DIO1_WAKEUP_Pin
       __HAL_GPIO_EXTI_CLEAR_IT(RADIO_DIO1_WAKEUP_Pin); // important for low-power consumption in STOP2 mode -> see README
+  #endif /* RADIO_DIO1_WAKEUP_Pin */
       /*if (LOW_POWER_MODE == LP_MODE_STOP2) {
         HAL_NVIC_SetPriority(RADIO_DIO1_WAKEUP_EXTI_IRQn, 5, 0);
         HAL_NVIC_EnableIRQ(RADIO_DIO1_WAKEUP_EXTI_IRQn);
@@ -280,7 +299,9 @@ void lpm_resume(void)
     __HAL_RCC_SYSCFG_CLK_ENABLE();
     //__HAL_RCC_FLASH_CLK_ENABLE();
 
-    SystemClock_Config();                               /* restore clock config (and resume HAL tick) */
+  #ifndef DEVKIT
+    SystemClock_Config();     /* restore clock config (and resume HAL tick) */
+  #endif /* DEVKIT */
 
     /* restore GPIO config */
     /* currently nothing to do */
@@ -292,10 +313,12 @@ void lpm_resume(void)
     /* restore peripherals */
     __HAL_TIM_ENABLE(&htim1);
     __HAL_TIM_ENABLE(&htim2);
-    __HAL_TIM_ENABLE(&htim16);
-    __HAL_UART_ENABLE(&huart1);
+    __HAL_UART_ENABLE(&UART);
     __HAL_SPI_ENABLE(&hspi1);
+  #ifndef DEVKIT
+    __HAL_TIM_ENABLE(&htim16);
     __HAL_SPI_ENABLE(&hspi2);
+  #endif /* DEVKIT */
   #ifdef HAL_RNG_MODULE_ENABLED
     __HAL_RNG_ENABLE(&hrng);
   #endif /* HAL_RNG_MODULE_ENABLED */

@@ -30,28 +30,19 @@
 
 #include "flora_lib.h"
 
-#ifndef DEVKIT
+
 #define LED_SYSTEM_GPIO_Port LED_GREEN_GPIO_Port
 #define LED_SYSTEM_Pin LED_GREEN_Pin
 #define LED_EVENT_GPIO_Port LED_RED_GPIO_Port
 #define LED_EVENT_Pin LED_RED_Pin
 
-extern TIM_HandleTypeDef htim16;
-
 static bool pulse_enabled;
 static uint8_t pulse_counter;
 static uint16_t pulse_period; // in ms
+
+#ifndef DEVKIT
 static bool pulse_direction; // increasing brightness
-
-#else
-#define LED_SYSTEM_GPIO_Port DEVKIT_LED_RX_GPIO_Port
-#define LED_SYSTEM_Pin DEVKIT_LED_RX_Pin
-#define LED_EVENT_GPIO_Port DEVKIT_LED_TX_GPIO_Port
-#define LED_EVENT_Pin DEVKIT_LED_TX_Pin
-
-static bool pulse_enabled;
-static uint8_t pulse_counter;
-static uint16_t pulse_period; // in ms
+extern TIM_HandleTypeDef htim16;
 #endif
 
 bool leds_initialized = false;

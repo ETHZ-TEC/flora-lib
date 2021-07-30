@@ -57,9 +57,6 @@ void system_init(void)
 #if FLOCKLAB
   flocklab_init();
 #endif /* FLOCKLAB */
-#ifdef DEVKIT
-  HAL_PWREx_EnableGPIOPullUp(PWR_GPIO_A, GPIO_PIN_8); // RADIO_NSS
-#endif
   HAL_PWREx_EnablePullUpPullDownConfig();
 
   /* init peripherals / drivers */

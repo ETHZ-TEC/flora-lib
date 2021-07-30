@@ -128,11 +128,7 @@ void hs_timer_set_schedule_timestamp(uint64_t timestamp)
   uint64_t ts = timestamp;
 #endif /* HS_TIMER_COMPENSATE_DRIFT */
   hs_timer_schedule_counter_extension = ts >> 32;
-#ifndef DEVKIT
   htim2.Instance->CCR2 = (uint32_t) ts;
-#else
-  htim2.Instance->CCR1 = (uint32_t) ts;
-#endif
 }
 
 
@@ -157,11 +153,7 @@ void hs_timer_set_generic_timestamp(uint64_t timestamp)
   uint64_t ts = timestamp;
  #endif /* HS_TIMER_COMPENSATE_DRIFT */
   hs_timer_generic_counter_extension = ts >> 32;
- #ifndef DEVKIT
   htim2.Instance->CCR4 = (uint32_t) ts;
- #else
-  htim2.Instance->CCR2 = (uint32_t) ts;
- #endif /* DEVIT */
 }
 #endif /* BOLT_ENABLE */
 
@@ -198,11 +190,7 @@ uint64_t hs_timer_now(void)
 
 uint32_t hs_timer_get_schedule_timestamp(void)
 {
-#ifndef DEVKIT
   uint32_t timestamp = htim2.Instance->CCR2;
-#else
-  uint32_t timestamp = htim2.Instance->CCR1;
-#endif /* DEVKIT */
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint32_t) (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
 #else
@@ -214,11 +202,7 @@ uint32_t hs_timer_get_schedule_timestamp(void)
 uint64_t hs_timer_get_capture_timestamp(void)
 {
   uint64_t timestamp;
-#ifndef DEVKIT
   timestamp = htim2.Instance->CCR1;
-#else
-  timestamp = htim2.Instance->CCR4;
-#endif
   timestamp |= ((uint64_t) hs_timer_capture_counter_extension) << 32;
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
@@ -230,11 +214,7 @@ uint64_t hs_timer_get_capture_timestamp(void)
 uint64_t hs_timer_get_compare_timestamp(void)
 {
   uint64_t timestamp;
-#ifndef DEVKIT
-  timestamp = htim2.Instance->CCR2;
-#else
   timestamp = htim2.Instance->CCR1;
-#endif
   timestamp |= ((uint64_t) hs_timer_schedule_counter_extension) << 32;
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
@@ -261,11 +241,7 @@ uint64_t hs_timer_get_hs_timer_timeout_timestamp(void)
 uint64_t hs_timer_get_generic_timestamp(void)
 {
   uint64_t timestamp;
- #ifndef DEVKIT
   timestamp = htim2.Instance->CCR4;
- #else
-  timestamp = htim2.Instance->CCR2;
- #endif
   timestamp |= ((uint64_t) hs_timer_generic_counter_extension) << 32;
  #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
@@ -285,11 +261,7 @@ uint32_t hs_timer_get_counter_extension(void)
 void hs_timer_capture(hs_timer_cb_t callback)
 {
   capture_callback = callback;
-#ifndef DEVKIT
   HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
-#else
-  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_4);
-#endif
 }
 
 
@@ -305,13 +277,8 @@ void hs_timer_schedule_start(uint64_t timestamp, hs_timer_cb_t callback)
       hs_timer_scheduled_timestamp = timestamp;
       schedule_callback = callback;
       hs_timer_set_schedule_timestamp(timestamp);
-  #ifndef DEVKIT
       __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC2);
       HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
-  #else
-      __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC1);
-      HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
-  #endif
     }
   }
 }
@@ -340,11 +307,7 @@ void hs_timer_generic_start(uint64_t timestamp, hs_timer_cb_t callback)
     else {
       generic_callback = callback;
       hs_timer_set_generic_timestamp(timestamp);
-  #ifndef DEVKIT
       HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_4);
-  #else
-      HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_2);
-  #endif
     }
   }
 }
@@ -354,13 +317,8 @@ void hs_timer_generic_start(uint64_t timestamp, hs_timer_cb_t callback)
 
 void hs_timer_schedule_stop(void)
 {
-#ifndef DEVKIT
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
   __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC2);
-#else
-  HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_1);
-  __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC1);
-#endif
   schedule_callback = 0;
 }
 
@@ -375,11 +333,7 @@ void hs_timer_timeout_stop(void)
 #if !BOLT_ENABLE
 void hs_timer_generic_stop(void)
 {
-#ifndef DEVKIT
   HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_4);
-#else
-  HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
-#endif
   generic_callback = 0;
 }
 #endif /* BOLT_ENABLE */
@@ -412,7 +366,6 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if (htim->Instance == TIM2) {
 
-#ifndef DEVKIT
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
       if (schedule_callback) {
@@ -427,26 +380,6 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
       }
   #endif /* BOLT_ENABLE */
     }
-
-#else /* DEVKIT */
-    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-      if ((hs_timer_scheduled_timestamp >> 32) == hs_timer_counter_extension) {
-        HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_1);
-        if (schedule_callback) {
-          schedule_callback();
-        }
-      }
-    }
-    else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-      HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_2);
-  #if !BOLT_ENABLE
-      if (generic_callback) {
-        generic_callback();
-      }
-  #endif /* BOLT_ENABLE */
-    }
-#endif /* DEVKIT */
-
     else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
       HAL_TIM_OC_Stop_IT(&htim2, TIM_CHANNEL_3);
       if (timeout_callback) {

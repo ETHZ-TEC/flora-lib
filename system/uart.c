@@ -32,17 +32,13 @@
 
 
 #ifndef DEVKIT
-#define UART huart1
-  extern UART_HandleTypeDef huart1;
-#define DMA_UART_TX hdma_usart1_tx;
-#define DMA_UART_RX hdma_usart1_rx
+  #define DMA_UART_TX hdma_usart1_tx
+  #define DMA_UART_RX hdma_usart1_rx
   extern DMA_HandleTypeDef hdma_usart1_tx;
   extern DMA_HandleTypeDef hdma_usart1_rx;
 #else
-#define UART huart2
-  extern UART_HandleTypeDef huart2;
-#define DMA_UART_TX hdma_usart2_tx;
-#define DMA_UART_RX hdma_usart2_rx
+  #define DMA_UART_TX hdma_usart2_tx
+  #define DMA_UART_RX hdma_usart2_rx
   extern DMA_HandleTypeDef hdma_usart2_tx;
   extern DMA_HandleTypeDef hdma_usart2_rx;
 #endif
@@ -56,9 +52,7 @@ static uart_fifo_t rx_fifo = {0};
 volatile static bool uart_initialized = false;
 
 
-
 void uart_tx_fifo_send();
-
 
 
 void uart_init()
@@ -75,7 +69,7 @@ void uart_init()
 
 uart_fifo_t* uart_rx()
 {
-  if(uart_initialized)
+  if (uart_initialized)
   {
     rx_fifo.set_pointer = UART_FIFO_BUFFER_SIZE - (uint16_t) __HAL_DMA_GET_COUNTER(&DMA_UART_RX);
     rx_fifo.item_count = ((unsigned) rx_fifo.set_pointer - (unsigned) rx_fifo.get_pointer) % (unsigned) UART_FIFO_BUFFER_SIZE;

@@ -433,18 +433,7 @@ void SX126xSetRfTxPower( int8_t power )
 
 uint8_t SX126xGetPaSelect( uint32_t channel )
 {
-#ifndef DEVKIT
     return SX1262;
-#else
-    if( HAL_GPIO_ReadPin(DEVKIT_DEVICE_SEL_GPIO_Port, DEVKIT_DEVICE_SEL_Pin) == 1 )
-    {
-        return SX1261;
-    }
-    else
-    {
-        return SX1262;
-    }
-#endif
 }
 
 void SX126xAntSwOn( void )
