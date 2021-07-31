@@ -44,14 +44,6 @@ extern TIM_HandleTypeDef     htim1;
 extern TIM_HandleTypeDef     htim2;
 extern TIM_HandleTypeDef     htim16;
 extern SPI_HandleTypeDef     hspi1;
-#ifndef DEVKIT
-  #define UART               huart1
-  extern UART_HandleTypeDef  huart1;
-  extern SPI_HandleTypeDef   hspi2;
-#else /* DEVKIT */
-  #define UART               huart2
-  extern UART_HandleTypeDef  huart2;
-#endif /* DEVKIT */
 #ifdef HAL_RNG_MODULE_ENABLED
 extern RNG_HandleTypeDef     hrng;
 #endif /* HAL_RNG_MODULE_ENABLED */
