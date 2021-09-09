@@ -166,13 +166,11 @@ static void fw_compose_msg(dpp_message_type_t type, uint8_t len)
 {
   /* compose the message header */
   fw_msg_buffer.header.device_id   = FW_OTA_NODE_ID;
-  fw_msg_buffer.header.type        = type;
-  type &= ~DPP_MSG_TYPE_MIN;
+  fw_msg_buffer.header.type        = type | DPP_MSG_TYPE_MIN;
   fw_msg_buffer.header.payload_len = len;
 
   /* calculate and append the CRC */
-  uint32_t msg_buffer_len = DPP_MSG_MIN_LEN(&fw_msg_buffer);
-  uint16_t crc = crc16((uint8_t*)&fw_msg_buffer, msg_buffer_len - DPP_MSG_CRC_LEN, 0);
+  uint16_t crc = crc16((uint8_t*)&fw_msg_buffer, DPP_MSG_MIN_LEN(&fw_msg_buffer) - DPP_MSG_CRC_LEN, 0);
   DPP_MSG_SET_CRC16(&fw_msg_buffer, crc);
 }
 
@@ -182,7 +180,7 @@ static void fw_transmit_msg(void)
   radio_standby();
   radio_set_tx_callback(&fw_tx_done);
   radio_set_irq_mode(IRQ_MODE_TX);
-  radio_transmit((uint8_t*)&fw_msg_buffer, DPP_MSG_LEN(&fw_msg_buffer));
+  radio_transmit((uint8_t*)&fw_msg_buffer, DPP_MSG_MIN_LEN(&fw_msg_buffer));
   LOG_VERBOSE("sending packet...");
 }
 
@@ -214,11 +212,11 @@ static bool fw_process_msg(dpp_message_t* msg)
   uint16_t calc_crc,
            msg_crc;
   if (msg->header.type & DPP_MSG_TYPE_MIN) {
-    calc_crc = crc16((uint8_t*)&fw_msg_buffer, DPP_MSG_MIN_LEN(&fw_msg_buffer) - DPP_MSG_CRC_LEN, 0);
-    msg_crc  = DPP_MSG_GET_CRC16((dpp_message_min_t*)&fw_msg_buffer);
+    calc_crc = crc16((uint8_t*)msg, DPP_MSG_MIN_LEN(msg) - DPP_MSG_CRC_LEN, 0);
+    msg_crc  = DPP_MSG_GET_CRC16((dpp_message_min_t*)msg);
   } else {
-    calc_crc = crc16((uint8_t*)&fw_msg_buffer, DPP_MSG_LEN(&fw_msg_buffer) - DPP_MSG_CRC_LEN, 0);
-    msg_crc  = DPP_MSG_GET_CRC16(&fw_msg_buffer);
+    calc_crc = crc16((uint8_t*)msg, DPP_MSG_LEN(msg) - DPP_MSG_CRC_LEN, 0);
+    msg_crc  = DPP_MSG_GET_CRC16(msg);
   }
   if (calc_crc != msg_crc) {
     LOG_WARNING("invalid CRC");
@@ -238,6 +236,7 @@ static bool fw_process_msg(dpp_message_t* msg)
 #if !FW_OTA_ALLOW_DOWNGRADE
   /* only continue if FW version is newer than current version */
   if (fw_pkt->version <= FW_VERSION) {
+    LOG_INFO("packet of FW version %d ignored (newer version already installed)");
     return true;
   }
 #endif /* FW_OTA_ALLOW_DOWNGRADE */

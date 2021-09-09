@@ -129,6 +129,7 @@ uint32_t bolt_read(uint8_t* out_data)
     out_data++;
     rcvd_bytes++;
   }
+  delay_us(10);   /* a small delay may be needed in case the message is as long as the max. supported size */
   if (BOLT_ACK_STATUS) {
     /* ACK is still high -> packet is too long */
     LOG_WARNING("received packet is too long");
