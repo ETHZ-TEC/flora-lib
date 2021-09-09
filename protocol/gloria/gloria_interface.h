@@ -77,7 +77,7 @@
 /**
  * Upper bound of the slot number during one flood (limits flood duration)
  * NOTE: also limits max number of hops
- * NOTE: intentially set to a large number since GMW does not specify this
+ * NOTE: intentionally set to a large number since GMW does not specify this
  *       number but limits the Gloria round by calling gloria_stop().
  */
 #ifndef GLORIA_INTERFACE_MAX_SLOTS
@@ -198,13 +198,13 @@ uint8_t gloria_get_rx_started_cnt(void);
  *                   updated during the last Gloria run, zero otherwise.
  *                   NOTE: With the current implementation, t_ref is not updated
  *                   if Gloria is stopped before the flood ends, even if packets
- *                   have been recieved.
+ *                   have been received.
  */
 uint8_t gloria_is_t_ref_updated(void);
 
 /**
  * \brief            Get the sync reference time in lptimer ticks.
- * \returns          Reference timestamp (flood marker) of last sucessfully
+ * \returns          Reference timestamp (flood marker) of last successfully
  *                   received flood during a Gloria run with sync_slot set to
  *                   true, in lptimer clock ticks
  *                   NOTE: The returned t_ref value is NOT updated nor reset
@@ -215,7 +215,7 @@ uint64_t gloria_get_t_ref(void);
 
 /**
  * \brief            Get the sync reference time in hs timer ticks.
- * \returns          Reference timestamp (flood marker) of last sucessfully
+ * \returns          Reference timestamp (flood marker) of last successfully
  *                   received flood during a Gloria run with sync_slot set to
  *                   true, in hs timer clock ticks
  */

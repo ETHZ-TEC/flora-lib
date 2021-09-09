@@ -320,7 +320,7 @@ struct Radio_s
      * \brief Sets the radio in reception mode for the given time
      * \param [IN] timeout Reception timeout in ms (0 = no timeout)
      * \param [IN] continuous Set to true for RX continuous mode.
-     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
+     * \param [IN] scheduled Whether this is a scheduled command (= write command w/o execute).
      */
     void    ( *Rx )( uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!
@@ -329,7 +329,7 @@ struct Radio_s
      * \param [IN] mask Mask to enable/disable radio interrupts
      * \param [IN] timeout_ms Timeout in milliseconds (0 = no timeout).
      * \param [IN] continuous Set to true for RX continuous mode.
-     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
+     * \param [IN] scheduled Whether this is a scheduled command (= write command w/o execute).
      */
     void    ( *RxMask )( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!
@@ -414,7 +414,7 @@ struct Radio_s
      * \param [IN] timeout Reception timeout [ms]
      *                     [0: continuous, others timeout]
      * \param [IN] continuous Set to true for RX continuous mode.
-     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
+     * \param [IN] scheduled Whether this is a scheduled command (= write command w/o execute).
      */
     void    ( *RxBoosted )( uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!
@@ -425,7 +425,7 @@ struct Radio_s
      * \param [IN] mask Mask to enable/disable radio interrupts
      * \param [IN] timeout_ms Timeout in milliseconds (0 = no timeout).
      * \param [IN] continuous Set to true for RX continuous mode.
-     * \param [IN] scheduled Whether this is a scheduled commmand (= write command w/o execute).
+     * \param [IN] scheduled Whether this is a scheduled command (= write command w/o execute).
      */
     void    ( *RxBoostedMask )( uint16_t mask, uint32_t timeout_ms, bool continuous, bool scheduled );
     /*!

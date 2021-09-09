@@ -49,7 +49,7 @@
 
 #define NVCFG_BLOCK_SIZE_WITH_CRC   ((((NVCFG_BLOCK_SIZE + NVCFG_CRC_SIZE) + 7) / 8) * 8)     /* must be a multiple of 8 */
 
-#define NVCFG_FLASH_EMPTY_VALUE     0xffffffff   /* on the STM32L4, flash values are all zeros after an erase */
+#define NVCFG_FLASH_EMPTY_VALUE     0xffffffff   /* on the STM32L4, flash values are all zeros after an erasure */
 
 /* how many times the flash memory should be erased at max. (if unsuccessful) */
 #ifndef NVCFG_ERASE_RETRY

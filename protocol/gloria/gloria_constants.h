@@ -42,7 +42,7 @@
 #define GLORIA_TIMESTAMP_LENGTH       8         // length of the timestamp to send with sync floods
 
 #ifndef GLORIA_SCHEDULE_GRANULARITY
-#define GLORIA_SCHEDULE_GRANULARITY   1         // sync timestamps get divided by the granularity. can be used to send less bytes for the sync ts.
+#define GLORIA_SCHEDULE_GRANULARITY   1         // sync timestamps get divided by the granularity. can be used to send fewer bytes for the sync ts.
 #endif /* GLORIA_SCHEDULE_GRANULARITY */
 
 #define GLORIA_RADIO_SLEEP_TIME       2000      // 250us  TODO: calculate min sleep time for which it's worth going into warm sleep mode
@@ -51,7 +51,7 @@
 #define GLORIA_RADIO_WAKEUP_TIME_COLD 36000     // 4.5 ms; time needed to wake up from cold sleep
 #define GLORIA_MIN_RX_TIME            2000      // 250 us; min time left before rx timeout for which radio is still set in receive mode
 
-#define GLORIA_HSTIMER_TRIGGER_DELAY  36        // ~4.5 us  implementation specific time between the timer compare trigger and the actual NSS pin actuation, assumes ~18 CPU cycles for ISR entry + register saving + ISR_IND setting)
+#define GLORIA_HSTIMER_TRIGGER_DELAY  36        // ~4.5 us  implementation specific time between the timer compare trigger and the actual NSS pin actuation (assumes ~18 CPU cycles for ISR entry + register saving + ISR_IND setting)
 #define GLORIA_TIME_BUFFER            800       // 100 us, time buffer for RX / TX radio setup
 #define GLORIA_FLOOD_FINISH_OVERHEAD  152       // 19.000 us
 #define GLORIA_RX_TRIGGER_DELAY       682       // 85.250 us   delay after the rx command has been sent to the radio until it is executed

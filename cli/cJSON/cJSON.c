@@ -497,8 +497,8 @@ static cJSON_bool print_number(const cJSON * const item, printbuffer * const out
     	/* We only print integers. Support for printing doubles with printf support is disabled in STM32CubeIDE project (Properties > C/C++ Build > Settings Tool Settings) */
     	length = sprintf((char*)number_buffer, "%i", num);
 
-    	/* The following implementation is used in the original code on github, but we do not use it since we disabled the double printf support */
-        // /* Try 15 decimal places of precision to avoid nonsignificant nonzero digits */
+    	/* The following implementation is used in the original code on GitHub, but we do not use it since we disabled the double printf support */
+        // /* Try 15 decimal places of precision to avoid insignificant nonzero digits */
         // length = sprintf((char*)number_buffer, "%1.15g", d);
         //
         // /* Check whether the original double can be recovered */
@@ -1560,7 +1560,7 @@ static cJSON_bool parse_object(cJSON * const item, parse_buffer * const input_bu
         buffer_skip_whitespace(input_buffer);
         if (!parse_string(current_item, input_buffer))
         {
-            goto fail; /* faile to parse name */
+            goto fail; /* failed to parse name */
         }
         buffer_skip_whitespace(input_buffer);
 

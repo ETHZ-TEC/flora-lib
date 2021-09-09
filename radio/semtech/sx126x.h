@@ -896,7 +896,7 @@ void SX126xCalibrate( CalibrationParams_t calibParam );
 void SX126xCalibrateImage( uint32_t freq );
 
 /*!
- * \brief Activate the extention of the timeout when long preamble is used
+ * \brief Activate the extension of the timeout when long preamble is used
  *
  * \param [in]  enable      The radio will extend the timeout to cope with long preamble
  */

@@ -30,7 +30,7 @@
 #endif /* SX126x_CHECK_CMD_RETVAL */
 
 #ifndef SX126x_USE_ACCESS_LOCK
-#define SX126x_USE_ACCESS_LOCK    1         // set to 1 to use an lock (semaphore) for the radio SPI access to prevent nesting
+#define SX126x_USE_ACCESS_LOCK    1         // set to 1 to use a lock (semaphore) for the radio SPI access to prevent nesting
 #endif /* SX126x_USE_ACCESS_LOCK */
 
 #ifndef SX126x_PRINT_ERRORS

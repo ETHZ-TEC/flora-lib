@@ -38,7 +38,7 @@
 #define BOLT_ENABLE                     0
 #endif /* BOLT_ENABLE */
 
-/* note: the time request feature is configured outside of this driver */
+/* note: the time request feature is configured outside this driver */
 
 #ifndef BOLT_MAX_MSG_LEN
 #define BOLT_MAX_MSG_LEN                128  /* bytes */

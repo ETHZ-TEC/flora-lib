@@ -42,7 +42,7 @@ system_backup_registers_t* system_backup_access() {
   *SYSTEM_RTC_WPR = 0xCA;
   *SYSTEM_RTC_WPR = 0x53;
 
-  // Map backup registers to backup register struct
+  // Map backup registers to back up register struct
   backup_registers = (system_backup_registers_t*) SYSTEM_RTC_BKUPR0;
 
   return backup_registers;
