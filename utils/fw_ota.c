@@ -208,6 +208,12 @@ static bool fw_process_msg(dpp_message_t* msg)
     return false;
   }
 
+  /* check the target ID (if set) */
+  if (!(msg->header.type & DPP_MSG_TYPE_MIN) && msg->header.target_id != FW_OTA_NODE_ID) {
+    LOG_INFO("message ignored (target ID %u != node ID %u)", msg->header.target_id, FW_OTA_NODE_ID);
+    return false;
+  }
+
   /* check the CRC */
   uint16_t calc_crc,
            msg_crc;
@@ -639,7 +645,7 @@ static bool fw_store_data(const dpp_fw_t* fw_pkt)
   /* first packet of this FW version? */
   if (fw_info.state <= FW_STATE_INIT || fw_pkt->version != fw_info.version) {
     /* erase memory if new FW version or invalid state */
-    if (fw_info.state == FW_STATE_INVALID || fw_pkt->version != fw_info.version) {
+    if (fw_info.state == FW_STATE_INVALID || ((fw_info.state > FW_STATE_INIT) && (fw_pkt->version != fw_info.version))) {
       if (!fw_erase_data()) {
         fw_info.state = FW_STATE_INVALID;
         LOG_WARNING("failed to erase firmware in flash memory");
