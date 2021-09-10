@@ -38,11 +38,14 @@
 /* check if DPP message is valid */
 bool ps_validate_msg(dpp_message_t* msg)
 {
-  uint16_t msg_len = DPP_MSG_LEN(msg);
+  if (!msg) {
+    return false;
+  }
+  uint16_t msg_len = (msg->header.type & DPP_MSG_TYPE_MIN) ? DPP_MSG_MIN_LEN(msg) : DPP_MSG_LEN(msg);
+  uint16_t msg_crc = (msg->header.type & DPP_MSG_TYPE_MIN) ? DPP_MSG_GET_CRC16(((dpp_message_min_t*)msg)) : DPP_MSG_GET_CRC16(msg);
 
-  if (!msg ||
-      msg_len > DPP_MSG_PKT_LEN ||
-      DPP_MSG_GET_CRC16(msg) != crc16((uint8_t*)msg, msg_len - DPP_MSG_CRC_LEN, 0)) {
+  if (msg_len > DPP_MSG_PKT_LEN ||
+      msg_crc != crc16((uint8_t*)msg, msg_len - DPP_MSG_CRC_LEN, 0)) {
     return false;
   }
   return true;
@@ -128,13 +131,8 @@ uint8_t ps_compose_msg(uint16_t recipient,
   } else {
     dpp_message_min_t* msg_min = (dpp_message_min_t*)out_msg;
     /* copy the payload if valid */
-    if (msg_min->header.payload_len) {
-      if (data) {
-        memcpy(msg_min->payload, data, msg_min->header.payload_len);
-      } else {
-        /* note: src and dest are the same buffer, but offset by 10 bytes */
-        memcpy(msg_min->payload, out_msg->payload, msg_min->header.payload_len);
-      }
+    if (msg_min->header.payload_len && data) {
+      memcpy(msg_min->payload, data, msg_min->header.payload_len);
     }
     /* calculate and append the CRC */
     msg_len = DPP_MSG_MIN_LEN(msg_min);

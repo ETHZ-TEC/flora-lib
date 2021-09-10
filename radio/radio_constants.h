@@ -67,6 +67,8 @@
 #define RADIO_DEFAULT_BAND              0
 #endif
 
+#define RADIO_MAX_PAYLOAD_SIZE          255
+
 #define RADIO_CLOCK_DRIFT_PPM           10      // +-10ppm
 #define RADIO_TIMER_PERIOD_NS           15625U
 #define RADIO_TIMER_FREQUENCY           64000   // Hz

@@ -215,6 +215,12 @@ typedef enum {
   #define LOG_RAW(str)
 #endif
 
+#if !LOG_PRINT_IMMEDIATELY || LOG_USE_DMA
+  #define LOG_FLUSH()             log_flush()
+#else
+  #define LOG_FLUSH()
+#endif /* LOG_PRINT_IMMEDIATELY */
+
 
 /* --- FUNCTIONS --- */
 

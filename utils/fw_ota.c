@@ -265,6 +265,7 @@ static bool fw_process_msg(dpp_message_t* msg)
   case DPP_FW_TYPE_UPDATE:
     radio_standby();
     LOG_INFO("updating firmware...");
+    LOG_FLUSH();
     return fw_update();
 
   default:
