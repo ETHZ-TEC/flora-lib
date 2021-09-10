@@ -236,7 +236,7 @@ static bool fw_process_msg(dpp_message_t* msg)
 #if !FW_OTA_ALLOW_DOWNGRADE
   /* only continue if FW version is newer than current version */
   if (fw_pkt->version <= FW_VERSION) {
-    LOG_INFO("packet of FW version %d ignored (newer version already installed)");
+    LOG_INFO("packet of FW version %u ignored (newer version already installed)", fw_pkt->version);
     return true;
   }
 #endif /* FW_OTA_ALLOW_DOWNGRADE */
