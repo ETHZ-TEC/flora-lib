@@ -433,9 +433,7 @@ bool rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void
   rtc_alarm_callback = callback;
 
   if (!callback) {
-    __HAL_RTC_ALARMA_DISABLE(&hrtc);
-    __HAL_RTC_ALARM_CLEAR_FLAG(&hrtc, RTC_FLAG_ALRAF);
-    return false;
+    return (HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A) == HAL_OK);
   }
 
   rtc_update_datetime();
@@ -471,11 +469,11 @@ uint32_t rtc_time_to_next_alarm(void)
   RTC_AlarmTypeDef alarm;
 
   if ((hrtc.Instance->CR & RTC_CR_ALRAE) == 0 || (hrtc.Instance->CR & RTC_IT_ALRA) == 0) {
-    return -1;      // no alarm scheduled
+    return 0;      // no alarm scheduled
   }
 
   if (HAL_RTC_GetAlarm(&hrtc, &alarm, RTC_ALARM_A, RTC_FORMAT_BIN) != HAL_OK) {
-    return -1;
+    return 0;
   }
 
   uint32_t next_alarm = (uint32_t)alarm.AlarmTime.Hours * 3600 + (uint32_t)alarm.AlarmTime.Minutes * 60 + (uint32_t)alarm.AlarmTime.Seconds;
