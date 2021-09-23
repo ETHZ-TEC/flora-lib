@@ -62,7 +62,7 @@ extern uint32_t t_dack;
 static elwb_time_t         elwb_time;                                                     /* global time in microseconds */
 static uint32_t            elwb_time_ofs;                                                 /* time offset */
 static uint32_t            base_period = ELWB_CONF_SCHED_PERIOD * ELWB_TIMER_FREQUENCY;   /* base (idle) period in ticks */
-static uint32_t            n_nodes;                                                       /* # active nodes */
+static uint16_t            n_nodes;                                                       /* # active nodes */
 static elwb_sched_state_t  sched_state;
 static elwb_node_list_t    node_list[ELWB_CONF_MAX_NODES];                                /* actual list */
 static elwb_node_list_t*   head;                                                          /* head of the linked list */
@@ -315,9 +315,9 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
 {
 #define ELWB_SCHED_PRINT_BUFFER_SIZE  128
   static char print_buffer[ELWB_SCHED_PRINT_BUFFER_SIZE];
-  static uint32_t req_nodes = 0;
-  static uint32_t req_slots = 0;
-  uint32_t n_slots_assigned = 0;
+  static uint16_t req_nodes = 0;
+  static uint16_t req_slots = 0;
+  uint16_t n_slots_assigned = 0;
 
   /*
    * note: the schedule is sent at the beginning of the next round,
@@ -421,8 +421,8 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
   } else if (sched_state == ELWB_SCHED_STATE_DATA) {
     /* a data round has just finished */
 
-    LOG_INFO("%lums round duration (%lu of %lu nodes requested %lu slots)",
-             ELWB_TICKS_TO_MS(t_round), req_nodes, n_nodes, req_slots);
+    LOG_INFO("%lums round duration (%u of %u nodes requested %u slots)",
+             (uint32_t)ELWB_TICKS_TO_MS(t_round), req_nodes, n_nodes, req_slots);
 
     memset(sched->slot, 0, sizeof(sched->slot));        /* clear the content */
     /* reset all requests (set n_pkts to 0) */
@@ -474,7 +474,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
   /* calculate the new time for the source nodes */
   sched->time = elwb_time + elwb_time_ofs;
 
-  uint32_t compressed_size;
+  uint16_t compressed_size;
 #if ELWB_CONF_SCHED_COMPRESS
   compressed_size = elwb_sched_compress((uint8_t*)sched->slot, n_slots_assigned);
   if ((compressed_size == 0) && (n_slots_assigned > 0)) {
@@ -499,7 +499,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
 #endif /* ELWB_CONF_SCHED_CRC */
 
   /* log the parameters of the new schedule */
-  LOG_INFO("schedule updated (s=%lu T=%lums n=%lu x=%u l=%lu)", n_nodes, ELWB_TICKS_TO_MS(sched->period), n_slots_assigned, sched->n_slots >> 13, compressed_size);
+  LOG_INFO("schedule updated (s=%u T=%lums n=%u l=%u)", n_nodes, (uint32_t)ELWB_TICKS_TO_MS(sched->period), n_slots_assigned, compressed_size);
 
   return compressed_size;
 }
@@ -509,8 +509,8 @@ uint32_t elwb_sched_init(elwb_schedule_t* sched)
 {
   uint32_t t_round_max = elwb_get_max_round_duration(0, 0, 0);
 
-  LOG_INFO("rounds [ms]: T=%lu000ms round_max=%lums",
-           ELWB_TICKS_TO_S(base_period),
+  LOG_INFO("rounds [ms]: T=%us round_max=%lums",
+           (uint16_t)ELWB_TICKS_TO_S(base_period),
            (uint32_t)ELWB_TICKS_TO_MS(t_round_max));
 
   /* make sure the minimal round period is not smaller than the max. round duration! */

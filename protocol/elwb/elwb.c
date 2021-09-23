@@ -512,7 +512,7 @@ static void elwb_send_packet(elwb_time_t slot_start, uint32_t slot_length, uint3
       stats.pkt_tx_all++;
       if (data_packet) {
         stats.pkt_sent++;   /* only count data packets */
-        LOG_VERBOSE("packet sent (%lub)", packet_len);
+        LOG_VERBOSE("packet sent (%ub)", packet_len);
       }
     }
 
@@ -552,7 +552,7 @@ static void elwb_receive_packet(elwb_time_t slot_start, uint32_t slot_length, ui
         keep_packet |= (schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK) || (schedule.slot[slot_idx] == schedule.host_id);
       }
       if (keep_packet) {
-        LOG_VERBOSE("data received from node %u (%lub)", schedule.slot[slot_idx], packet_len);
+        LOG_VERBOSE("data received from node %u (%ub)", schedule.slot[slot_idx], packet_len);
         if (ELWB_QUEUE_PUSH(rx_queue, packet.payload)) {
           stats.pkt_rcvd++;
 #if ELWB_CONF_DATA_ACK
