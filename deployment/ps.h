@@ -48,6 +48,10 @@
 #define PS_DEVICE_ID      NODE_ID
 #endif /* PS_DEVICE_ID */
 
+#if !defined(FW_VERSION) && defined(FW_VERSION_MAJOR)
+#define FW_VERSION        (FW_VERSION_MAJOR * 10000 + FW_VERSION_MINOR * 100 + FW_VERSION_PATCH)
+#endif /* FW_VERSION */
+
 
 bool    ps_validate_msg(dpp_message_t* msg);
 uint8_t ps_compose_msg(uint16_t recipient,
