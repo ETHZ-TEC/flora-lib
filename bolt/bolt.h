@@ -38,11 +38,17 @@
 #define BOLT_ENABLE                     0
 #endif /* BOLT_ENABLE */
 
-/* note: the time request feature is configured outside this driver */
-
 #ifndef BOLT_MAX_MSG_LEN
 #define BOLT_MAX_MSG_LEN                128  /* bytes */
 #endif /* BOLT_MAX_MSG_LEN */
+
+/* note: the time request feature is configured outside this driver */
+
+#if BOLT_ENABLE
+
+#if BOLT_MAX_MSG_LEN < DPP_MSG_PKT_LEN
+#warning "BOLT_MAX_MSG_LEN is smaller than DPP_MSG_PKT_LEN"
+#endif
 
 #if BASEBOARD
   /* baseboard-specific features */
@@ -109,6 +115,9 @@ uint32_t bolt_get_write_cnt(bool reset);
  * @return  the number of messages that could not be written to BOLT (due to queue full) since the last reset
  */
 uint32_t bolt_get_write_failed_cnt(bool reset);
+
+
+#endif /* BOLT_ENABLE */
 
 
 #endif /* BOLT_BOLT_H_ */
