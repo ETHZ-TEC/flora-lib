@@ -53,11 +53,7 @@
 #define SWDIO_GPIO_Port   GPIOA
 #endif /* SWDIO_Pin */
 
-#ifndef BASEBOARD
-#define BASEBOARD         0
-#endif /* BASEBOARD */
-
-#if BASEBOARD
+#ifdef BASEBOARD
 /* pin definitions for the Baseboard */
 #define BASEBOARD_ENABLE_Pin              COM_GPIO2_Pin
 #define BASEBOARD_ENABLE_GPIO_Port        COM_GPIO2_GPIO_Port
@@ -72,6 +68,14 @@
 #define BASEBOARD_ENABLE()                PIN_SET(BASEBOARD_ENABLE)
 #define BASEBOARD_DISABLE()               PIN_CLR(BASEBOARD_ENABLE)
 #endif /* BASEBOARD */
+
+#ifndef BASEBOARD
+#define BASEBOARD         0
+#endif /* BASEBOARD */
+
+#if BASEBOARD && SWO_ENABLE
+#error "SWO cannot be used with BASEBOARD"
+#endif
 
 
 /* Macros */

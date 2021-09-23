@@ -63,6 +63,10 @@ extern volatile uint16_t FLOCKLAB_NODE_ID;
 #error "can't use BOLT or SWO on FlockLab"
 #endif
 
+#if BASEBOARD
+#error "can't enable BASEBOARD on FlockLab"
+#endif
+
 
 /* pin mapping for rev1.1 adapter (small black PCB) */
 #define FLOCKLAB_SIG1_Pin           GPIO_PIN_0      /* = BOLT_IND_Pin */
