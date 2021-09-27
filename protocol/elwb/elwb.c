@@ -223,7 +223,7 @@ bool elwb_update_slot_durations(uint8_t n_tx_arg, uint8_t num_hops_arg)
     num_hops_arg = num_hops;
   }
   uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS * sizeof(uint16_t) + ELWB_SCHED_HDR_LEN + ELWB_SCHED_CRC_LEN));
-  uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_CONF_MAX_PAYLOAD_LEN);
+  uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_CONF_MAX_PAYLOAD_LEN + ELWB_PKT_HDR_LEN);
   uint32_t t_cont_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, MAX(ELWB_REQ_PKT_LEN, ELWB_2ND_SCHED_LEN) + ELWB_PKT_HDR_LEN);
   uint32_t t_dack_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8 + ELWB_PKT_HDR_LEN);
 
