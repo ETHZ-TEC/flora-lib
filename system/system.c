@@ -60,7 +60,7 @@ void system_init(void)
   HAL_PWREx_EnablePullUpPullDownConfig();
 
   /* init peripherals / drivers */
-  uart_init();
+  uart_init_rx();
 #if BOLT_ENABLE
   bolt_init();
 #endif /* BOLT_ENABLE */

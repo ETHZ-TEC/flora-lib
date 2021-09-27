@@ -42,12 +42,12 @@ void gpio_check_baseboard(void)
   uint32_t prev_pull   = BASEBOARD_ENABLE_GPIO_Port->PUPDR;
 
   /* to check whether the comboard is indeed not on a baseboard: read state of enable pin (has external pullup) */
-  GPIO_InitStruct.Pin   = BASEBOARD_ENABLE_Pin;
-  GPIO_InitStruct.Mode  = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull  = GPIO_PULLDOWN;      // first init with pull to remove potential charge on the pin
+  GPIO_InitStruct.Pin  = BASEBOARD_ENABLE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;      // first init with pull to remove potential charge on the pin
   HAL_GPIO_Init(BASEBOARD_ENABLE_GPIO_Port, &GPIO_InitStruct);
   delay_us(100);
-  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BASEBOARD_ENABLE_GPIO_Port, &GPIO_InitStruct);
   /* read pin value */
   uint32_t c = 10;
@@ -68,8 +68,8 @@ void gpio_check_baseboard(void)
   }
 
   /* restore previous pin config */
-  BASEBOARD_ENABLE_GPIO_Port->PUPDR  = prev_pull;
-  BASEBOARD_ENABLE_GPIO_Port->MODER  = prev_mode;
+  BASEBOARD_ENABLE_GPIO_Port->PUPDR = prev_pull;
+  BASEBOARD_ENABLE_GPIO_Port->MODER = prev_mode;
   /* make sure no interrupt is triggered by reconfiguring the pin */
   __HAL_GPIO_EXTI_CLEAR_IT(BASEBOARD_ENABLE_Pin);
 

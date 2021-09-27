@@ -55,7 +55,7 @@ typedef struct
 } uart_fifo_t;
 
 
-void uart_init();
+void uart_init_rx();
 
 uart_fifo_t* uart_rx(void);
 
