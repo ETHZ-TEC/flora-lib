@@ -47,7 +47,7 @@
 #endif /* HS_TIMER_INIT_FROM_RTC */
 
 
-#define HS_TIMER_TICKS_TO_LPTIMER(hs_ticks)   ((hs_ticks) * HS_TIMER_FREQUENCY / LPTIMER_FREQUENCY)
+#define HS_TIMER_TICKS_TO_LPTIMER(hs_ticks)   ((uint64_t)(hs_ticks) * LPTIMER_FREQUENCY / HS_TIMER_FREQUENCY)
 #define HS_TIMER_TICKS_TO_S(hs_ticks)         ((hs_ticks) / HS_TIMER_FREQUENCY)
 #define HS_TIMER_TICKS_TO_MS(hs_ticks)        ((hs_ticks) / HS_TIMER_FREQUENCY_MS)
 #define HS_TIMER_TICKS_TO_US(hs_ticks)        ((hs_ticks) / HS_TIMER_FREQUENCY_US)
