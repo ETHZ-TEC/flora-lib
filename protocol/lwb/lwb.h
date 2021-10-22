@@ -100,6 +100,11 @@
 #define LWB_T_GUARD_ROUND         (LWB_TIMER_FREQUENCY / 1000)    /* 1ms */
 #endif /* LWB_T_GUARD_ROUND */
 
+/* longer guard time before a round in LF ticks, used if a schedule is missed or the drift has not yet been estimated */
+#ifndef LWB_T_GUARD_ROUND_2
+#define LWB_T_GUARD_ROUND_2       (LWB_TIMER_FREQUENCY / 5000)    /* 5ms */
+#endif /* LWB_T_GUARD_ROUND_2 */
+
 /* time reserved for the preprocess task (before a round) in LF ticks */
 #ifndef LWB_T_PREPROCESS
 #define LWB_T_PREPROCESS          (LWB_TIMER_FREQUENCY / 10)      /* 100ms */
@@ -135,10 +140,6 @@
 #ifndef LWB_MAX_CLOCK_DRIFT
 #define LWB_MAX_CLOCK_DRIFT       100    /* in ppm */
 #endif /* LWB_MAX_CLOCK_DRIFT */
-
-#ifndef LWB_STARTUP_DELAY
-#define LWB_STARTUP_DELAY         1000   /* delay in milliseconds from the start of the MCU */
-#endif /* LWB_STARTUP_DELAY */
 
 /* use more accurate high frequency reference clock to schedule the contention slot
  * (requires an implementation of LWB_GLORIA_GET_T_REF_HF()) */

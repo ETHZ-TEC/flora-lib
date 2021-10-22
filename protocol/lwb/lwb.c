@@ -363,7 +363,7 @@ static void lwb_send_schedule(lwb_time_t start_of_round)
 static void lwb_receive_schedule(lwb_time_t start_of_round)
 {
   gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
-  lwb_wait_until(start_of_round + t_sched + LWB_T_GUARD_ROUND);
+  lwb_wait_until(start_of_round + t_sched + ((sync_state == SYNCED) ? LWB_T_GUARD_ROUND : LWB_T_GUARD_ROUND_2));
   gloria_stop();
 
   if (slot_cb) {
@@ -848,12 +848,12 @@ static void lwb_run(void)
     }
 
     /* drift compensation */
-    int32_t drift_comp   = lwb_calc_drift_comp(schedule.period);
+    int32_t drift_comp = lwb_calc_drift_comp(schedule.period);
 
     /* schedule the wakeup for the next round */
     start_of_round += schedule.period + drift_comp;
     if (!is_host) {
-      start_of_round -= LWB_T_GUARD_ROUND;   /* add guard time on a source node */
+      start_of_round -= (sync_state == SYNCED) ? LWB_T_GUARD_ROUND : LWB_T_GUARD_ROUND_2;   /* add guard time on a source node */
     }
     if (LWB_T_PREPROCESS) {
       start_of_round -= LWB_T_PREPROCESS;    /* wake up earlier such that the pre task can run */
@@ -932,17 +932,6 @@ void lwb_start(void)
            (uint32_t)LWB_TICKS_TO_MS(t_cont));
 
   lwb_running = true;
-
-  /* instead of calling lwb_run(), schedule the start */
-#if LWB_STARTUP_DELAY > 0
-  lwb_time_t starttime = LWB_MS_TO_TICKS(LWB_STARTUP_DELAY);
-  if (is_host) {
-    starttime += LWB_T_GUARD_ROUND;    /* delay the host by LWB_T_GUARD_ROUND */
-  }
-  if (LWB_TIMER_NOW() < starttime) {
-    lwb_wait_until(starttime);
-  }
-#endif /* LWB_STARTUP_DELAY */
 
   lwb_run();
 }
