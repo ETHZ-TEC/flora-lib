@@ -84,7 +84,7 @@ bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
   }
   if (node_id == DPP_DEVICE_ID_SINK      ||
       node_id == DPP_DEVICE_ID_BROADCAST ||
-      node_id == NODE_ID                 ||
+      node_id == LWB_NODE_ID             ||
       node_id < LWB_MIN_NODE_ID          ||
       node_id > LWB_MAX_NODE_ID) {
     LOG_WARNING("invalid node ID %u", node_id);
@@ -211,7 +211,7 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
 
   /* assign slots to the host */
   while (reserve_slots_host && sched->n_slots < LWB_MAX_SLOTS_HOST) {
-    sched->slot[sched->n_slots++] = DPP_DEVICE_ID_SINK;     /* use ID 0 for the HOST */
+    sched->slot[sched->n_slots++] = LWB_NODE_ID;
     reserve_slots_host--;
   }
 
@@ -232,7 +232,7 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
   /* complete the schedule */
   sched->period        = curr_period;
   sched->time          = lwb_time + lwb_time_ofs;
-  sched->host_id       = NODE_ID;
+  sched->host_id       = LWB_NODE_ID;
   sched->header.net_id = LWB_NETWORK_ID;    /* set the network ID */
   sched->header.type   = 1;                 /* packet type 'schedule' */
 
@@ -349,14 +349,14 @@ void lwb_sched_set_time_offset(uint32_t ofs)
 void lwb_sched_set_delay_nodes(const uint16_t* delay_node_list, uint8_t num_nodes)
 {
   /* clear delay node mask */
-  memset(delay_mask, 0, LSR_TX_DELAY_MASK_SIZE);
+  memset(delay_mask, 0, LWB_TX_DELAY_MASK_SIZE);
   delay_mask_set = false;
 
   if (delay_node_list && num_nodes) {
     uint32_t i;
     for (i = 0; i < num_nodes; i++) {
-      if (delay_node_list[i] >= LSR_MIN_NODE_ID && delay_node_list[i] <= LSR_MAX_NODE_ID) {
-        uint16_t ofs = delay_node_list[i] - LSR_MIN_NODE_ID;
+      if (delay_node_list[i] >= LWB_MIN_NODE_ID && delay_node_list[i] <= LWB_MAX_NODE_ID) {
+        uint16_t ofs = delay_node_list[i] - LWB_MIN_NODE_ID;
         delay_mask[ofs / 8] |= 1 << (ofs & 0x7);
         delay_mask_set = true;
       }

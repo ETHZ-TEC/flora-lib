@@ -48,6 +48,10 @@
 #define LWB_NETWORK_ID            0x2222      /* custom 15-bit network ID */
 #endif /* LWB_NETWORK_ID */
 
+#ifndef LWB_NODE_ID
+#define LWB_NODE_ID               NODE_ID
+#endif /* LWB_NODE_ID */
+
 /* the smallest node ID in the network (the host will ignore requests from nodes with smaller IDs) */
 #ifndef LWB_MIN_NODE_ID
 #define LWB_MIN_NODE_ID           1

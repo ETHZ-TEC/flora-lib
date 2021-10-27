@@ -502,7 +502,7 @@ static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint
 #if LWB_USE_TX_DELAY
   if (schedule.has_delay_mask) {
     uint8_t* delay_mask = (uint8_t*)&schedule.slot[schedule.n_slots];  /* delay mask starts after the last slot in the schedule */
-    uint16_t id_ofs     = (NODE_ID - LWB_MIN_NODE_ID);
+    uint16_t id_ofs     = (LWB_NODE_ID - LWB_MIN_NODE_ID);
     if (delay_mask[id_ofs / 8] & (1 << (id_ofs & 0x7))) {
       gloria_set_tx_delay(1);
     }
@@ -562,7 +562,7 @@ static void lwb_contention(lwb_time_t slot_start)
   if (!is_host &&
       ipi_changed &&
       rand_backoff == 0) {
-    packet.cont.node_id = NODE_ID;
+    packet.cont.node_id = LWB_NODE_ID;
     packet.cont.ipi     = ipi;
     LWB_SET_PKT_HEADER(&packet);
     LOG_INFO("transmitting node ID");
@@ -583,7 +583,7 @@ static void lwb_contention(lwb_time_t slot_start)
     rand_backoff = (rand() % LWB_RAND_BACKOFF);
 
     if (slot_cb) {
-      slot_cb(NODE_ID, LWB_PHASE_CONT, &packet);
+      slot_cb(LWB_NODE_ID, LWB_PHASE_CONT, &packet);
     }
 
   } else {
@@ -652,7 +652,7 @@ static void lwb_send_rcv_sched2(lwb_time_t slot_start)
         LWB_IS_PKT_HEADER_VALID(&packet) &&
         (gloria_get_payload_len() == packet_len)) {   /* packet received? */
       schedule.period = packet.sched2.period;         /* extract updated period */
-      if (packet.sched2.cont_winner == NODE_ID) {
+      if (packet.sched2.cont_winner == LWB_NODE_ID) {
         ipi_changed = false;
         LOG_VERBOSE("IPI change confirmed");
       }
@@ -814,7 +814,7 @@ static void lwb_run(void)
       uint32_t slot_idx;
       for (slot_idx = 0; slot_idx < schedule.n_slots; slot_idx++) {
         /* note: slots with node ID 0 belong to the host */
-        bool is_initiator = (schedule.slot[slot_idx] == NODE_ID) || (is_host && schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK);
+        bool is_initiator = (schedule.slot[slot_idx] == LWB_NODE_ID) || (is_host && schedule.slot[slot_idx] == DPP_DEVICE_ID_SINK);
         if (is_initiator) {
           lwb_send_packet(slot_ofs, t_data, slot_idx);                    /* initiator -> send packet */
         } else {
