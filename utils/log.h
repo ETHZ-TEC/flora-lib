@@ -208,6 +208,8 @@ typedef enum {
   #define LOG_VERBOSE_MARKER()
 #endif
 
+#define LOG_DEBUG                 LOG_VERBOSE       /* alias */
+
 /* print a string without any additional formatting by the log module (independent of log level) */
 #if LOG_ENABLE
   #define LOG_RAW(str)            log_print(str)
