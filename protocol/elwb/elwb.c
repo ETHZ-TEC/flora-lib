@@ -313,7 +313,7 @@ static void elwb_bootstrap(void)
 {
   schedule.n_slots = 0;
   stats.bootstrap_cnt++;
-  LOG_INFO("bootstrap");
+  LOG_VERBOSE("bootstrap");
   elwb_time_t bootstrap_timeout = ELWB_TIMER_NOW() + ELWB_CONF_BOOTSTRAP_TIMEOUT;
   /* keep listening until we receive a valid schedule packet */
   do {
@@ -449,7 +449,7 @@ static elwb_time_t elwb_sync(elwb_time_t start_of_round, bool expected_first_sch
       if (!expected_first_sched) {
         /* missed schedule was during a contention/data round */
         t_ref = last_synced;
-        LOG_INFO("start_of_round restored from last_synced (%llu)", last_synced);
+        LOG_VERBOSE("start_of_round restored from last_synced (%llu)", last_synced);
       } else {
         /* missed schedule is at beginning of a round */
         t_ref = start_of_round;
@@ -603,7 +603,7 @@ static void elwb_data_ack(elwb_time_t slot_start)
       elwb_wait_until(slot_start + t_dack);
       gloria_stop();
       stats.pkt_tx_all++;
-      LOG_INFO("D-ACK sent (%u bytes)", packet_len);
+      LOG_VERBOSE("D-ACK sent (%u bytes)", packet_len);
     }
     memset(data_ack, 0, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8);
 
@@ -680,7 +680,7 @@ static void elwb_contention(elwb_time_t slot_start, bool node_registered)
     /* node not yet registered? -> include node ID in the request */
     if (!node_registered) {
       packet.cont.node_id = NODE_ID;
-      LOG_INFO("transmitting node ID");
+      LOG_VERBOSE("transmitting node ID");
     }
     ELWB_SET_PKT_HEADER(&packet);
 #if ELWB_CONF_CONT_USE_HSTIMER
@@ -802,33 +802,33 @@ int32_t elwb_calc_drift_comp(uint32_t elapsed_ticks)
 static void elwb_print_stats(void)
 {
   if (is_host) {
-    LOG_INFO("%llu | T: %lus, slots: %u, rx/tx/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu, rssi: %ddBm",
-             network_time,
-             elwb_sched_get_period(),
-             ELWB_SCHED_N_SLOTS(&schedule),
-             stats.pkt_rcvd,
-             stats.pkt_sent,
-             stats.pkt_dropped,
-             stats.pkt_rx_all,
-             stats.pkt_tx_all,
-             stats.rssi_avg);
+    LOG_VERBOSE("%llu | T: %lus, slots: %u, rx/tx/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu, rssi: %ddBm",
+                network_time,
+                elwb_sched_get_period(),
+                ELWB_SCHED_N_SLOTS(&schedule),
+                stats.pkt_rcvd,
+                stats.pkt_sent,
+                stats.pkt_dropped,
+                stats.pkt_rx_all,
+                stats.pkt_tx_all,
+                stats.rssi_avg);
   } else {
     /* print out some stats (note: takes ~2ms to compose this string!) */
-    LOG_INFO("%s %llu | T: %lus, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
-             elwb_syncstate_to_string[sync_state],
-             schedule.time,
-             ELWB_TICKS_TO_S(schedule.period),
-             ELWB_SCHED_N_SLOTS(&schedule),
-             stats.pkt_rcvd,
-             stats.pkt_sent,
-             stats.pkt_ack,
-             stats.pkt_dropped,
-             stats.pkt_rx_all,
-             stats.pkt_tx_all,
-             stats.unsynced_cnt,
-             stats.bootstrap_cnt,
-             stats.drift,
-             stats.rssi_avg);
+    LOG_VERBOSE("%s %llu | T: %lus, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
+                elwb_syncstate_to_string[sync_state],
+                schedule.time,
+                ELWB_TICKS_TO_S(schedule.period),
+                ELWB_SCHED_N_SLOTS(&schedule),
+                stats.pkt_rcvd,
+                stats.pkt_sent,
+                stats.pkt_ack,
+                stats.pkt_dropped,
+                stats.pkt_rx_all,
+                stats.pkt_tx_all,
+                stats.unsynced_cnt,
+                stats.bootstrap_cnt,
+                stats.drift,
+                stats.rssi_avg);
   }
 }
 

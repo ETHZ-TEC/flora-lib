@@ -421,8 +421,8 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
   } else if (sched_state == ELWB_SCHED_STATE_DATA) {
     /* a data round has just finished */
 
-    LOG_INFO("%lums round duration (%u of %u nodes requested %u slots)",
-             (uint32_t)ELWB_TICKS_TO_MS(t_round), req_nodes, n_nodes, req_slots);
+    LOG_VERBOSE("%lums round duration (%u of %u nodes requested %u slots)",
+                (uint32_t)ELWB_TICKS_TO_MS(t_round), req_nodes, n_nodes, req_slots);
 
     memset(sched->slot, 0, sizeof(sched->slot));        /* clear the content */
     /* reset all requests (set n_pkts to 0) */
@@ -446,7 +446,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
         curr_node = curr_node->next;
       }
     }
-    LOG_INFO(print_buffer);
+    LOG_VERBOSE(print_buffer);
 
     sched_state = ELWB_SCHED_STATE_IDLE;
     /* schedule for next round will be set below */
@@ -499,7 +499,7 @@ uint32_t elwb_sched_compute(elwb_schedule_t * const sched,
 #endif /* ELWB_CONF_SCHED_CRC */
 
   /* log the parameters of the new schedule */
-  LOG_INFO("schedule updated (s=%u T=%lums n=%u l=%u)", n_nodes, (uint32_t)ELWB_TICKS_TO_MS(sched->period), n_slots_assigned, compressed_size);
+  LOG_VERBOSE("schedule updated (s=%u T=%lums n=%u l=%u)", n_nodes, (uint32_t)ELWB_TICKS_TO_MS(sched->period), n_slots_assigned, compressed_size);
 
   return compressed_size;
 }

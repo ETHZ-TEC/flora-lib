@@ -309,7 +309,7 @@ static bool lwb_is_schedule_valid(lwb_schedule_t* schedule)
 static void lwb_bootstrap(void)
 {
   stats.bootstrap_cnt++;
-  LOG_INFO("bootstrap");
+  LOG_VERBOSE("bootstrap");
   lwb_time_t bootstrap_timeout = LWB_TIMER_NOW() + LWB_BOOTSTRAP_TIMEOUT;
   /* keep listening until we receive a valid schedule packet */
   do {
@@ -565,7 +565,7 @@ static void lwb_contention(lwb_time_t slot_start)
     packet.cont.node_id = LWB_NODE_ID;
     packet.cont.ipi     = ipi;
     LWB_SET_PKT_HEADER(&packet);
-    LOG_INFO("transmitting node ID");
+    LOG_VERBOSE("transmitting node ID");
 #if LWB_CONT_USE_HSTIMER
     /* contention slot requires precise timing: use the high-speed timer for this wake-up! */
     LWB_TIMER_HS_SET(last_synced_hs + LPTIMER_TICKS_TO_HS_TIMER(slot_start - last_synced), lwb_notify);
@@ -672,7 +672,7 @@ static void lwb_send_rcv_sched2(lwb_time_t slot_start)
                 LOG_ERROR("failed to requeue packet");
               }
             } else {
-              LOG_INFO("packet reception ACK");
+              LOG_VERBOSE("packet reception ACK");
               stats.pkt_ack++;
             }
           } else {
@@ -732,33 +732,33 @@ int32_t lwb_calc_drift_comp(uint32_t elapsed_ticks)
 static void lwb_print_stats(void)
 {
   if (is_host) {
-    LOG_INFO("%llu | T: %lus, slots: %u, rx/tx/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu, rssi: %ddBm",
-             network_time,
-             lwb_sched_get_period(),
-             schedule.n_slots,
-             stats.pkt_rcvd,
-             stats.pkt_sent,
-             stats.pkt_dropped,
-             stats.pkt_rx_all,
-             stats.pkt_tx_all,
-             stats.rssi_avg);
+    LOG_VERBOSE("%llu | T: %lus, slots: %u, rx/tx/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu, rssi: %ddBm",
+                network_time,
+                lwb_sched_get_period(),
+                schedule.n_slots,
+                stats.pkt_rcvd,
+                stats.pkt_sent,
+                stats.pkt_dropped,
+                stats.pkt_rx_all,
+                stats.pkt_tx_all,
+                stats.rssi_avg);
   } else {
     /* print out some stats (note: takes ~2ms to compose this string!) */
-    LOG_INFO("%s %llu | T: %lus, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
-             lwb_syncstate_to_string[sync_state],
-             schedule.time,
-             LWB_TICKS_TO_S(schedule.period),
-             schedule.n_slots,
-             stats.pkt_rcvd,
-             stats.pkt_sent,
-             stats.pkt_ack,
-             stats.pkt_dropped,
-             stats.pkt_rx_all,
-             stats.pkt_tx_all,
-             stats.unsynced_cnt,
-             stats.bootstrap_cnt,
-             stats.drift,
-             stats.rssi_avg);
+    LOG_VERBOSE("%s %llu | T: %lus, slots: %u, rx/tx/ack/drop/rx_all/tx_all: %lu/%lu/%lu/%lu/%lu/%lu, usync: %lu/%lu, drift: %ld, rssi: %ddBm",
+                lwb_syncstate_to_string[sync_state],
+                schedule.time,
+                LWB_TICKS_TO_S(schedule.period),
+                schedule.n_slots,
+                stats.pkt_rcvd,
+                stats.pkt_sent,
+                stats.pkt_ack,
+                stats.pkt_dropped,
+                stats.pkt_rx_all,
+                stats.pkt_tx_all,
+                stats.unsynced_cnt,
+                stats.bootstrap_cnt,
+                stats.drift,
+                stats.rssi_avg);
   }
 }
 

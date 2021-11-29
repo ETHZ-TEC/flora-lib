@@ -254,7 +254,7 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
 #endif /* LWB_SCHED_ADD_CRC */
 
   /* log the parameters of the new schedule */
-  LOG_INFO("schedule updated (s=%lu T=%lums n=%u l=%u)", n_nodes, (uint32_t)LWB_TICKS_TO_MS(sched->period), sched->n_slots, sched_len);
+  LOG_VERBOSE("schedule updated (s=%lu T=%lums n=%u l=%u)", n_nodes, (uint32_t)LWB_TICKS_TO_MS(sched->period), sched->n_slots, sched_len);
 
   return sched_len;
 }
