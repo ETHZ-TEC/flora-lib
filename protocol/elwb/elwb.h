@@ -125,7 +125,7 @@
 /* append CRC to the schedule? */
 #ifndef ELWB_CONF_SCHED_CRC
 #define ELWB_CONF_SCHED_CRC       1
-#endif /* ELWB_CONF_SCHED_ADD_CRC */
+#endif /* ELWB_CONF_SCHED_CRC */
 
 #ifndef ELWB_CONF_SCHED_NODE_TIMEOUT
 #define ELWB_CONF_SCHED_NODE_TIMEOUT  3600    /* 1h */

@@ -108,7 +108,7 @@ typedef struct
     void ( *RxSync ) ( void ) ;
 
     /*!
-     * \brief Premable detected callback prototype.
+     * \brief Preamble detected callback prototype.
      */
     void ( *RxPreamble ) ( void ) ;
 

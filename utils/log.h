@@ -54,16 +54,16 @@
 #define LOG_ADD_TIMESTAMP       1
 #endif /* LOG_ADD_TIMESTAMP */
 
-/* whether or not to print the log level on each line */
+/* print the log level on each line */
 #ifndef LOG_ADD_LEVEL
 #define LOG_ADD_LEVEL           1
-#endif /* LOG_PRINT_LEVEL */
+#endif /* LOG_ADD_LEVEL */
 
 #ifndef LOG_USE_COLORS
 #define LOG_USE_COLORS          1
 #endif /* LOG_USE_COLORS */
 
-/* whether or not to print the log level on each line */
+/* print the log level on each line */
 #ifndef LOG_ADD_MODULE
 #define LOG_ADD_MODULE          1
 #endif /* LOG_ADD_MODULE */
