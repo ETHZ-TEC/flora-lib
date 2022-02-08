@@ -124,12 +124,14 @@ void discosync_start(uint8_t nr_slots, uint16_t rx_time_before_start_ms, discosy
 #endif /* DISCOSYNC_PROBABILISTIC_ASSIGNMENT */
 
   // Print slot assignment
+#if LOG_ENABLE && (LOG_LEVEL > LOG_LEVEL_INFO)
   char array_representation[2 * DISCOSYNC_MAX_NUM_SLOTS + 1] = {0};
   for (uint8_t i = 0; i < total_slots; i++) {
     array_representation[2 * i    ] = '0' + tx_slots[i];
     array_representation[2 * i + 1] = ' ';
   }
   LOG_VERBOSE("slot assignment: %s", array_representation);
+#endif /* LOG_LEVEL > LOG_LEVEL_INFO */
 
 #if DISCOSYNC_DISABLE_INTERRUPTS
   // Disable other potentially interfering interrupts!
