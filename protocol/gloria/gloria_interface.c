@@ -191,7 +191,7 @@ uint8_t gloria_stop(void)
 #if GLORIA_INTERFACE_WAIT_TX_FINISHED
     // if a transmission is ongoing, wait for it to complete
     flood.stop = true;
-    uint64_t timeout = hs_timer_get_current_timestamp() + gloria_calculate_slot_time(GLORIA_INTERFACE_MODULATION, 0, 0, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
+    uint64_t timeout = hs_timer_get_current_timestamp() + gloria_calculate_slot_time(internal_modulation, 0, 0, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
     while ((radio_get_status() == RF_TX_RUNNING) && !flood_completed && (hs_timer_get_current_timestamp() < timeout));
 #endif /* GLORIA_INTERFACE_WAIT_TX_FINISHED */
 

@@ -301,7 +301,12 @@ void hs_timer_generic_start(uint64_t timestamp, hs_timer_cb_t callback)
 {
   if (callback) {
     uint64_t now = hs_timer_get_current_timestamp();
-    if ((timestamp - now) < HS_TIMER_GUARD_TIME || (timestamp - now) > (uint64_t) INT64_MAX) {
+    if ((timestamp - now) < HS_TIMER_GUARD_TIME) {
+      LOG_WARNING("Generic too late!");
+      callback();
+    }
+    else if ((timestamp - now) > (uint64_t) INT64_MAX) {
+      LOG_WARNING("Generic strange condition");
       callback();
     }
     else {
@@ -388,4 +393,3 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
     }
   }
 }
-

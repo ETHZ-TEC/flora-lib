@@ -143,7 +143,11 @@ void gloria_update()
 
 void gloria_process_slot()
 {
-  if (gloria_is_not_finished(current_flood) && !current_flood->stop) {
+  if (current_flood->stop) {
+    // finish flood without callback (calling callback could lead to executing gloria_stop() two times)
+    return;
+  }
+  else if (gloria_is_not_finished(current_flood)) {
     if (gloria_is_ack_slot(current_flood)) {
       if (current_flood->acked) {
         // flood ack received or node is flood destination -> send ack
