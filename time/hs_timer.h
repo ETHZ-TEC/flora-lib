@@ -57,6 +57,7 @@
 #define HS_TIMER_US_TO_TICKS(us)              ((us) * HS_TIMER_FREQUENCY_US)
 #define HS_TIMER_NS_TO_TICKS(ns)              ((ns) * HS_TIMER_FREQUENCY_US / 1000)
 
+#define hs_timer_now                          hs_timer_get_current_timestamp    // Alias
 
 typedef void (* hs_timer_cb_t)(void);
 

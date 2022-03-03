@@ -132,7 +132,7 @@ void hs_timer_set_schedule_timestamp(uint64_t timestamp)
 }
 
 
-void hs_timer_set_hs_timer_timeout_timestamp(uint64_t timestamp)
+void hs_timer_set_timeout_timestamp(uint64_t timestamp)
 {
 #if HS_TIMER_COMPENSATE_DRIFT
   uint64_t ts = (uint64_t) round((timestamp - hs_timer_offset) / hs_timer_drift);
@@ -160,31 +160,15 @@ void hs_timer_set_generic_timestamp(uint64_t timestamp)
 
 inline uint64_t hs_timer_get_current_timestamp(void)
 {
+  ENTER_CRITICAL_SECTION();
   uint64_t timestamp = __HAL_TIM_GET_COUNTER(&htim2);
   timestamp |= ((uint64_t) hs_timer_counter_extension) << 32;
+  LEAVE_CRITICAL_SECTION();
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
 #else
   return timestamp;
 #endif /* HS_TIMER_COMPENSATE_DRIFT */
-}
-
-
-uint64_t hs_timer_now(void)
-{
-  if (IS_INTERRUPT()) {
-    return 0;   /* this function must not be called from interrupt */
-  }
-  uint32_t hw_ts, hw_ts2, sw_ext, sw_ext2;
-
-  do {
-    hw_ts  = __HAL_TIM_GET_COUNTER(&htim2);
-    sw_ext = hs_timer_counter_extension;
-    hw_ts2  = __HAL_TIM_GET_COUNTER(&htim2);
-    sw_ext2 = hs_timer_counter_extension;
-  } while (sw_ext != sw_ext2 || hw_ts > hw_ts2);
-
-  return ((uint64_t)sw_ext << 32) | hw_ts;
 }
 
 
@@ -201,9 +185,10 @@ uint32_t hs_timer_get_schedule_timestamp(void)
 
 uint64_t hs_timer_get_capture_timestamp(void)
 {
-  uint64_t timestamp;
-  timestamp = htim2.Instance->CCR1;
+  ENTER_CRITICAL_SECTION();
+  uint64_t timestamp = htim2.Instance->CCR1;
   timestamp |= ((uint64_t) hs_timer_capture_counter_extension) << 32;
+  LEAVE_CRITICAL_SECTION();
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
 #else
@@ -213,9 +198,10 @@ uint64_t hs_timer_get_capture_timestamp(void)
 
 uint64_t hs_timer_get_compare_timestamp(void)
 {
-  uint64_t timestamp;
-  timestamp = htim2.Instance->CCR1;
+  ENTER_CRITICAL_SECTION();
+  uint64_t timestamp = htim2.Instance->CCR1;
   timestamp |= ((uint64_t) hs_timer_schedule_counter_extension) << 32;
+  LEAVE_CRITICAL_SECTION();
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
 #else
@@ -224,11 +210,12 @@ uint64_t hs_timer_get_compare_timestamp(void)
 }
 
 
-uint64_t hs_timer_get_hs_timer_timeout_timestamp(void)
+uint64_t hs_timer_get_timeout_timestamp(void)
 {
-  uint64_t timestamp;
-  timestamp = htim2.Instance->CCR3;
+  ENTER_CRITICAL_SECTION();
+  uint64_t timestamp = htim2.Instance->CCR3;
   timestamp |= ((uint64_t) hs_timer_timeout_counter_extension) << 32;
+  LEAVE_CRITICAL_SECTION();
 #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
 #else
@@ -240,9 +227,10 @@ uint64_t hs_timer_get_hs_timer_timeout_timestamp(void)
 #if !BOLT_ENABLE
 uint64_t hs_timer_get_generic_timestamp(void)
 {
-  uint64_t timestamp;
-  timestamp = htim2.Instance->CCR4;
+  ENTER_CRITICAL_SECTION();
+  uint64_t timestamp = htim2.Instance->CCR4;
   timestamp |= ((uint64_t) hs_timer_generic_counter_extension) << 32;
+  LEAVE_CRITICAL_SECTION();
  #if HS_TIMER_COMPENSATE_DRIFT
   return (uint64_t) round(timestamp * hs_timer_drift + hs_timer_offset);
  #else
@@ -288,7 +276,7 @@ void hs_timer_timeout_start(uint64_t timeout, hs_timer_cb_t callback)
 {
   if (callback) {
     timeout_callback = callback;
-    hs_timer_set_hs_timer_timeout_timestamp(timeout);
+    hs_timer_set_timeout_timestamp(timeout);
     __HAL_TIM_CLEAR_IT(&htim2, TIM_IT_CC3);
     HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_3);
   }
