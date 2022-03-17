@@ -43,34 +43,36 @@ static char log_print_buffer[LOG_LINE_LENGTH];
   static int32_t write_idx = 0;
 #endif /* LOG_PRINT_IMMEDIATELY */
 
-static int_fast8_t log_semaphore   = 0;
-static bool        log_lock_failed = false;
+static bool log_locked      = false;
+static bool log_lock_failed = false;
 
 
 /* --- FUNCTIONS --- */
 
 static void log_unlock(void)
 {
-  log_semaphore--;
-  if (log_semaphore < 0) {              /* just for debugging */
-    /* not supposed to happen */
-    const char* error_msg = "ERROR: log printing semaphore is invalid!\n";
-    LOG_PRINT_FUNC((char*)error_msg, strlen(error_msg));
-    log_semaphore = 0;
+  ENTER_CRITICAL_SECTION();
+  if (!log_locked) {              /* just for debugging */
+    LOG_PRINT_FUNC(LOG_ERR_MSG_LOCK_INV, strlen(LOG_ERR_MSG_LOCK_INV));
   }
+  log_locked = false;
+  LEAVE_CRITICAL_SECTION();
 }
 
 static bool log_lock(void)
 {
-  if (log_semaphore == 0) {
-    log_semaphore++;
-    if (log_semaphore == 1) {
-      return true;
-    }
-    log_unlock();
+  bool lock_obtained = false;
+
+  ENTER_CRITICAL_SECTION();
+  if (log_locked) {
+    log_lock_failed = true;
+  } else {
+    lock_obtained   = true;
+    log_locked      = true;
   }
-  log_lock_failed = true;
-  return false;
+  LEAVE_CRITICAL_SECTION();
+
+  return lock_obtained;
 }
 
 #if !LOG_PRINT_IMMEDIATELY || LOG_USE_DMA

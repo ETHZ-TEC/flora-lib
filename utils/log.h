@@ -114,6 +114,7 @@
 #endif /* LOG_ADD_LEVEL */
 
 #define LOG_ERR_MSG_LOCK_FAILED (LOG_NEWLINE "--- ERROR failed to acquire log lock ---" LOG_NEWLINE)
+#define LOG_ERR_MSG_LOCK_INV    (LOG_NEWLINE "--- ERROR invalid log lock state ---" LOG_NEWLINE)
 
 #if LOG_ADD_MODULE
   #define LOG_MODULE_NAME       LOG_SRCFILENAME
