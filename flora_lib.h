@@ -88,11 +88,11 @@
 
 /* --- global error checks --- */
 
-#ifndef __OPTIMIZE__
+#if !defined(__OPTIMIZE__) && (!defined(FLORA_COMPILER_OPT_CHECK) || (FLORA_COMPILER_OPT_CHECK != 0))
 #error "Compiler optimizations have to be enabled! Recommended setting is -O2."
 #endif
 
-#if __GNUC__ != 7
+#if (__GNUC__ != 7) && (!defined(FLORA_COMPILER_VER_CHECK) || (FLORA_COMPILER_VER_CHECK != 0))
 #warning "Compiler version has changed."
 #endif
 

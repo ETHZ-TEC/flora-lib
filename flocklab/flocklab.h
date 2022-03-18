@@ -32,7 +32,7 @@
 #define FLOCKLAB_FLOCKLAB_H_
 
 #ifndef FLOCKLAB
-#define FLOCKLAB      0
+#define FLOCKLAB            0
 #endif /* FLOCKLAB */
 
 extern volatile uint16_t FLOCKLAB_NODE_ID;
@@ -44,18 +44,25 @@ extern volatile uint16_t FLOCKLAB_NODE_ID;
 #define NODE_ID       FLOCKLAB_NODE_ID
 #endif /* NODE_ID */
 
+/* disable SWD pins (instead, use them for tracing) */
 #ifndef FLOCKLAB_SWD
-#define FLOCKLAB_SWD  0
+#define FLOCKLAB_SWD        0
 #endif /* FLOCKLAB_SWD */
 
+/* don't use signal pin interrupt */
 #ifndef FLOCKLAB_SIG_INT
-#define FLOCKLAB_SIG_INT  0           /* enable SIG1 pin interrupt? */
+#define FLOCKLAB_SIG_INT    0
 #endif /* FLOCKLAB_SIG_INT */
 
-/* don't print color codes */
+/* debug log: don't print color codes */
 #ifndef LOG_USE_COLORS
-#define LOG_USE_COLORS  0
+#define LOG_USE_COLORS      0
 #endif /* LOG_USE_COLORS */
+
+/* debug log: don't print a timestamp */
+#ifndef LOG_ADD_TIMESTAMP
+#define LOG_ADD_TIMESTAMP   0
+#endif
 
 /* error check */
 #if BOLT_ENABLE
