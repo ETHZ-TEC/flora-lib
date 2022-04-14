@@ -157,13 +157,14 @@ void lptimer_expired(void)
     }
     uint64_t now = ((uint64_t)ext << 16) | cnt;
     if (now >= lptimer_exp) {
-      lptimer_cb_func_t cb = lptimer_cb;
-      lptimer_cb = 0;                     /* must be reset before entering the callback since the timer could be reset within the callback */
+      uint64_t          exp = lptimer_exp;  /* store, may be overwritten by the user callback */
+      lptimer_cb_func_t cb  = lptimer_cb;
+      lptimer_cb = 0;                       /* must be reset before entering the callback since the timer could be reset within the callback */
       if (cb) {
-        cb();                             /* execute callback function */
+        cb();                               /* execute callback function */
       }
-      if (now > (lptimer_exp + LPTIMER_MS_TO_TICKS(LPTIMER_EXP_TIME_TH_MS))) {
-        LOG_WARNING("timer fired %lums too late", (uint32_t)LPTIMER_TICKS_TO_MS(now - lptimer_exp));
+      if (now > (exp + LPTIMER_MS_TO_TICKS(LPTIMER_EXP_TIME_TH_MS))) {
+        LOG_WARNING("timer fired %lums too late", (uint32_t)LPTIMER_TICKS_TO_MS(now - exp));
       }
     } else if (ext == (uint32_t)(lptimer_exp >> 16)) {
       LOG_WARNING("tick count (%u) and compare register (%u) differ", cnt, (uint16_t)hlptim1.Instance->CMP);
