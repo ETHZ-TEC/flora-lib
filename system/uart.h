@@ -33,11 +33,11 @@
 
 
 #ifndef UART_FIFO_BUFFER_SIZE
-#define UART_FIFO_BUFFER_SIZE    1024       /* buffer size for RX and TX queues, must be < 65536 */
+#define UART_FIFO_BUFFER_SIZE    1024         /* buffer size for RX and TX queues, must be < 65536 */
 #endif /* UART_FIFO_BUFFER_SIZE */
 
 #ifndef UART_TX_TIMEOUT_MS
-#define UART_TX_TIMEOUT_MS       100        /* uart_tx will block for at most this time */
+#define UART_TX_TIMEOUT_MS       1000         /* uart_tx will block for at most this time */
 #endif /* UART_TX_TIMEOUT_MS */
 
 #ifndef UART_RX_ENABLE

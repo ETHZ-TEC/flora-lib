@@ -73,6 +73,10 @@
 #define LOG_BUFFER_SIZE         4096
 #endif /* LOG_BUFFER_SIZE */
 
+#if LOG_BUFFER_SIZE >= 65536
+#error "LOG_BUFFER_SIZE must be < 65536"
+#endif /* LOG_BUFFER_SIZE */
+
 /* max. number of chars per line, defines the buffer size used for sprintf() */
 #ifndef LOG_LINE_LENGTH
 #define LOG_LINE_LENGTH         256
@@ -85,9 +89,9 @@
 /* the actual print function to use, must take 2 arguments (str and length) and return a boolean value (true = success, false = failed) */
 #ifndef LOG_PRINT_FUNC
  #if LOG_USE_DMA
-  #define LOG_PRINT_FUNC          uart_tx
+  #define LOG_PRINT_FUNC        uart_tx
  #else /* LOG_USE_DMA */
-  #define LOG_PRINT_FUNC          uart_tx_direct
+  #define LOG_PRINT_FUNC        uart_tx_direct
  #endif /* LOG_USE_DMA */
 #endif /* LOG_PRINT_FUNC */
 

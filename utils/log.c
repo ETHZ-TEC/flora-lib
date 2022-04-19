@@ -101,25 +101,30 @@ uint32_t log_buffer_space(void)
   return (LOG_BUFFER_SIZE - log_buffer_size() - 1);
 }
 
+static void log_buffer_clear(void)
+{
+  read_idx = write_idx = 0;
+}
+
 bool log_flush(void)
 {
-  static uint_fast8_t flush_lock = 0;
-  flush_lock++;
-  if (flush_lock != 1) {
-    flush_lock--;
+  if (!log_lock()) {
     return false;
   }
-  bool buffer_full = log_buffer_full();
+
   if (!log_buffer_empty()) {
+    bool full  = log_buffer_full();
     uint32_t n = log_buffer_size();
     uint32_t m = (LOG_BUFFER_SIZE - read_idx);
     if (!LOG_PRINT_FUNC(&log_buffer[read_idx], MIN(n, m))) {
-      flush_lock--;
+      log_buffer_clear();
+      log_unlock();
       return false;
     }
     if (m < n) {
       if (!LOG_PRINT_FUNC(&log_buffer[0], n - m)) {
-        flush_lock--;
+        log_buffer_clear();
+        log_unlock();
         return false;
       }
     }
@@ -127,15 +132,15 @@ bool log_flush(void)
     if(read_idx >= LOG_BUFFER_SIZE) {
       read_idx -= LOG_BUFFER_SIZE;
     }
-  }
-  if (buffer_full) {
-    LOG_PRINT_FUNC(LOG_QUEUE_FULL_MARK LOG_NEWLINE, strlen(LOG_QUEUE_FULL_MARK LOG_NEWLINE));   /* to indicate that the queue was full! */
+    if (full) {
+      LOG_PRINT_FUNC(LOG_QUEUE_FULL_MARK LOG_NEWLINE, strlen(LOG_QUEUE_FULL_MARK LOG_NEWLINE));   /* to indicate that the queue was full! */
+    }
   }
   if (log_lock_failed) {
-    LOG_PRINT_FUNC(LOG_ERR_MSG_LOCK_FAILED, sizeof(LOG_ERR_MSG_LOCK_FAILED));
+    LOG_PRINT_FUNC(LOG_ERR_MSG_LOCK_FAILED, strlen(LOG_ERR_MSG_LOCK_FAILED));
     log_lock_failed = false;
   }
-  flush_lock--;
+  log_unlock();
 
   return true;
 }
@@ -179,10 +184,11 @@ void log_print(const char* str)
     return;
   }
   log_buffer_add(str, 0);
+  log_unlock();
+
 #if LOG_USE_DMA && LOG_PRINT_IMMEDIATELY
   log_flush();
 #endif /* LOG_USE_DMA */
-  log_unlock();
 }
 
 /* puts a zero-terminated string into the TX queue and appends a newline */
@@ -250,12 +256,12 @@ void log_println(log_level_t level, const char* module, const char* msg)
   /* print the newline */
   log_buffer_add(LOG_NEWLINE, 0);
 
+  /* release lock */
+  log_unlock();
+
 #if LOG_USE_DMA && LOG_PRINT_IMMEDIATELY
   log_flush();
 #endif /* LOG_USE_DMA */
-
-  /* release lock */
-  log_unlock();
 }
 
 /* composes a zero-terminated string with arguments and writes it into the TX queue, newline is appended */
