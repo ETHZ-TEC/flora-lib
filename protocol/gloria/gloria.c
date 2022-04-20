@@ -63,7 +63,7 @@ void gloria_run_flood(gloria_flood_t* flood, void (*callback)())
   current_flood->msg_received       = current_flood->initial;
   current_flood->last_active_slot   = gloria_calculate_last_active_slot(current_flood);
 
-  current_flood->remaining_retransmissions = current_flood->max_retransmissions;
+  current_flood->rem_retransmissions = current_flood->max_retransmissions;
 
   current_flood->ack_message.protocol_id = PROTOCOL_ID_GLORIA;
   current_flood->ack_message.type        = 0;
@@ -182,7 +182,7 @@ static void gloria_rx_callback(uint8_t* payload, uint8_t size)
     gloria_finish_slot();
   }
   else if (size == GLORIA_ACK_LENGTH) {
-    gloria_ack_message_t* ack_message = (gloria_ack_message_t*) payload;
+    gloria_ack_msg_t* ack_message = (gloria_ack_msg_t*) payload;
     if (ack_message->dst) {
       current_flood->acked = true;
       current_flood->ack_message.dst = ack_message->dst;
@@ -232,10 +232,14 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size)
     }
 
     current_flood->first_rx_index = current_flood->header.slot_index;
-    current_flood->last_active_slot = gloria_calculate_last_active_slot(current_flood);
 
-    // set guard time to 0 as node is now synced to this flood
-    current_flood->guard_time = 0;
+    // user-defined RX callback (NOTE: execution time must be short / in the microsecond range, otherwise the Gloria slotOverhead must be adjusted)
+    if (current_flood->rx_cb) {
+      current_flood->rx_cb();
+    }
+
+    current_flood->last_active_slot = gloria_calculate_last_active_slot(current_flood);   // must be after rx callback
+    current_flood->guard_time       = 0;    // set guard time to 0 as node is now synced to this flood
 
     // check if node is also the destination
     if (current_flood->ack_mode && (header->dst == current_flood->node_id)) {

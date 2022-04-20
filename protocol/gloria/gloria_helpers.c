@@ -103,11 +103,7 @@ inline bool gloria_is_not_finished(gloria_flood_t* flood) {
  *     flood was not acked
  */
 inline bool gloria_valid_to_send(gloria_flood_t* flood) {
-  if (
-      flood->msg_received
-          && flood->remaining_retransmissions
-      && !flood->acked
-  ) {
+  if (flood->msg_received && flood->rem_retransmissions && !flood->acked) {
     return true;
   }
   else {
@@ -117,7 +113,7 @@ inline bool gloria_valid_to_send(gloria_flood_t* flood) {
 
 
 inline bool gloria_is_ack_slot(gloria_flood_t* flood) {
-  return (flood->ack_mode && flood->header.slot_index % 2);
+  return (flood->ack_mode && (flood->header.slot_index % 2));
 }
 
 

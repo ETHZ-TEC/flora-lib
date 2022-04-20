@@ -257,7 +257,7 @@ static void gloria_radio_setup_callback() {
 }
 
 static void gloria_radio_tx_callback() {
-  current_flood->remaining_retransmissions -= 1;
+  current_flood->rem_retransmissions--;
   callback();
 }
 
@@ -283,7 +283,7 @@ static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t r
   }
   // check packet type and apply user-defined packet filter
   else if ((current_flood->header.protocol_id != PROTOCOL_ID_GLORIA) ||
-           (current_flood->pkt_filter && (size > current_flood->header_size) && !current_flood->pkt_filter(payload + current_flood->header_size, size - current_flood->header_size))) {
+           (current_flood->filter_cb && (size > current_flood->header_size) && !current_flood->filter_cb(payload + current_flood->header_size, size - current_flood->header_size))) {
     gloria_radio_continue_rx();
   }
   else {

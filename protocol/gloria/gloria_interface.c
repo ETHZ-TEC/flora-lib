@@ -39,33 +39,29 @@
 
 
 /* internal state */
-static gloria_flood_t         flood;                                              // flood struct which (serves as input, state, and output to/from gloria_run_flood)
-static uint8_t                gloria_payload[GLORIA_INTERFACE_MAX_PAYLOAD_LEN];   // buffer for the message
-static bool                   flood_running;                                      // indicates whether flood is onging or not
-static bool                   flood_completed;                                    // indicates whether the flood completed (N_TX reached)
-static uint8_t                lastrun_n_rx_started = 0;                           // number of rx started events during the last Gloria run
-static bool                   lastrun_t_ref_updated = false;                      // indicates whether last_t_ref has been updated during the last flood
-static uint64_t               last_t_ref = 0;                                     // reference time (updated if gloria_start is called with sync_slot=true)
-static int8_t                 internal_power = GLORIA_INTERFACE_POWER;            // internal state for power (can be adapted from the upper layer)
-static uint8_t                internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the upper layer)
-static uint8_t                internal_band = GLORIA_INTERFACE_RF_BAND;           // internal state for the frequency band (can be adapted from the upper layer)
-static bool                   internal_enable_flood_printing = false;             // enable printing of finished (i.e. completely received/transmitted) floods
-static gloria_flood_cb_t      flood_cb = 0;                                       // user-defined callback; only called if flood participation terminates before gloria_stop() is called
-static gloria_pkt_filter_cb_t pkt_filter_cb = 0;                                  // a user-defined packet filter callback function
-static uint64_t               tx_start_timestamp = 0;                             // an optional user-defined TX start marker
-static uint8_t                tx_delay_slots = 0;                                 // TX delay after reception, in number of slots
+static gloria_flood_t flood;                                              // flood struct which (serves as input, state, and output to/from gloria_run_flood)
+static uint8_t        gloria_payload[GLORIA_INTERFACE_MAX_PAYLOAD_LEN];   // buffer for the message
+static bool           flood_running;                                      // indicates whether flood is onging or not
+static bool           flood_completed;                                    // indicates whether the flood completed (N_TX reached)
+static uint8_t        lastrun_n_rx_started;                               // number of rx started events during the last Gloria run
+static bool           lastrun_t_ref_updated;                              // indicates whether last_t_ref has been updated during the last flood
+static uint64_t       last_t_ref = 0;                                     // reference time (updated if gloria_start is called with sync_slot=true)
+static int8_t         internal_power = GLORIA_INTERFACE_POWER;            // internal state for power (can be adapted from the upper layer)
+static uint8_t        internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the upper layer)
+static uint8_t        internal_band = GLORIA_INTERFACE_RF_BAND;           // internal state for the frequency band (can be adapted from the upper layer)
+static bool           internal_enable_flood_printing = false;             // enable printing of finished (i.e. completely received/transmitted) floods
+static uint64_t       tx_start_timestamp = 0;                             // an optional user-defined TX start marker
 #if GLORIA_INTERFACE_APPEND_TIMESTAMP
-static uint8_t                last_timestamp[GLORIA_TIMESTAMP_LENGTH];            // last received 64-bit hstimer timestamp
+static uint8_t        last_timestamp[GLORIA_TIMESTAMP_LENGTH];            // last received 64-bit hstimer timestamp
 #endif /* GLORIA_INTERFACE_APPEND_TIMESTAMP */
 
 /* variables to store gloria_start arguments */
-static uint16_t               arg_is_initiator = 0;                               // ID of the inititator
-static uint8_t*               arg_payload_ptr = NULL;                             // pointer to payload of currently ongoing flood
-static bool                   arg_sync_slot;                                      // holds state whether current flood is used to update last_t_ref or not
+static uint8_t*       arg_payload_ptr = NULL;                             // pointer to payload of currently ongoing flood
+static bool           arg_sync_slot;                                      // holds state whether current flood is used to update last_t_ref or not
 
 
 /* Private Function Prototypes */
-static void gloria_flood_callback(void);
+static void flood_callback(void);
 static void copy_payload(void);
 static void update_t_ref(void);
 
@@ -104,10 +100,8 @@ void gloria_start(bool is_initiator,
   GLORIA_START_IND();
 
   /* store arguments for further use */
-  arg_is_initiator = is_initiator;
-  arg_payload_ptr  = payload;
-  // arg_payload_len: stored during argument check
-  arg_sync_slot    = sync_slot;
+  arg_payload_ptr = payload;
+  arg_sync_slot   = sync_slot;
 
   /* initialize internal state */
   flood_running         = true;  // keep ordering: first internal state variable to update here
@@ -116,51 +110,70 @@ void gloria_start(bool is_initiator,
   lastrun_t_ref_updated = false;
   // last_t_ref: not initialized here since old values of previous floods are still valid and useful if current flood does not update the value
 
-  /* prepare flood struct */
-  memset(&flood, 0, sizeof(gloria_flood_t));    // reset struct
-  flood.marker              = 0;
-  flood.modulation          = internal_modulation;
-  flood.power               = internal_power;
-  flood.band                = internal_band;
-  flood.flood_idx           = 0;
-  flood.max_retransmissions = n_tx_max;
-  flood.ack_mode            = 0;
-  flood.max_acks            = 0;
-  flood.data_slots          = GLORIA_INTERFACE_MAX_SLOTS;
-  flood.sync_timer          = 0;      // do not automatically adjust the hs timer offset
-  flood.lp_listening        = false;
-  flood.radio_no_sleep      = true;
-  flood.node_id             = 0;      // unused
-  flood.tx_delay_slots      = tx_delay_slots;
-  flood.pkt_filter          = pkt_filter_cb;
+  flood.ack_mode              = 0;
+  flood.band                  = internal_band;
+  flood.data_slots            = GLORIA_INTERFACE_MAX_SLOTS;
+  flood.guard_time            = 0;
+  flood.header.protocol_id    = PROTOCOL_ID_GLORIA;
+  flood.header.type           = 0;
+  flood.header.sync           = (GLORIA_INTERFACE_APPEND_TIMESTAMP != 0);   // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
+  flood.header.slot_index     = 0;
+  flood.initial               = is_initiator;
+  flood.lp_listening          = false;
+  flood.max_retransmissions   = n_tx_max;
+  flood.modulation            = internal_modulation;
+  flood.payload               = gloria_payload;
+  flood.payload_size          = 0;
+  flood.power                 = internal_power;
+  flood.radio_no_sleep        = true;
+  flood.rem_retransmissions   = n_tx_max;
+  flood.rssi                  = 0;
+  flood.rx_timeout            = 0;
+  flood.snr                   = 0;
+  flood.sync_timer            = false;    // do not automatically adjust the hs timer offset
 
-  flood.header.type         = 0;
-  flood.header.sync         = (GLORIA_INTERFACE_APPEND_TIMESTAMP != 0);   // no sync flood (i.e. timestamp for absolute sync to initiator is not included in to payload)
-  flood.header.slot_index   = 0;
-  // flood.reconstructed_marker: initialization not necessary -> initialized in gloria_run_flood()
+  // unused fields or internal state of Gloria (initialized in gloria_run_flood)
+  flood.acked                 = false;
+  flood.ack_counter           = 0;
+  flood.crc_error             = false;
+  flood.crc_timeout           = false;
+  flood.current_tx_marker     = 0;
+  flood.first_rx_index        = 0;
+  flood.flood_idx             = 0;
+  flood.header_size           = 0;
+  flood.header.src            = 0;
+  flood.header.dst            = 0;
+  flood.last_active_slot      = 0;
+  flood.max_acks              = 0;
+  flood.msg_received          = false;
+  flood.node_id               = 0;
+  flood.received_marker       = 0;
+  flood.reconstructed_marker  = 0;
+  flood.stop                  = false;
+  memset(&flood.ack_message, 0, sizeof(gloria_ack_msg_t));
+
+  // don't change the following fields (they are reset in gloria_stop and can be modified by the user prior to the call to gloria_start)
+  //flood.flood_cb            = NULL;
+  //flood.filter_cb           = NULL;
+  //flood.rx_cb               = NULL;
+  //flood.tx_delay_slots      = 0;
 
   if (is_initiator) {
     // send flood
     // set the TX marker (timestamp when flood shall start) must be set on the initiator
     if (tx_start_timestamp && (tx_start_timestamp > hs_timer_get_current_timestamp())) {
       // user-defined start time
-      flood.marker      = tx_start_timestamp;
+      flood.marker = tx_start_timestamp;
     } else {
       // use current timestamp
-      flood.marker      = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
+      flood.marker = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
     }
-    flood.initial       = true;       // this node is the initator
-    flood.payload       = gloria_payload;
-    flood.payload_size  = payload_len;
+    flood.payload_size = payload_len;
     memcpy(gloria_payload, payload, payload_len);
   }
   else {
     // receive flood
-    flood.payload     = gloria_payload;
-    flood.marker      = 0;
-    flood.rx_timeout  = 0;
-    flood.guard_time  = 0;
-    flood.initial     = false;
+    flood.marker = 0;
     // clear the receive buffer
     memset(payload, 0, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
   }
@@ -174,7 +187,7 @@ void gloria_start(bool is_initiator,
   SUSPEND_SYSTICK();
 #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
-  gloria_run_flood(&flood, &gloria_flood_callback);
+  gloria_run_flood(&flood, &flood_callback);
 }
 
 
@@ -183,7 +196,7 @@ uint8_t gloria_stop(void)
   // only stop if flood is not terminated yet
   if (flood_running) {
 
-    if (!flood_completed && arg_is_initiator) {
+    if (!flood_completed && flood.initial) {
       // If this node is initiator, we can detect if flood did not terminate and warn the user
       LOG_WARNING("Stopping glossy while flood sending is still ongoing!");
     }
@@ -239,13 +252,14 @@ uint8_t gloria_stop(void)
     }
 
     /* clear arg variables */
-    arg_is_initiator   = false;
-    arg_payload_ptr    = NULL;
-    arg_sync_slot      = false;
-    flood_cb           = NULL;
-    pkt_filter_cb      = NULL;
-    tx_delay_slots     = 0;
-    tx_start_timestamp = 0;
+    arg_payload_ptr      = NULL;
+    arg_sync_slot        = false;
+    tx_start_timestamp   = 0;
+
+    flood.flood_cb       = NULL;
+    flood.filter_cb      = NULL;
+    flood.rx_cb          = NULL;
+    flood.tx_delay_slots = 0;
 
   #if GLORIA_INTERFACE_DISABLE_INTERRUPTS
     HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
@@ -253,9 +267,9 @@ uint8_t gloria_stop(void)
     RESUME_SYSTICK();
   #endif /* GLORIA_INTERFACE_DISABLE_INTERRUPTS */
 
-    GLORIA_STOP_IND();
-
     flood_running = false; // keep ordering: last internal state variable updated here
+
+    GLORIA_STOP_IND();
   }
 
   return flood.msg_received;
@@ -375,15 +389,21 @@ void gloria_enable_flood_printing(bool enable)
 }
 
 
-void gloria_register_flood_callback(gloria_flood_cb_t cb)
+void gloria_register_flood_callback(gloria_flood_cb_t flood_cb)
 {
-  flood_cb = cb;
+  flood.flood_cb = flood_cb;
 }
 
 
-void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb)
+void gloria_set_pkt_filter(gloria_filter_cb_t filter_cb)
 {
-  pkt_filter_cb = filter_cb;
+  flood.filter_cb = filter_cb;
+}
+
+
+void gloria_register_rx_callback(gloria_rx_cb_t rx_cb)
+{
+  flood.rx_cb = rx_cb;
 }
 
 
@@ -395,7 +415,7 @@ void gloria_set_tx_marker(uint64_t timestamp_hs)
 
 void gloria_set_tx_delay(uint8_t delay_slots)
 {
-  tx_delay_slots = delay_slots;
+  flood.tx_delay_slots = delay_slots;
 }
 
 
@@ -414,9 +434,9 @@ void gloria_get_received_timestamp(uint8_t* out_timestamp)
 
 /* PRIVATE FUNCTIONS **********************************************************/
 
-static void gloria_flood_callback(void)
+static void flood_callback(void)
 {
-  gloria_flood_cb_t cb = flood_cb;
+  gloria_flood_cb_t cb = flood.flood_cb;
 
   // flood completed
   flood_completed = true;
@@ -447,6 +467,7 @@ static void copy_payload(void)
     }
   }
 }
+
 
 /*
  * Updates the last_t_ref and lastrun_t_ref_updated based on the flood.reconstructed_marker

@@ -306,7 +306,7 @@ void gloria_enable_flood_printing(bool enable);
  *                   flood stops before gloria_stop() is called!
  * \param            cb: callback function
  */
-void gloria_register_flood_callback(gloria_flood_cb_t cb);
+void gloria_register_flood_callback(gloria_flood_cb_t flood_cb);
 
 /**
  * \brief           Set a custom RX packet filter
@@ -319,7 +319,16 @@ void gloria_register_flood_callback(gloria_flood_cb_t cb);
  *                  execution times may disrupt the Gloria timing.
  * \note            The callback function will be cleared in gloria_stop().
  */
-void gloria_set_pkt_filter(gloria_pkt_filter_cb_t filter_cb);
+void gloria_set_pkt_filter(gloria_filter_cb_t filter_cb);
+
+/**
+ * \brief           Register a function that is called upon reception of a packet.
+ * \param           Pointer to a callback function
+ * \note            The callback function must be short. If the execution time is
+ *                  larger than a few microseconds, the Gloria slotOverhead must
+ *                  be adjusted.
+ */
+void gloria_register_rx_callback(gloria_rx_cb_t rx_cb);
 
 /**
  * \brief           Set the transmission start time (TX marker) for the initiator.
