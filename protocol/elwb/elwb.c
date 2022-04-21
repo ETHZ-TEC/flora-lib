@@ -222,10 +222,10 @@ bool elwb_update_slot_durations(uint8_t n_tx_arg, uint8_t num_hops_arg)
   if (!num_hops_arg) {
     num_hops_arg = num_hops;
   }
-  uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS * sizeof(uint16_t) + ELWB_SCHED_HDR_LEN + ELWB_SCHED_CRC_LEN));
-  uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_CONF_MAX_PAYLOAD_LEN + ELWB_PKT_HDR_LEN);
+  uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_MAX_SCHED_PKT_LEN);
+  uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_MAX_DATA_PKT_LEN);
   uint32_t t_cont_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, MAX(ELWB_REQ_PKT_LEN, ELWB_2ND_SCHED_LEN) + ELWB_PKT_HDR_LEN);
-  uint32_t t_dack_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8 + ELWB_PKT_HDR_LEN);
+  uint32_t t_dack_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, ELWB_MAX_DACK_PKT_LEN);
 
   if (is_host && !elwb_sched_check_params(0, t_sched_new, t_cont_new, t_data_new)) {
     return false;
@@ -315,12 +315,13 @@ static void elwb_bootstrap(void)
   stats.bootstrap_cnt++;
   LOG_VERBOSE("bootstrap");
   elwb_time_t bootstrap_timeout = ELWB_TIMER_NOW() + ELWB_CONF_BOOTSTRAP_TIMEOUT;
+
   /* keep listening until we receive a valid schedule packet */
   do {
     gloria_register_flood_callback(elwb_schedule_received_callback);
     gloria_set_pkt_filter(elwb_bootstrap_sched_pkt_filter);
-    gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
-    elwb_wait_until(ELWB_TIMER_NOW() + t_sched);
+    gloria_start(false, (uint8_t*)&schedule, ELWB_MAX_SCHED_PKT_LEN, n_tx, 1);
+    elwb_wait_until(ELWB_TIMER_NOW() + ELWB_S_TO_TICKS(ELWB_CONF_SCHED_PERIOD) + t_sched);
     gloria_stop();
     if (ELWB_TIMER_NOW() > bootstrap_timeout) {
       /* go to sleep for ELWB_CONF_T_DEEPSLEEP ticks */
@@ -368,7 +369,7 @@ static void elwb_send_schedule(elwb_time_t start_of_round)
 
 static void elwb_receive_schedule(elwb_time_t start_of_round)
 {
-  gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
+  gloria_start(false, (uint8_t*)&schedule, ELWB_MAX_SCHED_PKT_LEN, n_tx, 1);
   elwb_wait_until(start_of_round + t_sched + ELWB_CONF_T_GUARD_ROUND);
   gloria_stop();
 
@@ -528,8 +529,8 @@ static void elwb_send_packet(elwb_time_t slot_start, uint32_t slot_length, uint3
 
 static void elwb_receive_packet(elwb_time_t slot_start, uint32_t slot_length, uint32_t slot_idx)
 {
-  uint8_t packet_len = 0;
-  bool data_packet = ELWB_SCHED_HAS_DATA_SLOTS(&schedule);
+  uint8_t packet_len  = ELWB_MAX_DATA_PKT_LEN;
+  bool    data_packet = ELWB_SCHED_HAS_DATA_SLOTS(&schedule);
 
   if (!data_packet) {
     /* the packet length is known in the request round */
@@ -588,7 +589,7 @@ static void elwb_receive_packet(elwb_time_t slot_start, uint32_t slot_length, ui
 /* data acknowledgment slot */
 static void elwb_data_ack(elwb_time_t slot_start)
 {
-  uint8_t packet_len = 0;
+  uint8_t packet_len = ELWB_MAX_DACK_PKT_LEN;
 
   if (is_host) {
     /* acknowledge each received packet of the last round */
@@ -671,6 +672,7 @@ static void elwb_data_ack(elwb_time_t slot_start)
 static void elwb_contention(elwb_time_t slot_start, bool node_registered)
 {
   const uint8_t packet_len = ELWB_REQ_PKT_LEN + ELWB_PKT_HDR_LEN;
+
   packet.cont.node_id = 0;
 
   /* if there is data in the output buffer, then request a slot */
