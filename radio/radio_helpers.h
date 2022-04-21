@@ -36,9 +36,39 @@ void      radio_update_cli(void);
 
 void      radio_set_lora_syncword(radio_lora_syncword_t syncword);
 uint16_t  radio_get_syncword(void);
-void      radio_set_config_rx(uint8_t modulation_index, uint8_t band_index, int32_t bandwidth, int32_t datarate, int32_t preamble_length, uint16_t timeout, bool implicit, uint8_t implicit_length, bool crc, bool stop_rx_on_preamble);
-void      radio_set_config_tx(uint8_t modulation_index, uint8_t band_index, int8_t power, int32_t bandwidth, int32_t datarate, int32_t preamble_length, bool implicit, bool crc);
-void      radio_set_config_rxtx(bool lora_mode, uint8_t band_index, int32_t datarate, int8_t power, int32_t bandwidth, int32_t preamble_length, uint8_t coderate, uint16_t timeout, bool implicit,  uint8_t implicit_length, bool crc);
+void      radio_set_config_rx(uint8_t modulation_index,
+                              uint8_t band_index,
+                              int32_t bandwidth,
+                              int32_t datarate,
+                              int32_t preamble_length,
+                              uint16_t timeout,
+                              bool implicit,
+                              uint8_t payload_len,
+                              bool crc,
+                              bool stop_rx_on_preamble);
+void      radio_set_config_tx(uint8_t modulation_index,
+                              uint8_t band_index,
+                              int8_t power,
+                              int32_t bandwidth,
+                              int32_t datarate,
+                              int32_t preamble_length,
+                              bool implicit,
+                              bool crc);
+void      radio_set_config_rxtx(bool lora_mode,
+                                uint8_t band_index,
+                                int32_t datarate,
+                                int8_t power,
+                                int32_t bandwidth,
+                                int32_t preamble_length,
+                                uint8_t coderate,
+                                uint16_t timeout,
+                                bool implicit,
+                                uint8_t payload_len,
+                                bool crc);
+void      radio_set_config(uint8_t modulation_index,
+                           uint8_t band_index,
+                           int8_t power,
+                           uint8_t max_payload_len);
 void      radio_set_continuous_preamble(void);
 
 void      radio_get_payload(uint8_t* buffer, uint8_t* offset, uint8_t* size);

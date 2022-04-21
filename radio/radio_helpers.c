@@ -222,8 +222,8 @@ void radio_set_config_tx(uint8_t modulation_index,
       datarate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
       preamble_length,
-      implicit, // explicit header mode
-      crc,      // CRC on
+      implicit,
+      crc,
       false,    // FHSS
       0,        // FHSS period
       false,    // iqInverted
@@ -239,7 +239,7 @@ void radio_set_config_rx(uint8_t modulation_index,
                          int32_t preamble_length,
                          uint16_t timeout,
                          bool implicit,
-                         uint8_t implicit_length,
+                         uint8_t implicit_len,
                          bool crc,
                          bool stop_rx_on_preamble)
 {
@@ -261,26 +261,76 @@ void radio_set_config_rx(uint8_t modulation_index,
   }
 
   Radio.Standby();
-
   Radio.SetChannel(radio_bands[band_index].centerFrequency);
-
   Radio.SetRxConfig(
       radio_modulations[current_modulation].modem,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? bandwidth : bandwidth_rx,
       datarate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
-      0,        // AFC Bandwidth (FSK only, not used with SX126x!)
+      0,            // AFC Bandwidth (FSK only)
       preamble_length,
       timeout,
-      implicit, // explicit header mode
-      (implicit ? implicit_length : 0), // no fixed payload length (as it is explicit header mode / variable packet length)
-      crc,      // CRC on
-      false,    // FHSS
-      0,        // FHSS period
-      false     // iqInverted
+      implicit,
+      (implicit ? implicit_len : RADIO_MAX_PAYLOAD_SIZE),
+      crc,
+      false,        // FHSS
+      0,            // FHSS period
+      false         // iqInverted
   );
 
   SX126xSetStopRxTimerOnPreambleDetect(stop_rx_on_preamble);
+}
+
+
+void radio_set_config(uint8_t modulation_index,
+                      uint8_t band_index,
+                      int8_t power,
+                      uint8_t max_payload_len)
+{
+  if (modulation_index >= RADIO_NUM_MODULATIONS || band_index >= RADIO_NUM_BANDS) return;
+
+  current_modulation = modulation_index;
+
+  // Do not allow for illegal power level
+  if (power > radio_bands[band_index].maxPower) {
+    power = radio_bands[band_index].maxPower;
+  }
+
+  Radio.Standby();
+  Radio.SetChannel(radio_bands[band_index].centerFrequency);
+  Radio.SetTxConfig(
+      radio_modulations[current_modulation].modem,
+      power,
+      (radio_modulations[current_modulation].modem == MODEM_FSK) ? radio_modulations[current_modulation].fdev : 0, // FSK frequency deviation
+      (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].bandwidth : 0,
+      radio_modulations[current_modulation].datarate,
+      (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
+      radio_modulations[current_modulation].preambleLen,
+      false,    // use explicit mode
+      true,     // use crc
+      false,
+      0,
+      false,
+      0
+  );
+
+  int32_t bandwidth_rx = radio_get_rx_bandwidth(radio_bands[band_index].centerFrequency, radio_modulations[current_modulation].bandwidth);
+
+  Radio.SetRxConfig(
+      radio_modulations[current_modulation].modem,
+      (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].bandwidth : bandwidth_rx,
+      radio_modulations[current_modulation].datarate,
+      (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
+      0,
+      radio_modulations[current_modulation].preambleLen,
+      0,
+      false,    // use explicit mode
+      max_payload_len,
+      true,     // use crc
+      false,
+      0,
+      false
+  );
 }
 
 
@@ -293,7 +343,7 @@ void radio_set_config_rxtx(bool lora_mode,
                            uint8_t coderate,
                            uint16_t timeout,
                            bool implicit,
-                           uint8_t implicit_length,
+                           uint8_t implicit_len,
                            bool crc)
 {
   if (band_index >= RADIO_NUM_BANDS) return;
@@ -318,7 +368,7 @@ void radio_set_config_rxtx(bool lora_mode,
       datarate,                               // datarate (FSK: bits/s, LoRa: spreading-factor)
       (lora_mode) ? coderate : 0,             // coderate (LoRa only)
       preamble_length,                        // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
-      implicit,                               // Fixed length packets [0: variable, 1: fixed]
+      implicit,                               // fixed length packets [0: variable, 1: fixed]
       crc,                                    // CRC on
       false,                                  // FHSS
       0,                                      // FHSS period
@@ -334,15 +384,15 @@ void radio_set_config_rxtx(bool lora_mode,
       0,                                      // AFC Bandwidth (FSK only, not used with SX126x!)
       preamble_length,                        // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
       timeout,                                // RxSingle timeout value
-      implicit,                               // Fixed length packets [0: variable, 1: fixed]
-      (implicit ? implicit_length : 0),       // no fixed payload length (as it is explicit header mode / variable packet length)
+      implicit,                               // fixed length packets [0: variable, 1: fixed]
+      (implicit ? implicit_len : RADIO_MAX_PAYLOAD_SIZE),   // no fixed payload length (as it is explicit header mode / variable packet length)
       crc,                                    // CRC on
       false,                                  // FHSS
       0,                                      // FHSS period
       false                                   // iqInverted
   );
 
-  //SX126xSetStopRxTimerOnPreambleDetect(true);
+  SX126xSetStopRxTimerOnPreambleDetect(false);
 }
 
 

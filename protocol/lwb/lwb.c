@@ -212,7 +212,7 @@ bool lwb_update_slot_durations(uint8_t n_tx_arg, uint8_t num_hops_arg)
   if (!num_hops_arg) {
     num_hops_arg = num_hops;
   }
-  uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, (LWB_MAX_DATA_SLOTS * sizeof(uint16_t) + LWB_SCHED_HDR_LEN + LWB_SCHED_CRC_LEN));
+  uint32_t t_sched_new = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, LWB_MAX_SCHED_PKT_LEN);
   uint32_t t_data_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, LWB_MAX_PAYLOAD_LEN);
   uint32_t t_cont_new  = GLORIA_INTERFACE_FLOOD_DURATION(n_tx_arg, num_hops_arg, MAX(LWB_CONT_PKT_LEN, LWB_2ND_SCHED_LEN) + LWB_PKT_HDR_LEN);
 
@@ -315,8 +315,8 @@ static void lwb_bootstrap(void)
   do {
     gloria_register_flood_callback(lwb_schedule_received_callback);
     gloria_set_pkt_filter(lwb_bootstrap_sched_pkt_filter);
-    gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
-    lwb_wait_until(LWB_TIMER_NOW() + t_sched);
+    gloria_start(false, (uint8_t*)&schedule, LWB_MAX_SCHED_PKT_LEN, n_tx, 1);
+    lwb_wait_until(LWB_TIMER_NOW() + t_sched + LWB_S_TO_TICKS(LWB_SCHED_PERIOD));
     gloria_stop();
     if (LWB_TIMER_NOW() > bootstrap_timeout) {
       /* go to sleep for LWB_T_DEEPSLEEP ticks */
@@ -362,7 +362,7 @@ static void lwb_send_schedule(lwb_time_t start_of_round)
 
 static void lwb_receive_schedule(lwb_time_t start_of_round)
 {
-  gloria_start(false, (uint8_t*)&schedule, 0, n_tx, 1);
+  gloria_start(false, (uint8_t*)&schedule, LWB_MAX_SCHED_PKT_LEN, n_tx, 1);
   lwb_wait_until(start_of_round + t_sched + ((sync_state == SYNCED) ? LWB_T_GUARD_ROUND : LWB_T_GUARD_ROUND_2));
   gloria_stop();
 
@@ -495,8 +495,6 @@ static void lwb_send_packet(lwb_time_t slot_start, uint32_t slot_length, uint32_
 
 static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint8_t slot_idx, uint16_t initiator_id)
 {
-  uint8_t packet_len = 0;
-
   memset(&packet, 0, sizeof(packet));    /* clear packet before receiving the packet */
 
 #if LWB_USE_TX_DELAY
@@ -510,11 +508,11 @@ static void lwb_receive_packet(lwb_time_t slot_start, uint32_t slot_length, uint
 #endif /* LWB_USE_TX_DELAY */
 
   lwb_wait_until(slot_start - LWB_T_GUARD_SLOT);
-  gloria_start(false, (uint8_t*)&packet, packet_len, n_tx, 0);
+  gloria_start(false, (uint8_t*)&packet, LWB_MAX_DATA_PKT_LEN, n_tx, 0);
   lwb_wait_until(slot_start + slot_length + LWB_T_GUARD_SLOT);
   gloria_stop();
 
-  packet_len = gloria_get_payload_len();
+  uint8_t packet_len = gloria_get_payload_len();
   if (gloria_get_rx_cnt() && LWB_IS_PKT_HEADER_VALID(&packet)) {                   /* data received? */
     /* check whether to keep this packet */
     bool keep_packet = LWB_IS_SINK() || LWB_RCV_PKT_FILTER();

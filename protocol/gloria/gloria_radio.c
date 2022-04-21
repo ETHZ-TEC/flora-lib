@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 - 2021, ETH Zurich, Computer Engineering Group (TEC)
+ * Copyright (c) 2018 - 2022, ETH Zurich, Computer Engineering Group (TEC)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,30 +32,29 @@
 
 #if GLORIA_ENABLE
 
-static uint64_t rx_timeout_ts = 0;
-
+static uint64_t             rx_timeout_ts = 0;
 static gloria_radio_state_t state;
-static gloria_flood_t* current_flood;
+static gloria_flood_t*      current_flood = NULL;
 
-static void (*callback)(void) = NULL;
+static void (*callback)(void)                              = NULL;
 static void (*rx_callback)(uint8_t* payload, uint8_t size) = NULL;
 
 static uint64_t gloria_try_to_sleep(uint64_t future_timestamp);
-
-static void gloria_radio_setup_callback();
-static void gloria_radio_tx_callback();
-static void gloria_radio_tx_ack_callback();
-static void gloria_radio_rx_timeout_callback(bool crc_error);
-static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error);
-static void gloria_radio_continue_rx();
+static void     gloria_radio_setup_callback(void);
+static void     gloria_radio_tx_callback(void);
+static void     gloria_radio_tx_ack_callback(void);
+static void     gloria_radio_rx_timeout_callback(bool crc_error);
+static void     gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error);
+static void     gloria_radio_continue_rx(void);
 
 /*
  * calculate tx marker for data message and set timer for radio_setup
  */
-void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
-  state = GLORIA_RADIO_TX;
+void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void))
+{
+  state         = GLORIA_RADIO_TX;
   current_flood = flood;
-  callback = tx_callback;
+  callback      = tx_callback;
 
   uint64_t setup_timestamp = gloria_calculate_tx_marker(flood);
 
@@ -87,10 +86,11 @@ void gloria_tx(gloria_flood_t* flood, void (*tx_callback)(void)) {
 /*
  * calculate tx marker for ack message and set timer for radio_setup
  */
-void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
-  state = GLORIA_RADIO_ACK_TX;
+void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void))
+{
+  state         = GLORIA_RADIO_ACK_TX;
   current_flood = flood;
-  callback = tx_callback;
+  callback      = tx_callback;
 
   uint64_t setup_timestamp = gloria_calculate_tx_marker(flood);
 
@@ -122,10 +122,11 @@ void gloria_tx_ack(gloria_flood_t* flood, void (*tx_callback)(void)) {
 /*
  * calculate rx marker and set timer for radio_setup
  */
-void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
-  state = GLORIA_RADIO_RX;
+void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t))
+{
+  state         = GLORIA_RADIO_RX;
   current_flood = flood;
-  rx_callback = callback;
+  rx_callback   = callback;
 
   if (current_flood->msg_received || current_flood->marker) {
 
@@ -172,9 +173,11 @@ void gloria_rx(gloria_flood_t* flood, void (*callback)(uint8_t*, uint8_t)) {
  * returns 1 if there is no time to sleep but the future_timestamp has not yet passed
  * returns 0 if the future_timesamp has already passed
  */
-static uint64_t gloria_try_to_sleep(uint64_t future_timestamp) {
+static uint64_t gloria_try_to_sleep(uint64_t future_timestamp)
+{
   uint64_t current_timestamp = hs_timer_get_current_timestamp();
-  uint64_t time_diff = future_timestamp - current_timestamp;
+  uint64_t time_diff         = future_timestamp - current_timestamp;
+
   if (time_diff <= INT64_MAX) {
     if (time_diff > (GLORIA_RADIO_SLEEP_TIME_COLD + GLORIA_RADIO_WAKEUP_TIME_COLD)) {
       radio_sleep(false);
@@ -196,77 +199,80 @@ static uint64_t gloria_try_to_sleep(uint64_t future_timestamp) {
 /*
  * radio setup and start of tx/rx
  */
-static void gloria_radio_setup_callback() {
-
+static void gloria_radio_setup_callback(void)
+{
   if (!current_flood->radio_no_sleep) {
     radio_wakeup();
   }
 
   switch (state) {
-  case GLORIA_RADIO_TX:
-    radio_set_irq_mode(IRQ_MODE_TX);
-    // NOTE: TX config is set in gloria_run_flood()
-    radio_set_payload_chunk((uint8_t*)&current_flood->header, 0, current_flood->header_size, false);
-    radio_set_payload_chunk((uint8_t*)current_flood->payload, current_flood->header_size, current_flood->payload_size + current_flood->header.sync * GLORIA_TIMESTAMP_LENGTH, true);
-    radio_set_tx_callback(&gloria_radio_tx_callback);
-    radio_transmit_scheduled(0, 0, current_flood->current_tx_marker);
-    break;
+    case GLORIA_RADIO_TX:
+      radio_set_irq_mode(IRQ_MODE_TX);
+      // NOTE: TX config is set in gloria_run_flood()
+      radio_set_payload_chunk((uint8_t*)&current_flood->header, 0, current_flood->header_size, false);
+      radio_set_payload_chunk((uint8_t*)current_flood->payload, current_flood->header_size, current_flood->payload_size, true);
+      radio_set_tx_callback(&gloria_radio_tx_callback);
+      radio_transmit_scheduled(0, 0, current_flood->current_tx_marker);
+      break;
 
-  case GLORIA_RADIO_ACK_TX:
-    radio_set_irq_mode(IRQ_MODE_TX);
-    // NOTE: TX config is set in gloria_run_flood()
-    radio_set_payload((uint8_t*) &current_flood->ack_message, GLORIA_ACK_LENGTH);
-    radio_set_tx_callback(&gloria_radio_tx_ack_callback);
-    radio_transmit_scheduled(0, 0, current_flood->current_tx_marker);
-    break;
+    case GLORIA_RADIO_ACK_TX:
+      radio_set_irq_mode(IRQ_MODE_TX);
+      // NOTE: TX config is set in gloria_run_flood()
+      radio_set_payload((uint8_t*) &current_flood->ack_message, GLORIA_ACK_LENGTH);
+      radio_set_tx_callback(&gloria_radio_tx_ack_callback);
+      radio_transmit_scheduled(0, 0, current_flood->current_tx_marker);
+      break;
 
-  case GLORIA_RADIO_RX:
-    if (radio_modulations[current_flood->modulation].modem == MODEM_LORA) {
-      // preamble detected events are used for the gloria_interface function 'gloria_get_rx_started_cnt'
-      radio_set_irq_mode(IRQ_MODE_RX_CRC_PREAMBLE);
-    } else {
-      // many false positive preamble detected events for FSK => we don't use it and therefore disable them
-      radio_set_irq_mode(IRQ_MODE_RX_CRC);
-    }
-    // NOTE: RX config is set in gloria_run_flood()
-    radio_set_rx_callback(&gloria_radio_rx_callback);
-    radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
+    case GLORIA_RADIO_RX:
+      if (radio_modulations[current_flood->modulation].modem == MODEM_LORA) {
+        // preamble detected events are used for the gloria_interface function 'gloria_get_rx_started_cnt'
+        radio_set_irq_mode(IRQ_MODE_RX_CRC_PREAMBLE);
+      } else {
+        // many false positive preamble detected events for FSK => we don't use it and therefore disable them
+        radio_set_irq_mode(IRQ_MODE_RX_CRC);
+      }
+      // NOTE: RX config is set in gloria_run_flood()
+      radio_set_rx_callback(&gloria_radio_rx_callback);
+      radio_set_timeout_callback(&gloria_radio_rx_timeout_callback);
 
-    if (current_flood->msg_received || current_flood->lp_listening) {
-      // if a msg has been received listen for predefined timeout
-      uint32_t radio_rx_timeout = gloria_calculate_rx_timeout(current_flood);
-      radio_receive_scheduled(current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood), radio_rx_timeout);
-    }
-    else if (current_flood->marker) {
-      // if the flood marker is not 0 start listening at the expected flood time
-      uint64_t schedule_ts = current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood);
-      rx_timeout_ts = schedule_ts + current_flood->rx_timeout;
-      radio_receive_scheduled(schedule_ts, (uint64_t) current_flood->rx_timeout);
-    }
-    else {
-      // start receiving immediately
-      rx_timeout_ts = hs_timer_get_current_timestamp() + current_flood->rx_timeout;
-      radio_receive((uint64_t) current_flood->rx_timeout);
-    }
-    break;
+      if (current_flood->msg_received || current_flood->lp_listening) {
+        // if a msg has been received listen for predefined timeout
+        uint32_t radio_rx_timeout = gloria_calculate_rx_timeout(current_flood);
+        radio_receive_scheduled(current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood), radio_rx_timeout);
+      }
+      else if (current_flood->marker) {
+        // if the flood marker is not 0 start listening at the expected flood time
+        uint64_t schedule_ts = current_flood->current_tx_marker - gloria_get_rx_ex_offset(current_flood);
+        rx_timeout_ts = schedule_ts + current_flood->rx_timeout;
+        radio_receive_scheduled(schedule_ts, (uint64_t) current_flood->rx_timeout);
+      }
+      else {
+        // start receiving immediately
+        rx_timeout_ts = hs_timer_get_current_timestamp() + current_flood->rx_timeout;
+        radio_receive((uint64_t) current_flood->rx_timeout);
+      }
+      break;
 
-  default:
-    system_reset(); // Gloria radio in invalid state.
-    break;
+    default:
+      LOG_WARNING("invalid state");
+      break;
   }
 }
 
-static void gloria_radio_tx_callback() {
+static void gloria_radio_tx_callback(void)
+{
   current_flood->rem_retransmissions--;
   callback();
 }
 
 
-static void gloria_radio_tx_ack_callback() {
+static void gloria_radio_tx_ack_callback(void)
+{
   callback();
 }
 
-static void gloria_radio_rx_timeout_callback(bool crc_error) {
+static void gloria_radio_rx_timeout_callback(bool crc_error)
+{
   if (crc_error) {
     current_flood->crc_timeout = true;
     gloria_radio_continue_rx();
@@ -276,7 +282,8 @@ static void gloria_radio_rx_timeout_callback(bool crc_error) {
   }
 }
 
-static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error) {
+static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t snr, bool crc_error)
+{
   if (crc_error) {
     current_flood->crc_error = true;
     gloria_radio_continue_rx();
@@ -298,7 +305,8 @@ static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t r
  * continues with rx if no rx timeout was specified or the timeout has not yet expired
  * always triggers the callback if a message has already been received (node is synchronized to the flood)
  */
-static void gloria_radio_continue_rx() {
+static void gloria_radio_continue_rx(void)
+{
   if (!current_flood->msg_received && !current_flood->lp_listening) {
     if (current_flood->rx_timeout) {
       uint64_t now = hs_timer_get_current_timestamp();
