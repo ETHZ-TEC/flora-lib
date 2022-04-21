@@ -1051,18 +1051,6 @@ void elwb_start(void)
            (uint32_t)ELWB_TICKS_TO_MS(t_cont));
 
   elwb_running = true;
-
-  /* instead of calling elwb_run(), schedule the start */
-#if ELWB_CONF_STARTUP_DELAY > 0
-  elwb_time_t starttime = ELWB_MS_TO_TICKS(ELWB_CONF_STARTUP_DELAY);
-  if (is_host) {
-    starttime += ELWB_CONF_T_GUARD_ROUND;    /* delay the host by ELWB_CONF_T_GUARD_ROUND */
-  }
-  if (ELWB_TIMER_NOW() < starttime) {
-    elwb_wait_until(starttime);
-  }
-#endif /* ELWB_CONF_STARTUP_DELAY */
-
   elwb_run();
 }
 

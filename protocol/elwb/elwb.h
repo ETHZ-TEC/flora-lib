@@ -140,10 +140,6 @@
 #define ELWB_CONF_CONT_TH         1
 #endif /* ELWB_CONF_CONT_TH */
 
-#ifndef ELWB_CONF_STARTUP_DELAY
-#define ELWB_CONF_STARTUP_DELAY   1000   /* delay in milliseconds from the start of the MCU */
-#endif /* ELWB_CONF_STARTUP_DELAY */
-
 /* use more accurate high frequency reference clock to schedule the contention slot
  * (requires an implementation of ELWB_GLORIA_GET_T_REF_HF()) */
 #ifndef ELWB_CONF_CONT_USE_HSTIMER
@@ -162,7 +158,7 @@
 #define ELWB_SCHED_PERIOD_MAX_S   (ULONG_MAX / ELWB_TIMER_FREQUENCY)  /* max period in seconds */
 #define ELWB_NETWORK_ID_BITMASK   0x7fff
 #define ELWB_PKT_TYPE_BITMASK     0x8000
-#define ELWB_PKT_BUFFER_SIZE      GLORIA_INTERFACE_MAX_PAYLOAD_LEN    /* must be at least as large as the gloria interface buffer */
+#define ELWB_PKT_BUFFER_SIZE      GLORIA_INTERFACE_MAX_PAYLOAD_LEN
 #define ELWB_MAX_SCHED_PKT_LEN    (ELWB_SCHED_HDR_LEN + ELWB_CONF_MAX_DATA_SLOTS * sizeof(uint16_t) + ELWB_SCHED_CRC_LEN)
 #define ELWB_MAX_DATA_PKT_LEN     (ELWB_PKT_HDR_LEN + ELWB_CONF_MAX_PAYLOAD_LEN)
 #define ELWB_MAX_DACK_PKT_LEN     (ELWB_PKT_HDR_LEN + (ELWB_CONF_MAX_DATA_SLOTS + 7) / 8)

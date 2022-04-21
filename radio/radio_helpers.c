@@ -391,8 +391,6 @@ void radio_set_config_rxtx(bool lora_mode,
       0,                                      // FHSS period
       false                                   // iqInverted
   );
-
-  SX126xSetStopRxTimerOnPreambleDetect(false);
 }
 
 
