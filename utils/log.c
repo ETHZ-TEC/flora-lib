@@ -103,6 +103,9 @@ uint32_t log_buffer_space(void)
 
 static void log_buffer_clear(void)
 {
+  if (!log_buffer_empty()) {
+    LOG_PRINT_FUNC(LOG_QUEUE_FULL_MARK LOG_NEWLINE, strlen(LOG_QUEUE_FULL_MARK LOG_NEWLINE));   /* to indicate data was dropped */
+  }
   read_idx = write_idx = 0;
 }
 

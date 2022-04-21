@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 - 2021, ETH Zurich, Computer Engineering Group (TEC)
+ * Copyright (c) 2018 - 2022, ETH Zurich, Computer Engineering Group (TEC)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,8 +73,8 @@
 #define LOG_BUFFER_SIZE         4096
 #endif /* LOG_BUFFER_SIZE */
 
-#if LOG_BUFFER_SIZE >= 65536
-#error "LOG_BUFFER_SIZE must be < 65536"
+#if LOG_BUFFER_SIZE <= 0 || LOG_BUFFER_SIZE >= 65536
+#error "invalid value for LOG_BUFFER_SIZE"
 #endif /* LOG_BUFFER_SIZE */
 
 /* max. number of chars per line, defines the buffer size used for sprintf() */
@@ -100,7 +100,7 @@
 #endif /* LOG_NEWLINE */
 
 #ifndef LOG_QUEUE_FULL_MARK
-#define LOG_QUEUE_FULL_MARK     "\\~"
+#define LOG_QUEUE_FULL_MARK     "\\~"       /* "queue full" or "data missing" marker */
 #endif /* LOG_QUEUE_FULL_MARK */
 
 #if LOG_ADD_LEVEL
