@@ -50,7 +50,6 @@ static uint8_t        internal_modulation = GLORIA_INTERFACE_MODULATION;  // int
 static uint8_t        internal_band = GLORIA_INTERFACE_RF_BAND;           // internal state for the frequency band (can be adapted from the upper layer)
 static bool           internal_enable_flood_printing = false;             // enable printing of finished (i.e. completely received/transmitted) floods
 static bool           internal_append_timestamp = GLORIA_INTERFACE_APPEND_TIMESTAMP;
-static uint64_t       tx_start_timestamp = 0;                             // an optional user-defined TX start marker
 
 /* variables to store gloria_start arguments */
 static uint8_t*       arg_payload_ptr = NULL;                             // pointer to payload of currently ongoing flood
@@ -156,11 +155,8 @@ void gloria_start(bool is_initiator,
 
   if (is_initiator) {
     // send flood
-    // set the TX marker (timestamp when flood shall start) must be set on the initiator
-    if (tx_start_timestamp && (tx_start_timestamp > hs_timer_get_current_timestamp())) {
-      // user-defined start time
-      flood.marker = tx_start_timestamp;
-    } else {
+    // set the TX marker (timestamp when flood shall start), must be set on the initiator
+    if (flood.marker < hs_timer_get_current_timestamp()) {
       // use current timestamp
       flood.marker = ((hs_timer_get_current_timestamp() + (GLORIA_SCHEDULE_GRANULARITY - 1))) / GLORIA_SCHEDULE_GRANULARITY * GLORIA_SCHEDULE_GRANULARITY;
     }
@@ -414,11 +410,13 @@ void gloria_enable_append_timestamp(bool enable)
 }
 
 
-void gloria_get_received_timestamp(uint8_t* out_timestamp)
+bool gloria_get_received_timestamp(uint8_t* out_timestamp)
 {
-  if (out_timestamp) {
+  if (out_timestamp && flood.header.sync) {
     memcpy(out_timestamp, flood.header.timestamp, GLORIA_TIMESTAMP_LENGTH);
+    return true;
   }
+  return false;
 }
 
 
@@ -452,7 +450,7 @@ static void copy_payload(void)
       memcpy(arg_payload_ptr, flood.payload, flood.payload_size);
     }
     else {
-      LOG_WARNING("Payload length in received message is larger than payload length of Gloria interface (GLORIA_MAX_PAYLOAD_LENGTH)! Payload has been truncated!");
+      LOG_WARNING("Payload length in received message is larger than payload length of Gloria interface (GLORIA_INTERFACE_MAX_PAYLOAD_LEN)! Payload has been truncated!");
       memcpy(arg_payload_ptr, flood.payload, GLORIA_INTERFACE_MAX_PAYLOAD_LEN);
       flood.payload_size = GLORIA_INTERFACE_MAX_PAYLOAD_LEN;
     }

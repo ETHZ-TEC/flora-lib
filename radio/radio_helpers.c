@@ -182,7 +182,7 @@ void radio_set_config_tx(uint8_t modulation_index,
                          int8_t power,
                          int32_t bandwidth,     // DSB
                          int32_t datarate,
-                         int32_t preamble_length,
+                         int32_t preamble_len,
                          bool implicit,
                          bool crc)
 {
@@ -190,8 +190,8 @@ void radio_set_config_tx(uint8_t modulation_index,
 
   current_modulation = modulation_index;
 
-  if (preamble_length == -1) {
-    preamble_length = radio_modulations[current_modulation].preambleLen;
+  if (preamble_len == -1) {
+    preamble_len = radio_modulations[current_modulation].preambleLen;
   }
 
   // Do not allow for illegal power level
@@ -221,7 +221,7 @@ void radio_set_config_tx(uint8_t modulation_index,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? bandwidth : 0,
       datarate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
-      preamble_length,
+      preamble_len,
       implicit,
       crc,
       false,    // FHSS
@@ -236,7 +236,7 @@ void radio_set_config_rx(uint8_t modulation_index,
                          uint8_t band_index,
                          int32_t bandwidth,           // DSB
                          int32_t datarate,
-                         int32_t preamble_length,
+                         int32_t preamble_len,
                          uint16_t timeout,
                          bool implicit,
                          uint8_t implicit_len,
@@ -247,8 +247,8 @@ void radio_set_config_rx(uint8_t modulation_index,
 
   current_modulation = modulation_index;
 
-  if (preamble_length == -1) {
-    preamble_length = radio_modulations[current_modulation].preambleLen;
+  if (preamble_len == -1) {
+    preamble_len = radio_modulations[current_modulation].preambleLen;
   }
   if (bandwidth == -1) {
     bandwidth = radio_modulations[current_modulation].bandwidth;
@@ -268,7 +268,7 @@ void radio_set_config_rx(uint8_t modulation_index,
       datarate,
       (radio_modulations[current_modulation].modem == MODEM_LORA) ? radio_modulations[current_modulation].coderate : 0,
       0,            // AFC Bandwidth (FSK only)
-      preamble_length,
+      preamble_len,
       timeout,
       implicit,
       (implicit ? implicit_len : RADIO_MAX_PAYLOAD_SIZE),
@@ -339,7 +339,7 @@ void radio_set_config_rxtx(bool lora_mode,
                            int32_t datarate,
                            int8_t power,
                            int32_t bandwidth,         // DSB
-                           int32_t preamble_length,
+                           int32_t preamble_len,
                            uint8_t coderate,
                            uint16_t timeout,
                            bool implicit,
@@ -367,7 +367,7 @@ void radio_set_config_rxtx(bool lora_mode,
       (lora_mode) ? bandwidth : 0,            // bandwidth (LoRa only)
       datarate,                               // datarate (FSK: bits/s, LoRa: spreading-factor)
       (lora_mode) ? coderate : 0,             // coderate (LoRa only)
-      preamble_length,                        // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
+      preamble_len,                           // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
       implicit,                               // fixed length packets [0: variable, 1: fixed]
       crc,                                    // CRC on
       false,                                  // FHSS
@@ -382,7 +382,7 @@ void radio_set_config_rxtx(bool lora_mode,
       datarate,                               // datarate (FSK: bits/s, LoRa: spreading-factor)
       (lora_mode) ? coderate : 0,             // coderate (LoRa only)
       0,                                      // AFC Bandwidth (FSK only, not used with SX126x!)
-      preamble_length,                        // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
+      preamble_len,                           // preamble length (FSK: num bytes, LoRa: symbols (HW adds 4 symbols))
       timeout,                                // RxSingle timeout value
       implicit,                               // fixed length packets [0: variable, 1: fixed]
       (implicit ? implicit_len : RADIO_MAX_PAYLOAD_SIZE),   // no fixed payload length (as it is explicit header mode / variable packet length)

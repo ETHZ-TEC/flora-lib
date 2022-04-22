@@ -54,14 +54,14 @@ void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback)
   // initialize flood parameters
   current_flood->first_rx_index      = (current_flood->ack_mode ? -2 : -1);
   current_flood->header.protocol_id  = PROTOCOL_ID_GLORIA;
-  current_flood->header.type         = 0;
+  current_flood->header.type         = GLORIA_PKT_TYPE_DATA;
   current_flood->header.slot_index   = 0;
   current_flood->msg_received        = current_flood->initiator;
   current_flood->last_active_slot    = gloria_calculate_last_active_slot(current_flood);
   current_flood->rem_retransmissions = current_flood->max_retransmissions;
 
   current_flood->ack_message.protocol_id = PROTOCOL_ID_GLORIA;
-  current_flood->ack_message.type        = 0;
+  current_flood->ack_message.type        = GLORIA_PKT_TYPE_ACK;
   current_flood->ack_message.sync        = 0;
   current_flood->ack_message.dst         = 0;
   current_flood->ack_counter             = 0;
@@ -69,9 +69,7 @@ void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback)
 
   // calculate the message size; always needed for the initiator; other nodes need it for low power listening
   current_flood->header_size = (current_flood->ack_mode ? GLORIA_HEADER_LENGTH : GLORIA_HEADER_LENGTH_MIN);
-  if (current_flood->header.sync) {
-    current_flood->header_size += GLORIA_TIMESTAMP_LENGTH;
-  }
+  uint8_t max_packet_len     = current_flood->header_size + current_flood->payload_size + GLORIA_TIMESTAMP_LENGTH;
 
   // calculate the message size for the initiator, initialize markers
   if (current_flood->initiator) {
@@ -82,6 +80,7 @@ void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback)
     if (current_flood->header.sync) {
       uint64_t new_timestamp = current_flood->received_marker / GLORIA_SCHEDULE_GRANULARITY;
       memcpy(current_flood->header.timestamp, (uint8_t*)&new_timestamp, GLORIA_TIMESTAMP_LENGTH);
+      current_flood->header_size += GLORIA_TIMESTAMP_LENGTH;
     }
   }
   else {
@@ -96,7 +95,7 @@ void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback)
         slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 1, GLORIA_ACK_LENGTH);
       }
       else {
-        slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 0, current_flood->payload_size + current_flood->header_size);
+        slot_time = gloria_calculate_slot_time(current_flood->modulation, current_flood->ack_mode, 0, current_flood->header_size + current_flood->payload_size);
       }
 
       if (slot_time < rx2rx_trans + gloria_calculate_rx_timeout(current_flood)) {
@@ -126,7 +125,6 @@ void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback)
   current_flood->crc_timeout = false;
 
   // set radio config
-  uint8_t max_packet_len = current_flood->payload_size + current_flood->header_size;
   radio_set_config(current_flood->modulation, current_flood->band, current_flood->power, max_packet_len);
 
   gloria_process_slot();
@@ -170,34 +168,42 @@ void gloria_process_slot()
 
 static void gloria_rx_callback(uint8_t* payload, uint8_t size)
 {
-  if (payload == NULL || size == 0) {
-    gloria_finish_slot();
-  }
-  else if (size == GLORIA_ACK_LENGTH) {
-    gloria_ack_msg_t* ack_message = (gloria_ack_msg_t*) payload;
-    if (ack_message->dst) {
-      current_flood->acked = true;
-      current_flood->ack_message.dst = ack_message->dst;
+  if (payload && size > 0) {
 
-      // prevent ack destination from retransmitting the ack message (ack_mode 2)
-      // prevent nodes that have not yet sent the message from retransmitting acks (ack mode 1)
-      if (!current_flood->msg_received || ((current_flood->ack_mode == 2) && ack_message->dst == current_flood->node_id) ||
-          ((current_flood->ack_mode == 1) && (current_flood->header.slot_index - current_flood->first_rx_index == 1))) {
-        // increase slot index to be consistent with other flood ends
-        current_flood->header.slot_index++;
-        // finish flood
-        flood_callback();
-        return;
-      }
+    switch (((gloria_header_t*)payload)->type) {
+
+      case GLORIA_PKT_TYPE_ACK:
+      {
+        gloria_ack_msg_t* ack_message = (gloria_ack_msg_t*)payload;
+        if (ack_message->dst) {
+          current_flood->acked = true;
+          current_flood->ack_message.dst = ack_message->dst;
+
+          // prevent ack destination from retransmitting the ack message (ack_mode 2)
+          // prevent nodes that have not yet sent the message from retransmitting acks (ack mode 1)
+          if (!current_flood->msg_received || ((current_flood->ack_mode == 2) && ack_message->dst == current_flood->node_id) ||
+              ((current_flood->ack_mode == 1) && (current_flood->header.slot_index - current_flood->first_rx_index == 1))) {
+            // increase slot index to be consistent with other flood ends
+            current_flood->header.slot_index++;
+            // finish flood
+            flood_callback();
+            return;
+          }
+        }
+      } break;
+
+      case GLORIA_PKT_TYPE_DATA:
+        if (size >= current_flood->header_size) {
+          gloria_process_rx(payload, size);
+        }
+        break;
+
+      default:
+        LOG_WARNING("unknown gloria message type");
+        break;
     }
-    gloria_finish_slot();
   }
-  else if (size >= current_flood->header_size) {
-    gloria_process_rx(payload, size);
-  }
-  else {
-    gloria_finish_slot();
-  }
+  gloria_finish_slot();
 }
 
 
@@ -207,12 +213,16 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size)
 
   if (!current_flood->msg_received) {
 
-    // the size of the actual payload is the message size minus the header length and for sync floods minus the timestamp length
+    // copy the header
+    memcpy((uint8_t*)&current_flood->header, payload, current_flood->header_size);
+
+    // the size of the actual payload is the message size minus the header length
+    // NOTE: the received payload must not exceed the specified max. payload length on the receiver
     current_flood->payload_size = MIN(current_flood->payload_size, size - current_flood->header_size);
     current_flood->msg_received = true;
     memcpy(current_flood->payload, payload + current_flood->header_size, current_flood->payload_size);
 
-    current_flood->header.slot_index = header->slot_index;
+    //current_flood->header.slot_index = header->slot_index;
     gloria_reconstruct_flood_marker(current_flood);
 
     // make sure the timer is only synced if the flood contains a timestamp
@@ -245,8 +255,6 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size)
       current_flood->header.slot_index += current_flood->tx_delay_slots;
     }
   }
-
-  gloria_finish_slot();
 }
 
 

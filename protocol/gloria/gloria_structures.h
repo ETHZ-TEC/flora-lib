@@ -53,6 +53,12 @@ typedef struct __attribute__((__packed__, __aligned__(1))) {
   uint8_t timestamp[GLORIA_TIMESTAMP_LENGTH];
 } gloria_header_t;
 
+typedef enum {
+  GLORIA_PKT_TYPE_DATA = 0,
+  GLORIA_PKT_TYPE_ACK  = 1,
+  GLORIA_PKT_TYPE_LAST = 7,   // 3 bits only, 7 is the last valid value
+} gloria_pkt_type_t;
+
 typedef struct {
   // parameters to specify before flood start
   gloria_flood_cb_t   flood_cb;           // callback function after flood finished

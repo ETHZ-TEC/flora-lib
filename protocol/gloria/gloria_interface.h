@@ -127,8 +127,6 @@
  *                      location data provided by the application.
  *                      At a receiver, Glossy writes to the given memory
  *                      location data for the application.
- *                      NOTE: At the receiver, the payload buffer must have a
- *                      size of at least GLORIA_INTERFACE_MAX_PAYLOAD_LEN Bytes.
  * \param payload_len   Size of the `payload` buffer in bytes. On the receiver
  *                      side, this value limits the max. packet size that will
  *                      be accepted. Note that a payload length of zero is
@@ -369,8 +367,10 @@ void gloria_enable_append_timestamp(bool enable);
 /**
  * \brief           Returns the last received Gloria timestamp
  * \param           buffer to hold the timestamp
+ * \return          true if a timestamp has been received during the last
+ *                  flood (and copied into `out_timestamp`), false otherwise
  */
-void gloria_get_received_timestamp(uint8_t* out_timestamp);
+bool gloria_get_received_timestamp(uint8_t* out_timestamp);
 
 
 /**
