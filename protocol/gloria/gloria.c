@@ -79,7 +79,7 @@ void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback)
     // add timestamp for sync floods
     if (current_flood->header.sync) {
       uint64_t new_timestamp = current_flood->received_marker / GLORIA_SCHEDULE_GRANULARITY;
-      memcpy(current_flood->header.timestamp, (uint8_t*)&new_timestamp, GLORIA_TIMESTAMP_LENGTH);
+      memcpy(current_flood->ack_mode ? current_flood->header.ext.timestamp : current_flood->header.min.timestamp, (uint8_t*)&new_timestamp, GLORIA_TIMESTAMP_LENGTH);
       current_flood->header_size += GLORIA_TIMESTAMP_LENGTH;
     }
   }
@@ -117,7 +117,7 @@ void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback)
 
   // initialize message header
   if (current_flood->ack_mode) {
-    current_flood->header.src = (current_flood->initiator ? current_flood->node_id : 0);
+    current_flood->header.ext.src = (current_flood->initiator ? current_flood->node_id : 0);
   }
 
   // initialize error flags
@@ -244,10 +244,10 @@ static void gloria_process_rx(uint8_t* payload, uint8_t size)
     current_flood->guard_time       = 0;    // set guard time to 0 as node is now synced to this flood
 
     // check if node is also the destination
-    if (current_flood->ack_mode && (header->dst == current_flood->node_id)) {
+    if (current_flood->ack_mode && (header->ext.dst == current_flood->node_id)) {
       // prepare ack if flood should be acked
       current_flood->acked = true;
-      current_flood->ack_message.dst = header->src;
+      current_flood->ack_message.dst = header->ext.src;
     }
 
     if (!current_flood->ack_mode) {

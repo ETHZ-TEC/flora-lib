@@ -136,8 +136,6 @@ void gloria_start(bool is_initiator,
   flood.first_rx_index        = 0;
   flood.flood_idx             = 0;
   flood.header_size           = 0;
-  flood.header.src            = 0;
-  flood.header.dst            = 0;
   flood.last_active_slot      = 0;
   flood.max_acks              = 0;
   flood.msg_received          = false;
@@ -413,7 +411,7 @@ void gloria_enable_append_timestamp(bool enable)
 bool gloria_get_received_timestamp(uint8_t* out_timestamp)
 {
   if (out_timestamp && flood.header.sync) {
-    memcpy(out_timestamp, flood.header.timestamp, GLORIA_TIMESTAMP_LENGTH);
+    memcpy(out_timestamp, flood.header.min.timestamp, GLORIA_TIMESTAMP_LENGTH);
     return true;
   }
   return false;

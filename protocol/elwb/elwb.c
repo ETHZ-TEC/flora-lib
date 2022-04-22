@@ -292,13 +292,14 @@ static void elwb_update_rssi_snr(void)
 }
 
 
-static bool elwb_bootstrap_sched_pkt_filter(uint8_t* pkt, uint8_t len)
+static bool elwb_bootstrap_sched_pkt_filter(const uint8_t* gloria_hdr, uint8_t hdr_len, const uint8_t* pkt, uint8_t len)
 {
   if ((len > ELWB_PKT_HDR_LEN) && ELWB_IS_PKT_HEADER_VALID((elwb_packet_t*)pkt) && ELWB_IS_SCHEDULE_PACKET((elwb_packet_t*)pkt) && ELWB_SCHED_IS_FIRST((elwb_schedule_t*)pkt)) {
     return true;
   }
   return false;
 }
+
 
 static bool elwb_is_schedule_valid(elwb_schedule_t* schedule)
 {

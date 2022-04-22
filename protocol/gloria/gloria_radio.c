@@ -300,7 +300,7 @@ static void gloria_radio_rx_callback(uint8_t* payload, uint16_t size,  int16_t r
 
   // check packet type and apply user-defined packet filter
   if ((header->protocol_id != PROTOCOL_ID_GLORIA) ||
-      (current_flood->filter_cb && (size > current_flood->header_size) && !current_flood->filter_cb(payload + current_flood->header_size, size - current_flood->header_size))) {
+      (current_flood->filter_cb && (size > current_flood->header_size) && !current_flood->filter_cb(payload, current_flood->header_size, payload + current_flood->header_size, size - current_flood->header_size))) {
     gloria_radio_continue_rx();
   }
   else {

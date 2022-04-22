@@ -314,9 +314,9 @@ void gloria_register_flood_callback(gloria_flood_cb_t flood_cb);
 /**
  * \brief           Set a custom RX packet filter
  * \param           A callback function that takes a pointer to the received
- *                  payload as well as the payload length. It must returns true
- *                  if the received packet should be kept / accepted and false
- *                  otherwise.
+ *                  header, the header length, a pointer to the payload and the
+ *                  payload length. It must returns true if the received packet
+ *                  should be kept / accepted and false otherwise.
  *                  IMPORTANT: The function must be fast and deterministic. Make
  *                  sure the function completes execution within ~100us. Longer
  *                  execution times may disrupt the Gloria timing.

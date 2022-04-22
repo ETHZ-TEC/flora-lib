@@ -289,7 +289,7 @@ static void lwb_update_rssi_snr(void)
 }
 
 
-static bool lwb_bootstrap_sched_pkt_filter(uint8_t* pkt, uint8_t len)
+static bool lwb_bootstrap_sched_pkt_filter(const uint8_t* gloria_hdr, uint8_t hdr_len, const uint8_t* pkt, uint8_t len)
 {
   if ((len > LWB_PKT_HDR_LEN) && LWB_IS_PKT_HEADER_VALID((lwb_packet_t*)pkt) && LWB_IS_SCHEDULE_PACKET((lwb_packet_t*)pkt)) {
     return true;

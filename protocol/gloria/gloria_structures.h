@@ -33,7 +33,7 @@
 
 
 typedef void (* gloria_flood_cb_t)(void);
-typedef bool (* gloria_filter_cb_t)(uint8_t*, uint8_t);
+typedef bool (* gloria_filter_cb_t)(const uint8_t*, uint8_t, const uint8_t*, uint8_t);
 typedef bool (* gloria_rx_cb_t)(void);
 
 typedef struct __attribute__((__packed__, __aligned__(1))) {
@@ -48,9 +48,16 @@ typedef struct __attribute__((__packed__, __aligned__(1))) {
   uint8_t type : 3;           // msg type
   uint8_t sync: 1;            // 1: message includes ts for sync, 0: no ts
   int8_t  slot_index;         // current slot index (must be signed due to init values for ACK floods)
-  uint8_t src;                // msg source
-  uint8_t dst;                // msg destination
-  uint8_t timestamp[GLORIA_TIMESTAMP_LENGTH];
+  union {
+    struct {                  // extended header for ACK mode
+      uint8_t src;            // msg source
+      uint8_t dst;            // msg destination
+      uint8_t timestamp[GLORIA_TIMESTAMP_LENGTH];   // optional timestamp
+    } ext;
+    struct {                  // minimal header
+      uint8_t timestamp[GLORIA_TIMESTAMP_LENGTH];   // optional timestamp
+    } min;
+  };
 } gloria_header_t;
 
 typedef enum {
