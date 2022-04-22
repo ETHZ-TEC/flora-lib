@@ -199,7 +199,7 @@ static void gloria_rx_callback(uint8_t* payload, uint8_t size)
         break;
 
       default:
-        LOG_WARNING("unknown gloria message type");
+        LOG_WARNING("unknown gloria packet type");
         break;
     }
   }

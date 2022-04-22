@@ -32,10 +32,9 @@
 #define PROTOCOL_GLORIA_GLORIA_CONSTANTS_H_
 
 #define GLORIA_PHY_MAX_PAYLOAD        255       // max length of the physical layer payload (given by the hardware)
-#define GLORIA_HEADER_LENGTH_WITH_TS  (GLORIA_HEADER_LENGTH + GLORIA_TIMESTAMP_LENGTH)     // length of the gloria header, with timestamp
-#define GLORIA_HEADER_LENGTH          4         // length of the gloria header
-#define GLORIA_HEADER_LENGTH_MIN      2         // length of the gloria header without ACK mode
-#define GLORIA_MAX_PAYLOAD_LENGTH     (GLORIA_PHY_MAX_PAYLOAD - GLORIA_HEADER_LENGTH_WITH_TS)
+#define GLORIA_HEADER_LENGTH          4         // length of the gloria header (without timestamp)
+#define GLORIA_HEADER_LENGTH_MIN      2         // length of the gloria header in ACK mode (without timestamp)
+#define GLORIA_MAX_PAYLOAD_LENGTH     (GLORIA_PHY_MAX_PAYLOAD - GLORIA_HEADER_LENGTH - GLORIA_TIMESTAMP_LENGTH)
 #define GLORIA_ACK_LENGTH             2         // length of the gloria ack message
 #define GLORIA_TIMESTAMP_LENGTH       8         // length of the timestamp to send with sync floods
 

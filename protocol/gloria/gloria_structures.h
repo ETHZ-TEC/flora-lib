@@ -111,7 +111,7 @@ typedef struct {
 } gloria_flood_t;
 
 
-_Static_assert(sizeof(gloria_ack_msg_t) == GLORIA_ACK_LENGTH, "gloria_ack_msg_t is not GLORIA_ACK_LENGTH bytes in size!");
-_Static_assert(sizeof(gloria_header_t) == GLORIA_HEADER_LENGTH_WITH_TS, "gloria_header_t is not GLORIA_HEADER_LENGTH_WITH_TS bytes in size!");
+_Static_assert(sizeof(gloria_ack_msg_t) == GLORIA_ACK_LENGTH, "invalid size of gloria_ack_msg_t");
+_Static_assert(sizeof(gloria_header_t) == (GLORIA_HEADER_LENGTH + GLORIA_TIMESTAMP_LENGTH), "invalid size of gloria_header_t");
 
 #endif /* PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_ */
