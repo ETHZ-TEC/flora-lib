@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 - 2021, ETH Zurich, Computer Engineering Group (TEC)
+ * Copyright (c) 2018 - 2022, ETH Zurich, Computer Engineering Group (TEC)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 
 
 typedef void (* gloria_flood_cb_t)(void);
-typedef bool (* gloria_filter_cb_t)(uint8_t*, uint8_t);
+typedef bool (* gloria_filter_cb_t)(const uint8_t*, uint8_t, const uint8_t*, uint8_t);
 typedef bool (* gloria_rx_cb_t)(void);
 
 typedef struct __attribute__((__packed__, __aligned__(1))) {
@@ -48,9 +48,23 @@ typedef struct __attribute__((__packed__, __aligned__(1))) {
   uint8_t type : 3;           // msg type
   uint8_t sync: 1;            // 1: message includes ts for sync, 0: no ts
   int8_t  slot_index;         // current slot index (must be signed due to init values for ACK floods)
-  uint8_t src;                // msg source
-  uint8_t dst;                // msg destination
+  union {
+    struct {                  // extended header for ACK mode
+      uint8_t src;            // msg source
+      uint8_t dst;            // msg destination
+      uint8_t timestamp[GLORIA_TIMESTAMP_LENGTH];   // optional timestamp
+    } ext;
+    struct {                  // minimal header
+      uint8_t timestamp[GLORIA_TIMESTAMP_LENGTH];   // optional timestamp
+    } min;
+  };
 } gloria_header_t;
+
+typedef enum {
+  GLORIA_PKT_TYPE_DATA = 0,
+  GLORIA_PKT_TYPE_ACK  = 1,
+  GLORIA_PKT_TYPE_LAST = 7,   // 3 bits only, 7 is the last valid value
+} gloria_pkt_type_t;
 
 typedef struct {
   // parameters to specify before flood start
@@ -75,7 +89,7 @@ typedef struct {
   uint16_t node_id;
 
   uint8_t  header_size;                   // size of the message header (GLORIA_HEADER_LENGTH or GLORIA_HEADER_LENGTH_MIN)
-  uint8_t  payload_size;                  // size of the raw payload (without header or timestamp); max payload = 255 - GLORIA_HEADER_LENGTH (- GLORIA_TIMESTAMP_LENGTH (if sync flood))
+  uint8_t  payload_size;                  // size of the payload buffer (for TX: # bytes to send, for RX: max. number of bytes to receive)
   uint8_t  data_slots;                    // max number of data slots for this flood; for ack floods this is also the number of ack slots
   uint8_t  last_active_slot;              // last slot the node should send / receive (different for nodes)
   uint8_t  rem_retransmissions;           // remaining retransmissions for this node
@@ -91,7 +105,7 @@ typedef struct {
   int8_t   snr;                           // save snr of received data msg
   int8_t   rssi;                          // save rssi of received data msg
 
-  bool     initial;                       // 1: initiator of the flood
+  bool     initiator;                     // initiator of the flood
   bool     sync_timer;                    // specify if gloria should adapt the timer offset to sync to the initiator clock
   bool     lp_listening;                  // don't listen continuously but only for a short time each slot until a message is received
   bool     msg_received;                  // true: successfully received a message; false: no message received; set to 1 at flood start for the initiator
@@ -104,7 +118,7 @@ typedef struct {
 } gloria_flood_t;
 
 
-_Static_assert(sizeof(gloria_ack_msg_t) == GLORIA_ACK_LENGTH, "gloria_ack_msg_t is not GLORIA_ACK_LENGTH bytes in size!");
-_Static_assert(sizeof(gloria_header_t) == GLORIA_HEADER_LENGTH, "gloria_header_t is not GLORIA_HEADER_LENGTH bytes in size!");
+_Static_assert(sizeof(gloria_ack_msg_t) == GLORIA_ACK_LENGTH, "invalid size of gloria_ack_msg_t");
+_Static_assert(sizeof(gloria_header_t) == (GLORIA_HEADER_LENGTH + GLORIA_TIMESTAMP_LENGTH), "invalid size of gloria_header_t");
 
 #endif /* PROTOCOL_GLORIA_GLORIA_STRUCTURES_H_ */

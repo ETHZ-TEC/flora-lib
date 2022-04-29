@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 - 2021, ETH Zurich, Computer Engineering Group (TEC)
+ * Copyright (c) 2018 - 2022, ETH Zurich, Computer Engineering Group (TEC)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,7 +47,7 @@
 #include "protocol/gloria/gloria_interface.h"
 
 
-void gloria_run_flood(gloria_flood_t* flood, void (*callback)());
-void gloria_update();
+void gloria_run_flood(gloria_flood_t* flood, gloria_flood_cb_t callback);
+
 
 #endif /* PROTOCOL_GLORIA_GLORIA_H_ */

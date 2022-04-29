@@ -168,9 +168,11 @@
 #define LWB_SCHED_CRC_LEN         (LWB_SCHED_ADD_CRC ? 2 : 0)
 #define LWB_SCHED_PERIOD_MAX_S    (ULONG_MAX / LWB_TIMER_FREQUENCY)  /* max period in seconds */
 #define LWB_NETWORK_ID_BITMASK    0x7fff
-#define LWB_PKT_BUFFER_SIZE       GLORIA_INTERFACE_MAX_PAYLOAD_LEN    /* must be at least as large as the gloria interface buffer */
+#define LWB_PKT_BUFFER_SIZE       GLORIA_INTERFACE_MAX_PAYLOAD_LEN
 #define LWB_TX_DELAY_MASK_SIZE    (LWB_USE_TX_DELAY ? ((LWB_MAX_NUM_NODES + 7) / 8) : 0)
 #define LWB_DATA_ACK_SIZE         (LWB_DATA_ACK ? ((LWB_MAX_DATA_SLOTS + 7) / 8) : 0)
+#define LWB_MAX_SCHED_PKT_LEN     (LWB_SCHED_HDR_LEN + LWB_MAX_DATA_SLOTS * sizeof(uint16_t) + LWB_SCHED_CRC_LEN)
+#define LWB_MAX_DATA_PKT_LEN      (LWB_PKT_HDR_LEN + LWB_MAX_PAYLOAD_LEN)
 
 
 /*---------------------------------------------------------------------------*/
@@ -218,10 +220,11 @@
 #define LWB_TIMER_STOP()               lptimer_set(0, 0)
 #define LWB_TIMER_HS_SET(t, cb)        hs_timer_schedule_start(t, cb)          /* high-speed timer */
 #define LWB_TICKS_TO_S(t)              ((t) / LWB_TIMER_FREQUENCY)
-#define LWB_TICKS_TO_MS(t)             ((uint64_t)(t) * 1000UL / LWB_TIMER_FREQUENCY)
+#define LWB_TICKS_TO_MS(t)             ((uint64_t)(t) * 1000ULL / LWB_TIMER_FREQUENCY)
 #define LWB_TICKS_TO_US(t)             ((uint64_t)(t) * 1000000ULL / LWB_TIMER_FREQUENCY)
-#define LWB_MS_TO_TICKS(ms)            ((uint64_t)(ms) * LWB_TIMER_FREQUENCY / 1000UL)
 #define LWB_S_TO_TICKS(s)              ((uint64_t)(s) * LWB_TIMER_FREQUENCY)
+#define LWB_MS_TO_TICKS(ms)            ((uint64_t)(ms) * LWB_TIMER_FREQUENCY / 1000ULL)
+#define LWB_US_TO_TICKS(us)            ((uint64_t)(us) * LWB_TIMER_FREQUENCY / 1000000ULL)
 
 /* message passing */
 #ifndef LWB_QUEUE_SIZE
@@ -316,7 +319,7 @@ typedef struct {
   uint64_t      time;                 /* current time in microseconds */
   uint16_t      host_id;              /* node ID of the host */
   union {
-    uint16_t    slot[LWB_MAX_DATA_SLOTS + LWB_SCHED_ADD_CRC];
+    uint16_t    slot[LWB_MAX_DATA_SLOTS + LWB_SCHED_CRC_LEN / 2];
     uint8_t     rxbuffer[LWB_PKT_BUFFER_SIZE - LWB_SCHED_HDR_LEN];  /* to make sure that potentially larger received packets don't cause a buffer overflow */
   };
 } lwb_schedule_t;

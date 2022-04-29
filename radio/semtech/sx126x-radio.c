@@ -109,7 +109,8 @@ uint32_t RadioRandom( void );
  *                          FSK : timeout in number of bytes
  *                          LoRa: timeout in symbols
  * \param [IN] fixLen       Fixed length packets [0: variable, 1: fixed]
- * \param [IN] payloadLen   Sets payload length when fixed length is used
+ * \param [IN] payloadLen   Sets payload length when fixed length is used, or the max.
+ *                          allowed payload length in explicit mode
  * \param [IN] crcOn        Enables/Disables the CRC [0: OFF, 1: ON]
  * \param [IN] FreqHopOn    Enables disables the intra-packet frequency hopping
  *                          FSK : N/A ( set to 0 )
@@ -679,14 +680,7 @@ void RadioSetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                          bool crcOn, bool freqHopOn, uint8_t hopPeriod,
                          bool iqInverted )
 {
-    if( fixLen == true )
-    {
-        MaxPayloadLength = payloadLen;
-    }
-    else
-    {
-        MaxPayloadLength = 0xFF;
-    }
+    MaxPayloadLength = payloadLen;
 
     switch( modem )
     {

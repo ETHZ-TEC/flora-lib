@@ -110,7 +110,6 @@ void system_update(void)
     radio_update_cli();
     leds_update();
     cli_update();
-    gloria_update();
   }
 }
 

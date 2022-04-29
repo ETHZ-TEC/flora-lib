@@ -581,7 +581,7 @@ static command_return_t gloria_rx_command_handler(command_execution_t execution)
   flood.max_acks = macks;
   flood.data_slots = slots;
   flood.payload = message;
-  flood.initial = false;
+  flood.initiator = false;
   flood.rx_timeout = cad * HS_TIMER_FREQUENCY_MS;
   flood.sync_timer = (bool) sync;
   flood.lp_listening = lp_listening;
@@ -717,7 +717,7 @@ static command_return_t gloria_tx_command_handler(command_execution_t execution)
   flood.max_acks = macks;
   flood.data_slots = slots;
   flood.payload = message;
-  flood.initial = true;
+  flood.initiator = true;
 
   if (cont) {
     tx_period = txper;
@@ -737,7 +737,7 @@ static void sync_callback() {
 }
 
 static void gloria_cont_callback() {
-  if (flood.initial) {
+  if (flood.initiator) {
     gloria_last_sync = flood.marker;
   }
   if (flood.msg_received) {
@@ -753,7 +753,7 @@ static void gloria_cont_callback() {
   flood.guard_time = guard_time * HS_TIMER_FREQUENCY_US;
   flood.flood_idx++;
 
-  if (!flood.initial || flood.flood_idx < iterations) {
+  if (!flood.initiator || flood.flood_idx < iterations) {
     gloria_run_flood(&flood, &gloria_cont_callback);
   }
 }
@@ -762,7 +762,7 @@ static void gloria_finish_callback() {
   if (flood.msg_received) {
     hs_timer_generic(flood.reconstructed_marker + gloria_calculate_flood_time(flood.payload_size, flood.modulation, flood.data_slots, flood.header.sync, flood.ack_mode) + 50*HS_TIMER_FREQUENCY_MS, &sync_callback);
   }
-  if (flood.initial) {
+  if (flood.initiator) {
     gloria_last_sync = flood.marker;
   }
 
@@ -817,7 +817,7 @@ void gloria_print_flood(gloria_flood_t *print_flood) {
     goto end;
   }
 
-  if (cJSON_AddBoolToObject(flood_result, "initial", print_flood->initial) == NULL) {
+  if (cJSON_AddBoolToObject(flood_result, "initiator", print_flood->initiator) == NULL) {
     goto end;
   }
 

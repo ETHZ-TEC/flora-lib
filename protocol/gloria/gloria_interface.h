@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 - 2021, ETH Zurich, Computer Engineering Group (TEC)
+ * Copyright (c) 2018 - 2022, ETH Zurich, Computer Engineering Group (TEC)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@
 
 /**
  * Maximum length of payload (in Bytes) expected to be passed to the gloria
- * interface (e.g. from GMW). This value must not exceed the max payload length
+ * interface. This value must not exceed the max payload length
  * of Gloria (GLORIA_MAX_PAYLOAD_LENGTH).
  */
 #ifndef GLORIA_INTERFACE_MAX_PAYLOAD_LEN
@@ -85,9 +85,11 @@
 #endif /* GLORIA_INTERFACE_MAX_SLOTS */
 
 /**
- * If set to 1, the initiator will append a Gloria timestamp at the end of a
- * packet (GLORIA_TIMESTAMP_LENGTH bytes, hstimer timestamp divided by
+ * If set to 1, the initiator will include a timestamp in the Gloria header
+ * (GLORIA_TIMESTAMP_LENGTH bytes, hstimer timestamp divided by
  * GLORIA_SCHEDULE_GRANULARITY).
+ * NOTE: this is just the default setting and can be overwritten at runtime
+ *       with gloria_enable_append_timestamp()
  */
 #ifndef GLORIA_INTERFACE_APPEND_TIMESTAMP
 #define GLORIA_INTERFACE_APPEND_TIMESTAMP   0
@@ -125,9 +127,10 @@
  *                      location data provided by the application.
  *                      At a receiver, Glossy writes to the given memory
  *                      location data for the application.
- *                      NOTE: At the receiver, the payload buffer must have a
- *                      size of at least GLORIA_INTERFACE_MAX_PAYLOAD_LEN Bytes.
- * \param payload_len   Size of the `payload` buffer in bytes.
+ * \param payload_len   Size of the `payload` buffer in bytes. On the receiver
+ *                      side, this value limits the max. packet size that will
+ *                      be accepted. Note that a payload length of zero is
+ *                      allowed.
  * \param n_tx_max      Maximum number of transmissions (N).
  * \param sync_slot     Not zero if flood should be used to update the
  *                      reference, zero otherwise.
@@ -311,9 +314,9 @@ void gloria_register_flood_callback(gloria_flood_cb_t flood_cb);
 /**
  * \brief           Set a custom RX packet filter
  * \param           A callback function that takes a pointer to the received
- *                  payload as well as the payload length. It must returns true
- *                  if the received packet should be kept / accepted and false
- *                  otherwise.
+ *                  header, the header length, a pointer to the payload and the
+ *                  payload length. It must returns true if the received packet
+ *                  should be kept / accepted and false otherwise.
  *                  IMPORTANT: The function must be fast and deterministic. Make
  *                  sure the function completes execution within ~100us. Longer
  *                  execution times may disrupt the Gloria timing.
@@ -355,13 +358,19 @@ int32_t gloria_get_rssi();
  */
 int32_t gloria_get_snr();
 
+/**
+ * \brief           Enable or disable the inclusion of a timestamp in the
+ *                  Gloria header.
+ */
+void gloria_enable_append_timestamp(bool enable);
 
 /**
  * \brief           Returns the last received Gloria timestamp
  * \param           buffer to hold the timestamp
- * \note            GLORIA_INTERFACE_APPEND_TIMESTAMP must be enabled
+ * \return          true if a timestamp has been received during the last
+ *                  flood (and copied into `out_timestamp`), false otherwise
  */
-void gloria_get_received_timestamp(uint8_t* out_timestamp);
+bool gloria_get_received_timestamp(uint8_t* out_timestamp);
 
 
 /**
