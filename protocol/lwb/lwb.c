@@ -135,7 +135,7 @@ void lwb_wait_until(lwb_time_t timeout)
 
 void lwb_schedule_received_callback(void)
 {
-  LWB_TIMER_SET(0, 0);   /* cancel timer */
+  LWB_TIMER_STOP();
   lwb_notify();
 }
 

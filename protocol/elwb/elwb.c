@@ -137,7 +137,7 @@ void elwb_wait_until(elwb_time_t timeout)
 
 void elwb_schedule_received_callback(void)
 {
-  ELWB_TIMER_SET(0, 0);   /* cancel timer */
+  ELWB_TIMER_STOP();
   elwb_notify();
 }
 

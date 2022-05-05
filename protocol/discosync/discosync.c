@@ -303,7 +303,7 @@ void discosync_rx_done(uint8_t* payload, uint16_t size,  int16_t rssi, int8_t sn
     rx_done_cnt++;
 
     uint64_t estimated_start_time = radio_get_last_sync_timestamp() -
-                                    gloria_timings[DISCOSYNC_MODULATION].txSync -
+                                    DISCOSYNC_TX_SYNC -
                                     DISCOSYNC_TX_OFS -
                                     DISCOSYNC_SLOT_TIME * rcvd_pkt->slot_idx;
     if (rcvd_pkt->slot_idx >= pkt.slot_idx) {

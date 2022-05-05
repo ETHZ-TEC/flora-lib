@@ -94,7 +94,8 @@
 #define DISCOSYNC_PKT_LEN           2
 #define DISCOSYNC_PKT_TYPE          0xb     // 4 random bits
 
-#define DISCOSYNC_SLOT_TIME         (2 * DISCOSYNC_TX_OFS + radio_get_toa_hs(DISCOSYNC_PKT_LEN, DISCOSYNC_MODULATION) + gloria_timings[DISCOSYNC_MODULATION].txSync)  // Slot duration in hstimer ticks
+#define DISCOSYNC_TX_SYNC           gloria_timings[DISCOSYNC_MODULATION].txSync
+#define DISCOSYNC_SLOT_TIME         (2 * DISCOSYNC_TX_OFS + radio_get_toa_hs(DISCOSYNC_PKT_LEN, DISCOSYNC_MODULATION) + DISCOSYNC_TX_SYNC)  // Slot duration in hstimer ticks
 #define DISCOSYNC_SLOT_TIME_MS      (DISCOSYNC_SLOT_TIME / HS_TIMER_FREQUENCY_MS)
 
 
