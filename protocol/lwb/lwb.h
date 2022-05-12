@@ -106,7 +106,7 @@
 
 /* longer guard time before a round in LF ticks, used if a schedule is missed or the drift has not yet been estimated */
 #ifndef LWB_T_GUARD_ROUND_2
-#define LWB_T_GUARD_ROUND_2       (LWB_TIMER_FREQUENCY / 5000)    /* 5ms */
+#define LWB_T_GUARD_ROUND_2       (LWB_TIMER_FREQUENCY / 200)     /* 5ms */
 #endif /* LWB_T_GUARD_ROUND_2 */
 
 /* time reserved for the preprocess task (before a round) in LF ticks */
