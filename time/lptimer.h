@@ -32,38 +32,38 @@
 #define TIME_LPTIMER_H_
 
 
-#define LPTIMER_SECOND            32768UL         /* ticks per second */
-#define LPTIMER_FREQUENCY         LPTIMER_SECOND
+#define LPTIMER_SECOND                32768UL         /* ticks per second */
+#define LPTIMER_FREQUENCY             LPTIMER_SECOND
 
 #ifndef LPTIMER_RESET_WDG_ON_OVF
-#define LPTIMER_RESET_WDG_ON_OVF  0     /* reset watchdog inside the timer overflow interrupt? (only works if watchdog configured and enabled) */
+#define LPTIMER_RESET_WDG_ON_OVF      0     /* reset watchdog inside the timer overflow interrupt? (only works if watchdog configured and enabled) */
 #endif /* LPTIMER_RESET_WDG_ON_OVF */
 
 #ifndef LPTIMER_RESET_WDG_ON_EXP
-#define LPTIMER_RESET_WDG_ON_EXP  0
+#define LPTIMER_RESET_WDG_ON_EXP      0
 #endif /* LPTIMER_RESET_WDG_ON_EXP */
 
 #ifndef LPTIMER_CHECK_EXP_TIME
-#define LPTIMER_CHECK_EXP_TIME    1     /* check expiration time inside lptimer_set() and issue a warning if it is in the past or far in the future */
+#define LPTIMER_CHECK_EXP_TIME        1     /* check expiration time inside lptimer_set() and issue a warning if it is in the past or far in the future */
 #endif /* LPTIMER_CHECK_EXP_TIME */
 
 #ifndef LPTIMER_EXP_TIME_TH_MS
-#define LPTIMER_EXP_TIME_TH_MS    10    /* if expiration time is late by LPTIMER_EXP_TIME_TH_MS ms, a warning will be issued */
+#define LPTIMER_EXP_TIME_TH_MS        10    /* if expiration time is late by LPTIMER_EXP_TIME_TH_MS ms, a warning will be issued */
 #endif /* LPTIMER_EXP_TIME_TH_MS */
 
 /* returns relative time (elapsed time since MCU start) in milliseconds */
-#define LPTIMER_NOW_MS()          (uint32_t)(lptimer_now() * 1000UL / LPTIMER_SECOND)
+#define LPTIMER_NOW_MS()              (uint32_t)(lptimer_now() * 1000 / LPTIMER_SECOND)
 
 /* returns relative time (elapsed time since MCU start) in seconds */
-#define LPTIMER_NOW_SEC()         (uint32_t)(lptimer_now() / LPTIMER_SECOND)
+#define LPTIMER_NOW_SEC()             (uint32_t)(lptimer_now() / LPTIMER_SECOND)
 
-#define LPTIMER_TICKS_TO_HS_TIMER(t)  ((uint64_t)(t) * HS_TIMER_FREQUENCY / LPTIMER_SECOND)
-#define LPTIMER_TICKS_TO_US(t)    ((uint64_t)(t) * 1000000UL / LPTIMER_SECOND)
-#define LPTIMER_TICKS_TO_MS(t)    ((uint64_t)(t) * 1000UL / LPTIMER_SECOND)
-#define LPTIMER_TICKS_TO_S(t)     ((uint64_t)(t) / LPTIMER_SECOND)
-#define LPTIMER_US_TO_TICKS(us)   ((uint64_t)(us) * LPTIMER_SECOND / 1000000UL)
-#define LPTIMER_MS_TO_TICKS(ms)   ((uint64_t)(ms) * LPTIMER_SECOND / 1000UL)
-#define LPTIMER_S_TO_TICKS(s)     ((uint64_t)(s) * LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_HS_TIMER(t)  ((t)  * HS_TIMER_FREQUENCY / LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_US(t)        ((t)  * 1000000 / LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_MS(t)        ((t)  * 1000 / LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_S(t)         ((t)  / LPTIMER_SECOND)
+#define LPTIMER_US_TO_TICKS(us)       ((us) * LPTIMER_SECOND / 1000000)
+#define LPTIMER_MS_TO_TICKS(ms)       ((ms) * LPTIMER_SECOND / 1000)
+#define LPTIMER_S_TO_TICKS(s)         ((s)  * LPTIMER_SECOND)
 
 
 
