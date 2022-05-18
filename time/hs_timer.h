@@ -32,32 +32,32 @@
 #define TIME_HS_TIMER_H_
 
 
-#define HS_TIMER_FREQUENCY          8000000   // High speed timer (htim2) cycles per second
-#define HS_TIMER_FREQUENCY_MS       8000      // High speed timer (htim2) cycles per ms
-#define HS_TIMER_FREQUENCY_US       8         // High speed timer (htim2) cycles per us
+#define HS_TIMER_FREQUENCY            8000000LL // High speed timer (htim2) cycles per second
+#define HS_TIMER_FREQUENCY_MS         8000      // High speed timer (htim2) cycles per ms
+#define HS_TIMER_FREQUENCY_US         8         // High speed timer (htim2) cycles per us
 
-#define HS_TIMER_GUARD_TIME         800       // 100us; worst case time needed so set the timer correctly (schedule and generic)
+#define HS_TIMER_GUARD_TIME           800       // 100us; worst case time needed so set the timer correctly (schedule and generic)
 
 #ifndef HS_TIMER_COMPENSATE_DRIFT
-#define HS_TIMER_COMPENSATE_DRIFT   1
+#define HS_TIMER_COMPENSATE_DRIFT     1
 #endif /* HS_TIMER_COMPENSATE_DRIFT */
 
 #ifndef HS_TIMER_INIT_FROM_RTC
-#define HS_TIMER_INIT_FROM_RTC      1
+#define HS_TIMER_INIT_FROM_RTC        1
 #endif /* HS_TIMER_INIT_FROM_RTC */
 
 
-#define HS_TIMER_TICKS_TO_LPTIMER(hs_ticks)   ((hs_ticks) * LPTIMER_FREQUENCY / HS_TIMER_FREQUENCY)
-#define HS_TIMER_TICKS_TO_S(hs_ticks)         ((hs_ticks) / HS_TIMER_FREQUENCY)
-#define HS_TIMER_TICKS_TO_MS(hs_ticks)        ((hs_ticks) / HS_TIMER_FREQUENCY_MS)
-#define HS_TIMER_TICKS_TO_US(hs_ticks)        ((hs_ticks) / HS_TIMER_FREQUENCY_US)
-#define HS_TIMER_TICKS_TO_NS(hs_ticks)        ((hs_ticks) * 1000 / HS_TIMER_FREQUENCY_US)
-#define HS_TIMER_S_TO_TICKS(s)                ((s)  * HS_TIMER_FREQUENCY)
-#define HS_TIMER_MS_TO_TICKS(ms)              ((ms) * HS_TIMER_FREQUENCY_MS)
-#define HS_TIMER_US_TO_TICKS(us)              ((us) * HS_TIMER_FREQUENCY_US)
-#define HS_TIMER_NS_TO_TICKS(ns)              ((ns) * HS_TIMER_FREQUENCY_US / 1000)
+#define HS_TIMER_TICKS_TO_LPTIMER(t)  ((t)  * (int64_t)LPTIMER_FREQUENCY / HS_TIMER_FREQUENCY)
+#define HS_TIMER_TICKS_TO_S(t)        ((t)  / HS_TIMER_FREQUENCY)
+#define HS_TIMER_TICKS_TO_MS(t)       ((t)  / HS_TIMER_FREQUENCY_MS)
+#define HS_TIMER_TICKS_TO_US(t)       ((t)  / HS_TIMER_FREQUENCY_US)
+#define HS_TIMER_TICKS_TO_NS(t)       ((t)  * 1000LL / HS_TIMER_FREQUENCY_US)
+#define HS_TIMER_S_TO_TICKS(s)        ((s)  * (int64_t)HS_TIMER_FREQUENCY)
+#define HS_TIMER_MS_TO_TICKS(ms)      ((ms) * (int64_t)HS_TIMER_FREQUENCY_MS)
+#define HS_TIMER_US_TO_TICKS(us)      ((us) * (int64_t)HS_TIMER_FREQUENCY_US)
+#define HS_TIMER_NS_TO_TICKS(ns)      ((ns) * (int64_t)HS_TIMER_FREQUENCY_US / 1000)
 
-#define hs_timer_now                          hs_timer_get_current_timestamp    // Alias
+#define hs_timer_now                  hs_timer_get_current_timestamp    // Alias
 
 typedef void (* hs_timer_cb_t)(void);
 

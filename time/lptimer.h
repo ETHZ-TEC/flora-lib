@@ -57,13 +57,13 @@
 /* returns relative time (elapsed time since MCU start) in seconds */
 #define LPTIMER_NOW_SEC()             (uint32_t)(lptimer_now() / LPTIMER_SECOND)
 
-#define LPTIMER_TICKS_TO_HS_TIMER(t)  ((t)  * HS_TIMER_FREQUENCY / LPTIMER_SECOND)
-#define LPTIMER_TICKS_TO_US(t)        ((t)  * 1000000 / LPTIMER_SECOND)
-#define LPTIMER_TICKS_TO_MS(t)        ((t)  * 1000 / LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_HS_TIMER(t)  ((t)  * (int64_t)HS_TIMER_FREQUENCY / LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_US(t)        ((t)  * 1000000LL / LPTIMER_SECOND)
+#define LPTIMER_TICKS_TO_MS(t)        ((t)  * 1000LL / LPTIMER_SECOND)
 #define LPTIMER_TICKS_TO_S(t)         ((t)  / LPTIMER_SECOND)
-#define LPTIMER_US_TO_TICKS(us)       ((us) * LPTIMER_SECOND / 1000000)
-#define LPTIMER_MS_TO_TICKS(ms)       ((ms) * LPTIMER_SECOND / 1000)
-#define LPTIMER_S_TO_TICKS(s)         ((s)  * LPTIMER_SECOND)
+#define LPTIMER_US_TO_TICKS(us)       ((us) * (int64_t)LPTIMER_SECOND / 1000000LL)
+#define LPTIMER_MS_TO_TICKS(ms)       ((ms) * (int64_t)LPTIMER_SECOND / 1000LL)
+#define LPTIMER_S_TO_TICKS(s)         ((s)  * (int64_t)LPTIMER_SECOND)
 
 
 
