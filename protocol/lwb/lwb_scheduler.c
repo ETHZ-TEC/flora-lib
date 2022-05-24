@@ -48,6 +48,7 @@ static uint32_t           lwb_time_ofs;                                         
 static uint32_t           base_period = LWB_SCHED_PERIOD * LWB_TIMER_FREQUENCY;   /* base (idle) period in ticks */
 static uint32_t           min_period;
 static uint32_t           n_nodes;                                                /* # active nodes */
+static uint32_t           n_slots_host;                                           /* # slots reserved for the host */
 static lwb_node_list_t    node_list[LWB_MAX_NUM_NODES];                           /* actual list */
 static lwb_node_list_t*   head;                                                   /* head of the linked list */
 
@@ -210,7 +211,10 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
   uint32_t curr_time = lwb_time / 1000000;      /* current time in seconds */
 
   /* assign slots to the host */
-  while (reserve_slots_host && sched->n_slots < LWB_MAX_SLOTS_HOST) {
+  if (n_slots_host > 0) {
+    reserve_slots_host = n_slots_host;
+  }
+  while (reserve_slots_host && (sched->n_slots < LWB_MAX_SLOTS_HOST)) {
     sched->slot[sched->n_slots++] = LWB_NODE_ID;
     reserve_slots_host--;
   }
@@ -275,9 +279,10 @@ uint32_t lwb_sched_init(lwb_schedule_t* sched)
   }
   /* initialize node list */
   memset(node_list, 0, sizeof(lwb_node_list_t) * LWB_MAX_NUM_NODES);
-  head       = 0;
-  n_nodes    = 0;
-  min_period = t_round_max + LWB_TIMER_FREQUENCY / 10;    /* add some slack time */
+  head         = 0;
+  n_nodes      = 0;
+  n_slots_host = 0;
+  min_period   = t_round_max + LWB_TIMER_FREQUENCY / 10;    /* add some slack time */
 
 #if LWB_USE_TX_DELAY
   memset(delay_mask, 0, LWB_TX_DELAY_MASK_SIZE);
@@ -341,6 +346,14 @@ void lwb_sched_set_time_offset(uint32_t ofs)
 {
   /* convert from ticks to us */
   lwb_time_ofs = LWB_TICKS_TO_US(ofs);
+}
+
+
+void lwb_sched_set_host_slots(uint8_t n_slots)
+{
+  if (n_slots <= LWB_MAX_DATA_SLOTS) {
+    n_slots_host = n_slots;
+  }
 }
 
 

@@ -407,6 +407,7 @@ bool     lwb_sched_check_params(uint32_t period_secs, uint32_t sched_slot, uint3
 lwb_time_t lwb_sched_get_time(void);                    /* returns the current network time in microseconds */
 void     lwb_sched_set_time(lwb_time_t time_us);        /* set the current network time in microseconds */
 void     lwb_sched_set_delay_nodes(const uint16_t* node_list, uint8_t num_nodes);   /* define which source nodes should delay the retransmission of data packets */
+void     lwb_sched_set_host_slots(uint8_t n_slots);     /* set the number of slots reserved for the host node (applies to the next and all following rounds); if set to zero, the number of items in the TX queue will be used */
 
 /*---------------------------------------------------------------------------*/
 
