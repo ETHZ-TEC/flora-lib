@@ -95,7 +95,7 @@ static uint8_t            data_ack_slot_cnt   = 0;
 static lwb_time_t         last_synced_hs;
 #endif /* LWB_CONT_USE_HSTIMER */
 static lwb_syncstate_t    sync_state;
-static uint_fast16_t      period_idle;        /* last known base period */
+static uint32_t           period_idle;        /* last known base period */
 
 /* private (not exposed) scheduler functions */
 uint32_t lwb_sched_init(lwb_schedule_t* sched);
