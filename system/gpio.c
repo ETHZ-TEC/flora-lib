@@ -98,6 +98,16 @@ void gpio_init(void)
   GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(BASEBOARD_ENABLE_GPIO_Port, &GPIO_InitStruct);
+
+  /* configure baseboard wake pin as output low */
+  HAL_GPIO_DeInit(BASEBOARD_WAKE_GPIO_Port, BASEBOARD_WAKE_Pin);
+  HAL_GPIO_WritePin(BASEBOARD_WAKE_GPIO_Port, BASEBOARD_WAKE_Pin, GPIO_PIN_RESET);
+  GPIO_InitStruct.Pin   = BASEBOARD_WAKE_Pin;
+  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull  = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(BASEBOARD_WAKE_GPIO_Port, &GPIO_InitStruct);
+
   /* configure COM_PROG and COM_PROG2 as output */
   HAL_GPIO_DeInit(BASEBOARD_EXT3_SWITCH_GPIO_Port, BASEBOARD_EXT3_SWITCH_Pin);
   HAL_GPIO_DeInit(BASEBOARD_DEBUG_GPIO_Port, BASEBOARD_DEBUG_Pin);
