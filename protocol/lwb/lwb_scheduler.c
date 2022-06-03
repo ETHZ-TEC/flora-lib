@@ -298,7 +298,7 @@ uint32_t lwb_sched_init(lwb_schedule_t* sched)
   const uint16_t node_ids[] = { LWB_SCHED_NODE_LIST };
   uint32_t i;
   for (i = 0; i < sizeof(node_ids) / 2; i++) {
-    lwb_sched_process_req(node_ids[i], LWB_TICKS_TO_S(base_period));    /* add one slot per node and round by default */
+    lwb_sched_process_req(node_ids[i], LWB_SCHED_DEFAULT_IPI);
   }
 #endif /* LWB_SCHED_NODE_LIST */
 

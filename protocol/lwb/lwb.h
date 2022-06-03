@@ -129,7 +129,7 @@
 
 /* slack time for schedule computation, in ticks */
 #ifndef LWB_SCHED_COMP_TIME
-#define LWB_SCHED_COMP_TIME       (LWB_TIMER_FREQUENCY / 50)          /* 20ms */
+#define LWB_SCHED_COMP_TIME       (LWB_TIMER_FREQUENCY / 50)      /* 20ms */
 #endif /* LWB_SCHED_COMP_TIME */
 
 /* append CRC to the schedule? */
@@ -160,6 +160,11 @@
 #ifndef LWB_USE_TX_DELAY
 #define LWB_USE_TX_DELAY          0
 #endif /* LWB_USE_TX_DELAY */
+
+/* Default IPI, used for the nodes included in LWB_SCHED_NODE_LIST */
+#ifndef LWB_SCHED_DEFAULT_IPI
+#define LWB_SCHED_DEFAULT_IPI     LWB_SCHED_PERIOD                /* add 1 slot per node and round by default */
+#endif /* LWB_SCHED_DEFAULT_IPI */
 
 
 /* --------------- END OF CONFIG, do not change values below --------------- */
