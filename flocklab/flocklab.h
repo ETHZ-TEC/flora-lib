@@ -41,7 +41,7 @@ extern volatile uint16_t FLOCKLAB_NODE_ID;
 
 /* use the flocklab node ID */
 #ifndef NODE_ID
-#define NODE_ID       FLOCKLAB_NODE_ID
+#define NODE_ID             FLOCKLAB_NODE_ID
 #endif /* NODE_ID */
 
 /* disable SWD pins (instead, use them for tracing) */

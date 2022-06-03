@@ -391,9 +391,9 @@ const lwb_stats_t * const lwb_get_stats(void);
 
 uint32_t lwb_get_max_round_duration(uint32_t t_sched_arg, uint32_t t_cont_arg, uint32_t t_data_arg);
 
-void     lwb_set_drift(int32_t drift_ppm);
+void     lwb_set_drift(int32_t drift_ppm);              /* set the drift compensation (only on host node) */
 
-void     lwb_set_ipi(uint16_t ipi_secs);                /* set the inter-paket interval in seconds (source nodes only) */
+void     lwb_set_ipi(uint16_t ipi_secs);                /* set the inter-packet interval in seconds */
 
 uint8_t  lwb_get_n_tx(void);                            /* gets the number of retransmissions */
 bool     lwb_set_n_tx(uint8_t n_tx_arg);                /* sets the number of retransmissions, returns true on success */

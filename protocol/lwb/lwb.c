@@ -100,7 +100,7 @@ static uint32_t           period_idle;        /* last known base period */
 /* private (not exposed) scheduler functions */
 uint32_t lwb_sched_init(lwb_schedule_t* sched);
 bool     lwb_sched_process_req(uint16_t id, uint16_t ipi);
-uint32_t lwb_sched_compute(lwb_schedule_t * const sched, uint32_t reserve_slots_host);
+uint32_t lwb_sched_compute(lwb_schedule_t * const sched, uint8_t reserve_slots_host);
 void     lwb_sched_set_time_offset(uint32_t ofs);
 
 
@@ -262,8 +262,12 @@ bool lwb_set_num_hops(uint8_t num_hops_arg)
 void lwb_set_ipi(uint16_t ipi_secs)
 {
   if (ipi != ipi_secs) {
-    ipi = ipi_secs;
+    ipi         = ipi_secs;
     ipi_changed = true;
+
+    if (is_host) {
+      lwb_sched_process_req(LWB_NODE_ID, ipi_secs);
+    }
   }
 }
 
@@ -882,6 +886,10 @@ bool lwb_init(void* lwb_task,
     return false;
   }
 #endif /* LWB_DATA_ACK */
+  if (LWB_NODE_ID < LWB_MIN_NODE_ID || LWB_NODE_ID > LWB_MAX_NODE_ID) {
+    LOG_ERROR("invalid node ID");
+    return false;
+  }
 
   task_handle  = lwb_task;
   pre_task     = pre_lwb_task;

@@ -48,7 +48,7 @@ static uint32_t           lwb_time_ofs;                                         
 static uint32_t           base_period = LWB_SCHED_PERIOD * LWB_TIMER_FREQUENCY;   /* base (idle) period in ticks */
 static uint32_t           min_period;
 static uint32_t           n_nodes;                                                /* # active nodes */
-static uint32_t           n_slots_host;                                           /* # slots reserved for the host */
+static uint8_t            n_slots_host;                                           /* # slots reserved for the host */
 static lwb_node_list_t    node_list[LWB_MAX_NUM_NODES];                           /* actual list */
 static lwb_node_list_t*   head;                                                   /* head of the linked list */
 
@@ -57,15 +57,18 @@ static uint8_t            delay_mask[LWB_TX_DELAY_MASK_SIZE];
 static bool               delay_mask_set;
 #endif /* LWB_USE_TX_DELAY */
 
+
 /* returns true if a stream with the requested IPI can be added to the schedule */
-bool lwb_sched_check_utilization(uint16_t requested_ipi)
+static bool lwb_sched_check_utilization(uint16_t requested_ipi)
 {
   /* calculate the current bandwidth utilization */
   if (requested_ipi > 0) {
+    float            pkt_rate  = 1.0f / requested_ipi;
     lwb_node_list_t* curr_node = head;
-    float pkt_rate = 1.0 / requested_ipi;
     while (curr_node != 0) {
-      pkt_rate += 1.0 / curr_node->ipi;
+      if (curr_node->ipi) {
+        pkt_rate += 1.0f / curr_node->ipi;
+      }
       curr_node = curr_node->next;
     }
     uint32_t required_period = LWB_TIMER_FREQUENCY * (LWB_MAX_DATA_SLOTS / pkt_rate);
@@ -77,7 +80,7 @@ bool lwb_sched_check_utilization(uint16_t requested_ipi)
 }
 
 
-bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
+static bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
 {
   if (n_nodes >= LWB_MAX_NUM_NODES) {
     LOG_WARNING("request ignored (max #nodes reached)");
@@ -85,7 +88,6 @@ bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
   }
   if (node_id == DPP_DEVICE_ID_SINK      ||
       node_id == DPP_DEVICE_ID_BROADCAST ||
-      node_id == LWB_NODE_ID             ||
       node_id < LWB_MIN_NODE_ID          ||
       node_id > LWB_MAX_NODE_ID) {
     LOG_WARNING("invalid node ID %u", node_id);
@@ -96,10 +98,9 @@ bool lwb_sched_add_node(uint16_t node_id, uint16_t ipi)
     LOG_WARNING("request rejected (traffic demand exceeds capacity limit)");
     return false;
   }
-  lwb_node_list_t* node = 0;
-  uint32_t i;
   /* find a free spot */
-  for (i = 0; i < LWB_MAX_NUM_NODES; i++) {
+  lwb_node_list_t* node = 0;
+  for (uint32_t i = 0; i < LWB_MAX_NUM_NODES; i++) {
     if (node_list[i].id == 0) {
       node = &node_list[i];   /* use this spot */
       break;
@@ -172,7 +173,7 @@ bool lwb_sched_process_req(uint16_t id,
       }
       node->ipi        = ipi;
       node->t_last_req = lwb_time / 1000000;    /* set to current time */
-      LOG_VERBOSE("IPI of node %u adjusted to %us", id, node->ipi);
+      LOG_VERBOSE("IPI of node %u adjusted to %u", id, node->ipi);
       return true;
     }
   }
@@ -182,13 +183,17 @@ bool lwb_sched_process_req(uint16_t id,
 
 
 uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
-                           uint32_t reserve_slots_host)
+                           uint8_t reserve_slots_host)
 {
   lwb_node_list_t* curr_node = head;
 
   /* clear schedule content */
   memset(sched->slot, 0, sizeof(sched->slot));
   sched->n_slots = 0;
+
+  if (n_slots_host > 0) {
+    reserve_slots_host = n_slots_host;
+  }
 
   /* determine the required period (for this we need to know the total traffic demand per second) */
   curr_node = head;
@@ -210,25 +215,20 @@ uint32_t lwb_sched_compute(lwb_schedule_t* const sched,
   lwb_time += LWB_TICKS_TO_US(sched->period);
   uint32_t curr_time = lwb_time / 1000000;      /* current time in seconds */
 
-  /* assign slots to the host */
-  if (n_slots_host > 0) {
-    reserve_slots_host = n_slots_host;
-  }
-  while (reserve_slots_host && (sched->n_slots < LWB_MAX_SLOTS_HOST)) {
-    sched->slot[sched->n_slots++] = LWB_NODE_ID;
-    reserve_slots_host--;
-  }
-
   /* go through the list of nodes and assign the requested slots */
   curr_node = head;
   while (curr_node != 0 && (sched->n_slots < LWB_MAX_DATA_SLOTS)) {
+    uint32_t n_slots = 0;
     if (curr_node->ipi) {
-      uint32_t n_slots = (curr_time - curr_node->t_last_req) / curr_node->ipi;
-      while (n_slots && (sched->n_slots < LWB_MAX_DATA_SLOTS)) {
-        sched->slot[sched->n_slots++] = curr_node->id;
-        curr_node->t_last_req += curr_node->ipi;
-        n_slots--;
-      }
+      n_slots = (curr_time - curr_node->t_last_req) / curr_node->ipi;
+    } else if (curr_node->id == LWB_NODE_ID) {
+      /* on the host node: if no IPI specified, then reserve as many slots as requested */
+      n_slots = reserve_slots_host;
+    }
+    while (n_slots && (sched->n_slots < LWB_MAX_DATA_SLOTS)) {
+      sched->slot[sched->n_slots++] = curr_node->id;
+      curr_node->t_last_req        += curr_node->ipi;
+      n_slots--;
     }
     curr_node = curr_node->next;
   }
@@ -289,11 +289,16 @@ uint32_t lwb_sched_init(lwb_schedule_t* sched)
   delay_mask_set = false;
 #endif /* LWB_USE_TX_DELAY */
 
+  /* add an empty stream (IPI 0) for the host node */
+  if (!lwb_sched_process_req(LWB_NODE_ID, 0)) {
+    LOG_ERROR("failed to allocate a stream for the host node");
+  }
+
 #ifdef LWB_SCHED_NODE_LIST
   const uint16_t node_ids[] = { LWB_SCHED_NODE_LIST };
   uint32_t i;
   for (i = 0; i < sizeof(node_ids) / 2; i++) {
-    lwb_sched_add_node(node_ids[i], LWB_TICKS_TO_S(base_period));         /* add one slot per node and round by default */
+    lwb_sched_process_req(node_ids[i], LWB_TICKS_TO_S(base_period));    /* add one slot per node and round by default */
   }
 #endif /* LWB_SCHED_NODE_LIST */
 
