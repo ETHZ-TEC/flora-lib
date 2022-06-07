@@ -40,13 +40,15 @@ typedef struct
 } dcstat_t;
 
 
+#define DCSTAT_FREQUENCY                LPTIMER_SECOND
 #define DCSTAT_ACTIVE_TIME_MS(dc)       (((dc)->active_time * 1000) / LPTIMER_SECOND)
 
 
-void dcstat_start(dcstat_t* dc);        /* continue counting */
-void dcstat_stop(dcstat_t* dc);         /* stop counting */
-void dcstat_reset(dcstat_t* dc);        /* reset counter */
-uint32_t dcstat_get_dc(const dcstat_t* const dc);   /* get duty cycle in ppm */
+void     dcstat_start(dcstat_t* dc);                        /* continue counting */
+void     dcstat_stop(dcstat_t* dc);                         /* stop counting */
+void     dcstat_reset(dcstat_t* dc);                        /* reset counter */
+uint32_t dcstat_get_dc(const dcstat_t* const dc);           /* get duty cycle in ppm */
+uint64_t dcstat_get_active_time(const dcstat_t* const dc);  /* get active time in ticks */
 
 
 #endif /* UTILS_DCSTAT_H_ */

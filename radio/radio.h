@@ -113,7 +113,9 @@ uint8_t   radio_get_preamble_counter(void);
 void      radio_reset_sync_counter(void);
 uint8_t   radio_get_sync_counter(void);
 uint32_t  radio_get_rx_dc(void);
+uint64_t  radio_get_rx_time(void);
 uint32_t  radio_get_tx_dc(void);
+uint64_t  radio_get_tx_time(void);
 void      radio_dc_counter_reset(void);
 uint32_t  radio_get_prr(bool reset);      /* returns the packet reception rate in [% * 10^2] */
 

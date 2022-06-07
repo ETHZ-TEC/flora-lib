@@ -674,6 +674,7 @@ uint8_t radio_get_preamble_counter(void)
   return preamble_detected_counter;
 }
 
+
 void radio_reset_sync_counter(void)
 {
   sync_detected_counter = 0;
@@ -692,9 +693,21 @@ uint32_t radio_get_rx_dc(void)
 }
 
 
+uint64_t radio_get_rx_time(void)
+{
+  return dcstat_get_active_time(&radio_dc_rx);
+}
+
+
 uint32_t radio_get_tx_dc(void)
 {
   return dcstat_get_dc(&radio_dc_tx);
+}
+
+
+uint64_t radio_get_tx_time(void)
+{
+  return dcstat_get_active_time(&radio_dc_tx);
 }
 
 
