@@ -45,6 +45,7 @@ static bool           flood_completed;                                    // ind
 static uint8_t        lastrun_n_rx_started;                               // number of rx started events during the last Gloria run
 static bool           lastrun_t_ref_updated;                              // indicates whether last_t_ref has been updated during the last flood
 static uint64_t       last_t_ref = 0;                                     // reference time (updated if gloria_start is called with sync_slot=true)
+static uint64_t       last_t_ref_hs = 0;                                  // last reference time in hs timer ticks
 static int8_t         internal_power = GLORIA_INTERFACE_POWER;            // internal state for power (can be adapted from the upper layer)
 static uint8_t        internal_modulation = GLORIA_INTERFACE_MODULATION;  // internal state for the radio modulation (can be adapted from the upper layer)
 static uint8_t        internal_band = GLORIA_INTERFACE_RF_BAND;           // internal state for the frequency band (can be adapted from the upper layer)
@@ -297,7 +298,7 @@ uint64_t gloria_get_t_ref(void)
 
 uint64_t gloria_get_t_ref_hs(void)
 {
-  return flood.reconstructed_marker;
+  return last_t_ref_hs;
 }
 
 
@@ -480,7 +481,8 @@ static void update_t_ref(void)
 
   // determine the the reconstructed_marker time in lptimer ticks
   /* update t_ref related internal state */
-  last_t_ref = lp_sync_point - lp_time_diff;
+  last_t_ref            = lp_sync_point - lp_time_diff;
+  last_t_ref_hs         = flood.reconstructed_marker;
   lastrun_t_ref_updated = true;
 }
 
