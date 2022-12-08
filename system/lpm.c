@@ -137,8 +137,10 @@ bool lpm_prepare(void)
         return false;
       }
 
+  #if RADIO_ENABLE
       /* make sure the radio is in sleep mode */
       radio_sleep(!LPM_RADIO_COLD_SLEEP);
+  #endif /* RADIO_ENABLE */
 
       /* notes on stop mode:
       * - SRAM1, SRAM2 and all registers content are retained
@@ -328,8 +330,10 @@ void lpm_resume(void)
     //HAL_NVIC_DisableIRQ(RADIO_DIO1_WAKEUP_EXTI_IRQn);
     //__HAL_GPIO_EXTI_CLEAR_IT(RADIO_DIO1_WAKEUP_Pin);
 
+#if RADIO_ENABLE
     /* wake radio */
     radio_wakeup();
+#endif /* RADIO_ENABLE */
 
     /* resume FreeRTOS SysTick */
     RESUME_SYSTICK();

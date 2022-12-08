@@ -35,6 +35,8 @@
 #include "flora_lib.h"
 
 
+#if RADIO_ENABLE
+
 #define SX126x_CMD_STATUS_VALID(status)     ((status & 0xe) < (0x4 << 1) || (status & 0xe) > (0x5 << 1))      // see datasheet p.95
 
 
@@ -456,3 +458,4 @@ void SX126xAntSwOff( void )
 #endif
 }
 
+#endif /* RADIO_ENABLE */

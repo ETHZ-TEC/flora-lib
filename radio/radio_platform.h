@@ -31,6 +31,7 @@
 #ifndef RADIO_RADIO_PLATFORM_H_
 #define RADIO_RADIO_PLATFORM_H_
 
+
 // Platform specific commands
 
 #define RADIO_SET_NRESET_PIN()    HAL_GPIO_WritePin(RADIO_NRESET_GPIO_Port, RADIO_NRESET_Pin, GPIO_PIN_SET)       // release reset
@@ -52,5 +53,6 @@
   #define RADIO_RX_START_IND()
   #define RADIO_RX_STOP_IND()
 #endif /* RADIO_RX_START_IND */
+
 
 #endif /* RADIO_RADIO_PLATFORM_H_ */

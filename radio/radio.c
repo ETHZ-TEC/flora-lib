@@ -30,6 +30,7 @@
 
 #include "flora_lib.h"
 
+#if RADIO_ENABLE
 
 extern void (*RadioOnDioIrqCallback)(void);
 extern const struct Radio_s Radio;
@@ -729,3 +730,5 @@ uint32_t radio_get_prr(bool reset)
   }
   return prr;
 }
+
+#endif /* RADIO_ENABLE */

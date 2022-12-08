@@ -27,6 +27,8 @@
 
 #include "flora_lib.h"
 
+#if RADIO_ENABLE
+
 /*!
  * \brief Internal frequency of the radio
  */
@@ -884,3 +886,5 @@ void SX126xSetXoscTrim( void )
     SX126xWriteRegister( REG_XTB_TRIM, 0x0F );
 #endif
 }
+
+#endif /* RADIO_ENABLE */

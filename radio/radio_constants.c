@@ -30,6 +30,7 @@
 
 #include "flora_lib.h"
 
+#if RADIO_ENABLE
 
 const radio_config_t radio_modulations[RADIO_NUM_MODULATIONS] =
 {
@@ -209,3 +210,5 @@ const radio_cad_params_t radio_cad_params[RADIO_NUM_CAD_PARAMS] = {
     {.symb_num = LORA_CAD_04_SYMBOL, .cad_det_peak = 19, .cad_det_min = 10}, // SF6
     {.symb_num = LORA_CAD_04_SYMBOL, .cad_det_peak = 18, .cad_det_min = 10}, // SF5
 };
+
+#endif /* RADIO_ENABLE */

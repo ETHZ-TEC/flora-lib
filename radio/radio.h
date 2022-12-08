@@ -32,6 +32,10 @@
 #define RADIO_RADIO_H_
 
 
+#ifndef RADIO_ENABLE
+#define RADIO_ENABLE              1
+#endif /* RADIO_ENABLE */
+
 /* whether to use the hardware timeout of the radio chip in receive mode; if set to 0, a software timeout will be used instead (hs timer) */
 #ifndef RADIO_USE_HW_TIMEOUT
 #define RADIO_USE_HW_TIMEOUT      1

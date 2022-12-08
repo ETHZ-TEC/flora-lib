@@ -66,7 +66,9 @@ void system_init(void)
 #endif /* BOLT_ENABLE */
 
   /* init radio and protocols */
+#if RADIO_ENABLE
   radio_init();
+#endif
 #if CLI_ENABLE
   cli_init();
 #endif /* CLI_ENABLE */
@@ -107,7 +109,9 @@ void system_update(void)
 {
   if (system_initialized)
   {
+#if RADIO_ENABLE
     radio_update_cli();
+#endif /* RADIO_ENABLE */
     leds_update();
     cli_update();
   }
@@ -117,7 +121,9 @@ void system_update(void)
 void system_sleep(bool deep)
 {
   if (deep) {
+#if RADIO_ENABLE
     radio_sleep(false);
+#endif /* RADIO_ENABLE */
     leds_sleep();
 
     HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1_HIGH);
@@ -130,7 +136,9 @@ void system_sleep(bool deep)
     HAL_PWREx_EnterSHUTDOWNMode();
   }
   else {
+#if RADIO_ENABLE
     radio_sleep(false);
+#endif /* RADIO_ENABLE */
     leds_sleep();
 
     // Todo Implement standby mode with recovery (requires to define a backup-register

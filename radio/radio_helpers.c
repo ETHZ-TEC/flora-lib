@@ -30,6 +30,7 @@
 
 #include "flora_lib.h"
 
+#if RADIO_ENABLE
 
 extern volatile bool radio_irq_direct;
 extern bool          cli_interactive_mode;
@@ -704,3 +705,4 @@ uint16_t radio_get_error_flags(void)
   return SX126xGetDeviceErrors().Value;
 }
 
+#endif /* RADIO_ENABLE */

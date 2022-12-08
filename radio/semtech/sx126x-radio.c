@@ -28,6 +28,7 @@
 
 #include "flora_lib.h"
 
+#if RADIO_ENABLE
 
 #define RADIO_MAX_PAYLOAD_SIZE      255       // max. number of payload bytes (must not exceed 255!)
 
@@ -1408,3 +1409,5 @@ void RadioIrqProcess( void )
         }
     }
 }
+
+#endif /* RADIO_ENABLE */

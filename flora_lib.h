@@ -31,6 +31,14 @@
 #ifndef FLORA_LIB_H_
 #define FLORA_LIB_H_
 
+/* --- Version info --- */
+
+#define FLORA_LIB_VER_MAJOR           1               /* Max:  5 */
+#define FLORA_LIB_VER_MINOR           0               /* Max: 99 */
+#define FLORA_LIB_VER_PATCH           0               /* Max: 99 */
+#define FLORA_LIB_VER                 (FLORA_LIB_VER_MAJOR * 10000 + FLORA_LIB_VER_MINOR * 100 + FLORA_LIB_VER_PATCH)   /* 16-bit version number */
+
+
 /* --- include required standard libraries --- */
 
 #include <stdbool.h>
@@ -89,12 +97,12 @@
 /* --- global error checks --- */
 
 #if !defined(__OPTIMIZE__) && (!defined(FLORA_COMPILER_OPT_CHECK) || (FLORA_COMPILER_OPT_CHECK != 0))
-#error "Compiler optimizations have to be enabled! Recommended setting is -O2."
+#warning "Compiler optimizations should be enabled! Recommended setting is -O2."
 #endif
 
-#if (__GNUC__ != 7) && (!defined(FLORA_COMPILER_VER_CHECK) || (FLORA_COMPILER_VER_CHECK != 0))
-#warning "Compiler version has changed."
-#endif
+//#if (__GNUC__ != 7) && (!defined(FLORA_COMPILER_VER_CHECK) || (FLORA_COMPILER_VER_CHECK != 0))
+//#warning "Compiler version has changed."
+//#endif
 
 
 #endif /* FLORA_LIB_H_ */
