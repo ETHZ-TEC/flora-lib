@@ -164,7 +164,9 @@ bool lpm_prepare(void)
       __HAL_SPI_DISABLE(&hspi1);
   #ifndef DEVKIT
       __HAL_TIM_DISABLE(&htim16);
+  #if RADIO_ENABLE
       __HAL_SPI_DISABLE(&hspi2);
+  #endif /* RADIO_ENABLE */
   #endif /* DEVKIT */
   #ifdef HAL_RNG_MODULE_ENABLED
       __HAL_RNG_DISABLE(&hrng);
@@ -311,7 +313,9 @@ void lpm_resume(void)
     __HAL_SPI_ENABLE(&hspi1);
   #ifndef DEVKIT
     __HAL_TIM_ENABLE(&htim16);
+  #if RADIO_ENABLE
     __HAL_SPI_ENABLE(&hspi2);
+  #endif /* RADIO_ENABLE */
   #endif /* DEVKIT */
   #ifdef HAL_RNG_MODULE_ENABLED
     __HAL_RNG_ENABLE(&hrng);
