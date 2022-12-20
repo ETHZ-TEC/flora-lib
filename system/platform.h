@@ -49,8 +49,10 @@
 #ifndef DEVKIT
   #define RADIO_SPI hspi2
   extern SPI_HandleTypeDef hspi2;
-  #define UART huart1
-  extern UART_HandleTypeDef huart1;
+  #ifndef UART
+    #define UART huart1
+  #endif
+  extern UART_HandleTypeDef UART;
 #else
   #define RADIO_SPI hspi1
   extern SPI_HandleTypeDef hspi1;
