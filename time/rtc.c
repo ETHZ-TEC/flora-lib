@@ -485,6 +485,25 @@ uint32_t rtc_time_to_next_alarm(void)
 }
 
 
+void rtc_start_wakeup_timer(uint32_t period_s)
+{
+    /* RTC_WAKEUPCLOCK_CK_SPRE_16BITS will set the granularity to 1s. Note that the counter value is zero-based, i.e. a value of 10 will result in a wakeup every 11 seconds */
+    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, (period_s - 1), RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+    LOG_VERBOSE("RTC wakeup period is set to %us", period_s);
+
+    HAL_NVIC_SetPriority(RTC_WKUP_IRQn, RTC_WAKEUP_IRQ_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(RTC_WKUP_IRQn);
+}
+
+
+void rtc_stop_wakeup_timer(void)
+{
+  HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+
+  HAL_NVIC_DisableIRQ(RTC_WKUP_IRQn);
+}
+
+
 /*
  * delay in ms
  */

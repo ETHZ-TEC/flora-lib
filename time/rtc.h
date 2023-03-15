@@ -34,6 +34,10 @@
 
 #ifdef HAL_RTC_MODULE_ENABLED
 
+#ifndef RTC_WAKEUP_IRQ_PRIORITY
+#define RTC_WAKEUP_IRQ_PRIORITY   6
+#endif
+
 
 void rtc_init();
 
@@ -56,6 +60,8 @@ bool rtc_parse_date_string(RTC_DateTypeDef* rtc_date, RTC_TimeTypeDef* rtc_time,
 bool rtc_set_alarm(uint64_t timestamp, void* callback);
 bool rtc_set_alarm_daytime(uint32_t hour, uint32_t minute, uint32_t second, void (*callback)(void));
 uint32_t rtc_time_to_next_alarm(void);
+void rtc_start_wakeup_timer(uint32_t period_s);
+void rtc_stop_wakeup_timer(void);
 
 #else /* HAL_RTC_MODULE_ENABLED */
 
